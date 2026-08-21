@@ -11,7 +11,13 @@ const lowStockProductNames = new Set(
     .map((product) => product.name),
 );
 
-const CATEGORY_ORDER = ["Beverages", "Instant Food", "Snacks", "Dairy", "Other"];
+const CATEGORY_ORDER = [
+  "Beverages",
+  "Instant Food",
+  "Snacks",
+  "Dairy",
+  "Other",
+];
 const CATEGORY_COLORS = {
   Beverages: "var(--blue)",
   "Instant Food": "var(--red)",
@@ -68,7 +74,8 @@ const trendDayStats = trendDays.map((day) => {
     transactions: daySales.length,
     items: daySales.reduce(
       (sum, sale) =>
-        sum + sale.items.reduce((itemTotal, item) => itemTotal + item.quantity, 0),
+        sum +
+        sale.items.reduce((itemTotal, item) => itemTotal + item.quantity, 0),
       0,
     ),
     lowStockItemSales: daySales.reduce(
@@ -134,14 +141,24 @@ const lowStockProducts = products
   .filter((product) => product.stock <= LOW_STOCK_THRESHOLD)
   .sort((first, second) => first.stock - second.stock);
 document.getElementById("lowStockItems").textContent = lowStockProducts.length;
-setTrendNote("todayRevenueNote", todayStats.revenue, yesterdayStats.revenue, "revenue");
+setTrendNote(
+  "todayRevenueNote",
+  todayStats.revenue,
+  yesterdayStats.revenue,
+  "revenue",
+);
 setTrendNote(
   "todaySalesNote",
   todayStats.transactions,
   yesterdayStats.transactions,
   "transactions",
 );
-setTrendNote("productsSoldNote", todayStats.items, yesterdayStats.items, "items sold");
+setTrendNote(
+  "productsSoldNote",
+  todayStats.items,
+  yesterdayStats.items,
+  "items sold",
+);
 setTrendNote(
   "lowStockNote",
   todayStats.lowStockItemSales,
@@ -163,9 +180,11 @@ const lowStockModal = document.getElementById("lowStockModal");
 const closeLowStock = () => {
   lowStockModal.hidden = true;
   document.getElementById("lowStockTitle").textContent = "Low Stock Products";
-  [...inventoryBarsElement.querySelectorAll(".inventory-bar")].forEach((bar) => {
-    bar.classList.remove("active");
-  });
+  [...inventoryBarsElement.querySelectorAll(".inventory-bar")].forEach(
+    (bar) => {
+      bar.classList.remove("active");
+    },
+  );
 };
 const openLowStock = () => {
   lowStockModal.hidden = false;
@@ -268,7 +287,13 @@ document.getElementById("trendLabels").innerHTML = trendDays
   )
   .join("");
 
-function renderStackedChart(elementId, buckets, labels, colors, metric = "revenue") {
+function renderStackedChart(
+  elementId,
+  buckets,
+  labels,
+  colors,
+  metric = "revenue",
+) {
   const values =
     metric === "transactions"
       ? buckets.map((bucket) => ({ Transactions: bucket.sales.length }))
@@ -276,9 +301,12 @@ function renderStackedChart(elementId, buckets, labels, colors, metric = "revenu
           const totals = {};
           bucket.sales.forEach((sale) =>
             sale.items.forEach((item) => {
-              const product = products.find((entry) => entry.name === item.name);
+              const product = products.find(
+                (entry) => entry.name === item.name,
+              );
               const category = product?.category || "Other";
-              totals[category] = (totals[category] || 0) + item.price * item.quantity;
+              totals[category] =
+                (totals[category] || 0) + item.price * item.quantity;
             }),
           );
           return totals;
@@ -423,7 +451,8 @@ const categoryInventory = [
     };
     current.total += product.stock;
     current.products.push(product);
-    if (product.stock <= LOW_STOCK_THRESHOLD) current.lowItems.push(product.name);
+    if (product.stock <= LOW_STOCK_THRESHOLD)
+      current.lowItems.push(product.name);
     groups.set(product.category, current);
     return groups;
   }, new Map()),
@@ -445,10 +474,14 @@ inventoryBarsElement.innerHTML = orderedCategoryInventory
   .join("");
 
 const highlightLowStockCategory = (category) => {
-  [...inventoryBarsElement.querySelectorAll(".inventory-bar")].forEach((bar) => {
-    bar.classList.toggle("active", bar.dataset.category === category);
-  });
-  const categoryInfo = orderedCategoryInventory.find(([name]) => name === category);
+  [...inventoryBarsElement.querySelectorAll(".inventory-bar")].forEach(
+    (bar) => {
+      bar.classList.toggle("active", bar.dataset.category === category);
+    },
+  );
+  const categoryInfo = orderedCategoryInventory.find(
+    ([name]) => name === category,
+  );
   if (!categoryInfo) return;
   const [, values] = categoryInfo;
   const lowList = values.products
@@ -459,9 +492,11 @@ const highlightLowStockCategory = (category) => {
         `<div class="low-stock-row"><span><strong>${product.name}</strong><small>${product.category} · ${product.price.toFixed(2)} per unit</small></span><b class="low-stock-amount">${product.stock} left</b></div>`,
     )
     .join("");
-  document.getElementById("lowStockTitle").textContent = `${category} Low Stock`;
+  document.getElementById("lowStockTitle").textContent =
+    `${category} Low Stock`;
   document.getElementById("lowStockList").innerHTML =
-    lowList || '<div class="low-stock-empty">No low-stock products in this category.</div>';
+    lowList ||
+    '<div class="low-stock-empty">No low-stock products in this category.</div>';
   openLowStock();
 };
 
@@ -483,12 +518,14 @@ document.getElementById("lowStockMetric").addEventListener("click", () => {
   openLowStock();
 });
 
-document.getElementById("lowStockMetric").addEventListener("keydown", (event) => {
-  if (event.key === "Enter" || event.key === " ") {
-    event.preventDefault();
-    document.getElementById("lowStockMetric").click();
-  }
-});
+document
+  .getElementById("lowStockMetric")
+  .addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      document.getElementById("lowStockMetric").click();
+    }
+  });
 
 document.getElementById("recentSales").innerHTML =
   sales
