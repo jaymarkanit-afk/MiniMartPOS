@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Inventory | Mini Mart POS</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="css/inventory.css" />
+  </head>
+  <body class="inventory-page">
+    <div class="shell">
+      <header>
+        <div>
+          <div class="brand">
+            <div class="brand-mark">
+              <img src="Icons/grocery-store.png" alt="Mini Mart" />
+            </div>
+            <div>
+              <div class="eyebrow">REGISTER 01</div>
+              <h1>Mini Mart</h1>
+            </div>
+          </div>
+          <nav aria-label="Main navigation">
+            <a href="Index.html">⌑ CHECKOUT</a>
+            <a class="active" href="inventory.html">◈ INVENTORY</a>
+            <a href="reports.html">▥ REPORTS</a>
+          </nav>
+        </div>
+        <div class="date">Fri, Aug 21</div>
+      </header>
+
+      <main class="workspace">
+        <div class="inventory-toolbar">
+          <div class="inventory-heading">
+            <span>◇</span> PRODUCTS (<span id="productCount">5</span>)
+          </div>
+          <div class="inventory-toolbar-actions">
+            <button class="create-category" id="createCategory" type="button">
+              ＋ CREATE CATEGORY
+            </button>
+            <button class="add-product" id="createProduct" type="button">
+              ＋ CREATE PRODUCT
+            </button>
+          </div>
+        </div>
+        <div class="search-wrap">
+          <span aria-hidden="true">⌕</span>
+          <input
+            id="inventorySearch"
+            type="search"
+            placeholder="Search products..."
+            aria-label="Search inventory"
+            name="mini-mart-inventory-search"
+            autocomplete="off"
+            autocorrect="off"
+            spellcheck="false"
+          />
+        </div>
+        <div class="inventory-table-wrap">
+          <table class="inventory-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="inventoryRows">
+              <tr data-product="Coke 1.5L">
+                <td>Coke 1.5L</td>
+                <td>
+                  <span class="category-label" style="--accent: var(--blue)"
+                    >▣ Beverages</span
+                  >
+                </td>
+                <td class="inventory-price">&#8369;65.00</td>
+                <td class="inventory-stock">23</td>
+                <td class="row-actions">
+                  <button class="edit-action" type="button">♢ Edit</button
+                  ><button class="delete-action" type="button">♧ Delete</button>
+                </td>
+              </tr>
+              <tr data-product="Lucky Me Pancit Canton">
+                <td>Lucky Me Pancit Canton</td>
+                <td>
+                  <span class="category-label" style="--accent: var(--red)"
+                    >⌁ Instant Food</span
+                  >
+                </td>
+                <td class="inventory-price">&#8369;15.00</td>
+                <td class="inventory-stock">50</td>
+                <td class="row-actions">
+                  <button class="edit-action" type="button">♢ Edit</button
+                  ><button class="delete-action" type="button">♧ Delete</button>
+                </td>
+              </tr>
+              <tr data-product="Piattos 40g">
+                <td>Piattos 40g</td>
+                <td>
+                  <span class="category-label" style="--accent: var(--gold)"
+                    >◉ Snacks</span
+                  >
+                </td>
+                <td class="inventory-price">&#8369;22.00</td>
+                <td class="inventory-stock">29</td>
+                <td class="row-actions">
+                  <button class="edit-action" type="button">♢ Edit</button
+                  ><button class="delete-action" type="button">♧ Delete</button>
+                </td>
+              </tr>
+              <tr data-product="Bear Brand 33g">
+                <td>Bear Brand 33g</td>
+                <td>
+                  <span class="category-label" style="--accent: var(--green)"
+                    >♙ Dairy</span
+                  >
+                </td>
+                <td class="inventory-price">&#8369;14.00</td>
+                <td class="inventory-stock">40</td>
+                <td class="row-actions">
+                  <button class="edit-action" type="button">♢ Edit</button
+                  ><button class="delete-action" type="button">♧ Delete</button>
+                </td>
+              </tr>
+              <tr data-product="Skyflakes Crackers">
+                <td>Skyflakes Crackers</td>
+                <td>
+                  <span class="category-label" style="--accent: var(--gold)"
+                    >◉ Snacks</span
+                  >
+                </td>
+                <td class="inventory-price">&#8369;8.00</td>
+                <td class="inventory-stock">60</td>
+                <td class="row-actions">
+                  <button class="edit-action" type="button">♢ Edit</button
+                  ><button class="delete-action" type="button">♧ Delete</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="no-products" id="noProducts">No products found.</div>
+        </div>
+      </main>
+    </div>
+    <div class="modal-backdrop" id="categoryModal" hidden>
+      <section
+        class="product-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="categoryModalTitle"
+      >
+        <div class="modal-header">
+          <div>
+            <div class="eyebrow">INVENTORY</div>
+            <h2 id="categoryModalTitle">Create Category</h2>
+          </div>
+          <button
+            class="modal-close"
+            id="closeCategoryModal"
+            type="button"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+        <form id="categoryForm">
+          <label
+            >Category name<input
+              id="categoryName"
+              list="categoryOptions"
+              type="text"
+              placeholder="e.g. Bakery"
+              required
+          /></label>
+          <datalist id="categoryOptions"></datalist>
+          <div id="productFields">
+            <label
+              >Product name<input id="productName" type="text" required
+            /></label>
+            <div class="modal-fields">
+              <label
+                >Price<input
+                  id="productPrice"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  required
+              /></label>
+              <label
+                >Stock<input
+                  id="productStock"
+                  type="number"
+                  min="0"
+                  step="1"
+                  required
+              /></label>
+            </div>
+          </div>
+          <div class="category-icon-picker" id="categoryIconPicker">
+            <span class="picker-label">Category icon</span>
+            <div class="icon-options">
+              <button
+                type="button"
+                class="icon-option"
+                data-icon="Icons/beverages.png"
+                aria-label="Beverages icon"
+              >
+                <img src="Icons/beverages.png" alt="" />
+              </button>
+              <button
+                type="button"
+                class="icon-option"
+                data-icon="Icons/instant-food.png"
+                aria-label="Instant food icon"
+              >
+                <img src="Icons/instant-food.png" alt="" />
+              </button>
+              <button
+                type="button"
+                class="icon-option"
+                data-icon="Icons/snacks.png"
+                aria-label="Snacks icon"
+              >
+                <img src="Icons/snacks.png" alt="" />
+              </button>
+              <button
+                type="button"
+                class="icon-option"
+                data-icon="Icons/dairy.png"
+                aria-label="Dairy icon"
+              >
+                <img src="Icons/dairy.png" alt="" />
+              </button>
+              <button
+                type="button"
+                class="icon-option"
+                data-icon="Icons/bread.png"
+                aria-label="Bread icon"
+              >
+                <img src="Icons/bread.png" alt="" />
+              </button>
+            </div>
+          </div>
+          <p class="modal-help" id="categoryHelp">
+            Create the category and add its first product.
+          </p>
+          <div class="modal-actions">
+            <button class="modal-cancel" id="cancelCategoryModal" type="button">
+              CANCEL
+            </button>
+            <button class="modal-save" id="modalSaveButton" type="submit">
+              CREATE CATEGORY
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+    <script src="js/database.js"></script>
+    <script src="js/inventory.js"></script>
+  </body>
+</html>

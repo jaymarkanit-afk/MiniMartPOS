@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mini Mart POS</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="css/checkout.css" />
+  </head>
+  <body class="checkout-page">
+    <div class="shell">
+      <header>
+        <div>
+          <div class="brand">
+            <div class="brand-mark">
+              <img src="Icons/grocery-store.png" alt="Mini Mart" />
+            </div>
+            <div>
+              <div class="eyebrow">REGISTER 01</div>
+              <h1>Mini Mart</h1>
+            </div>
+          </div>
+          <nav aria-label="Main navigation">
+            <a class="active" href="Index.html">⌑ CHECKOUT</a>
+            <a href="inventory.html">◈ INVENTORY</a>
+            <a href="reports.html">▥ REPORTS</a>
+          </nav>
+        </div>
+        <div class="date">Fri, Aug 21</div>
+      </header>
+      <main class="workspace">
+        <div class="search-wrap">
+          <span aria-hidden="true">⌕</span>
+          <input
+            id="search"
+            type="search"
+            placeholder="Search products..."
+            aria-label="Search products"
+            name="mini-mart-product-search"
+            autocomplete="off"
+            autocorrect="off"
+            spellcheck="false"
+          />
+        </div>
+        <section class="products" id="products" aria-label="Products">
+          <article
+            class="product"
+            style="--accent: var(--blue)"
+            data-name="Coke 1.5L"
+            data-price="65"
+            data-stock="23"
+          >
+            <div class="product-head">
+              <span class="product-icon">▣</span
+              ><span class="category">BEVERAGES</span>
+            </div>
+            <h2>Coke 1.5L</h2>
+            <p class="price">&#8369;65.00</p>
+            <span class="stock">23 left</span>
+          </article>
+          <article
+            class="product"
+            style="--accent: var(--red)"
+            data-name="Lucky Me Pancit Canton"
+            data-price="15"
+            data-stock="50"
+          >
+            <div class="product-head">
+              <span class="product-icon">⌁</span
+              ><span class="category">INSTANT FOOD</span>
+            </div>
+            <h2>Lucky Me Pancit Canton</h2>
+            <p class="price">&#8369;15.00</p>
+            <span class="stock">50 left</span>
+          </article>
+          <article
+            class="product"
+            style="--accent: var(--gold)"
+            data-name="Piattos 40g"
+            data-price="22"
+            data-stock="29"
+          >
+            <div class="product-head">
+              <span class="product-icon">◉</span
+              ><span class="category">SNACKS</span>
+            </div>
+            <h2>Piattos 40g</h2>
+            <p class="price">&#8369;22.00</p>
+            <span class="stock">29 left</span>
+          </article>
+          <article
+            class="product"
+            style="--accent: var(--green)"
+            data-name="Bear Brand 33g"
+            data-price="14"
+            data-stock="40"
+          >
+            <div class="product-head">
+              <span class="product-icon">♙</span
+              ><span class="category">DAIRY</span>
+            </div>
+            <h2>Bear Brand 33g</h2>
+            <p class="price">&#8369;14.00</p>
+            <span class="stock">40 left</span>
+          </article>
+          <article
+            class="product"
+            style="--accent: var(--gold)"
+            data-name="Skyflakes Crackers"
+            data-price="8"
+            data-stock="60"
+          >
+            <div class="product-head">
+              <span class="product-icon">◉</span
+              ><span class="category">SNACKS</span>
+            </div>
+            <h2>Skyflakes Crackers</h2>
+            <p class="price">&#8369;8.00</p>
+            <span class="stock">60 left</span>
+          </article>
+          <div class="empty-results" id="emptyResults">No products found.</div>
+        </section>
+        <section class="receipt" aria-label="Shopping cart">
+          <div class="receipt-top">
+            <div class="receipt-title">▣ MINI MART</div>
+            <div class="receipt-date" id="receiptDate"></div>
+          </div>
+          <div class="cart-empty" id="cartEmpty">
+            <div class="cart-icon">
+              <img src="Icons/grocery-store.png" alt="Shopping cart" />
+            </div>
+            <div>Cart is empty</div>
+          </div>
+          <div class="cart-items" id="cartItems"></div>
+          <div class="total" id="total" hidden>
+            <span>TOTAL</span><strong id="totalAmount">&#8369;0.00</strong>
+          </div>
+          <div class="payment-panel" id="paymentPanel" hidden>
+            <label for="amountGiven">CUSTOMER GIVES</label>
+            <div class="payment-input-wrap">
+              <span>&#8369;</span
+              ><input
+                id="amountGiven"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                inputmode="decimal"
+              />
+            </div>
+            <div class="change-row">
+              <span>CHANGE</span><strong id="changeAmount">&#8369;0.00</strong>
+            </div>
+            <p class="payment-error" id="paymentError" hidden>
+              Payment is less than the total.
+            </p>
+          </div>
+          <button class="sell-button" id="sellButton" type="button" disabled>
+            SELL
+          </button>
+        </section>
+      </main>
+    </div>
+    <script src="js/database.js"></script>
+    <script src="js/checkout.js"></script>
+  </body>
+</html>

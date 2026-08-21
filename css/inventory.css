@@ -1,0 +1,148 @@
+/* Inventory page layout and table presentation. */
+.inventory-page .inventory-table-wrap {
+  width: 100%;
+}
+.inventory-page .inventory-toolbar {
+  min-height: 34px;
+}
+.inventory-page .inventory-toolbar-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.inventory-page .create-category,
+.inventory-page .add-product {
+  border: 0;
+  border-radius: 3px;
+  padding: 9px 13px;
+  cursor: pointer;
+  font:
+    600 14px "Barlow Condensed",
+    sans-serif;
+  letter-spacing: 0.04em;
+}
+.inventory-page .create-category {
+  background: #e8e7df;
+  color: var(--ink);
+}
+.inventory-page .create-category:hover {
+  background: #ddddd4;
+}
+.inventory-page .modal-backdrop {
+  backdrop-filter: blur(2px);
+}
+.inventory-page .category-group td {
+  padding: 10px 12px 7px;
+  border-top: 1px solid var(--line);
+  background: #f7f6f0;
+  color: var(--ink);
+  font:
+    700 14px "Barlow Condensed",
+    sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.inventory-page .category-group:hover td,
+.inventory-page .category-group:focus-visible td {
+  background: #eeeee7;
+}
+.inventory-page .category-group:first-child td {
+  border-top: 0;
+}
+.inventory-page .category-group span {
+  display: inline-grid;
+  place-items: center;
+  width: 21px;
+  height: 21px;
+  margin-right: 7px;
+  border-radius: 3px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 11%, white);
+  font-size: 11px;
+}
+.inventory-page .category-group span img,
+.inventory-page .category-label img {
+  width: 13px;
+  height: 13px;
+  object-fit: contain;
+}
+.inventory-page .category-group strong {
+  font-weight: 700;
+}
+.inventory-page .category-group small {
+  margin-left: 8px;
+  color: var(--muted);
+  font:
+    10px "DM Mono",
+    monospace;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.inventory-page .category-group b {
+  float: right;
+  color: var(--accent);
+  font:
+    18px "Barlow Condensed",
+    sans-serif;
+}
+.inventory-page .modal-help {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font:
+    10px/1.5 "DM Mono",
+    monospace;
+}
+.inventory-page .category-icon-picker {
+  margin-top: 15px;
+}
+.inventory-page .category-icon-picker[hidden] {
+  display: none;
+}
+.inventory-page .picker-label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font:
+    10px "DM Mono",
+    monospace;
+  text-transform: uppercase;
+}
+.inventory-page .icon-options {
+  display: flex;
+  gap: 8px;
+}
+.inventory-page .icon-option {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 7px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--white);
+  cursor: pointer;
+}
+.inventory-page .icon-option:hover,
+.inventory-page .icon-option.selected {
+  border-color: var(--blue);
+  background: rgba(43, 117, 145, 0.1);
+  box-shadow: 0 0 0 2px rgba(43, 117, 145, 0.12);
+}
+.inventory-page .icon-option img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+.inventory-page .category-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.inventory-page .category-group[data-open="true"] b {
+  font-size: 0;
+}
+.inventory-page .category-group[data-open="true"] b::after {
+  content: "−";
+  font-size: 18px;
+}

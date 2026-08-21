@@ -1,0 +1,1153 @@
+/* Reports page layout and summary presentation. */
+.reports-page .report-metrics {
+  align-items: stretch;
+}
+.reports-page .metric-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.reports-page .report-panel:last-child {
+  margin-bottom: 0;
+}
+.reports-page .report-dashboard {
+  padding-top: 20px;
+}
+.reports-page .report-livebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  margin-bottom: 10px;
+  color: var(--muted);
+  font:
+    10px "DM Mono",
+    monospace;
+}
+.reports-page .report-livebar strong {
+  color: var(--ink);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+.reports-page .report-livebar time {
+  margin-left: auto;
+  color: var(--blue);
+}
+.reports-page .live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 0 0 rgba(39, 114, 85, 0.5);
+  animation: live-pulse 2s infinite;
+}
+.reports-page .report-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.reports-page .metric-card,
+.reports-page .report-panel {
+  background: var(--white);
+  border: 1px solid #d8d5ca;
+  border-radius: 4px;
+  box-shadow: var(--shadow);
+}
+.reports-page .metric-card {
+  min-height: 112px;
+  position: relative;
+  padding: 15px;
+  border-top: 3px solid var(--accent);
+  animation: panel-in 0.45s both;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.reports-page .metric-card:nth-child(2) {
+  animation-delay: 0.06s;
+}
+.reports-page .metric-card:nth-child(3) {
+  animation-delay: 0.12s;
+}
+.reports-page .metric-card:nth-child(4) {
+  animation-delay: 0.18s;
+}
+.reports-page .metric-card:hover,
+.reports-page .report-panel:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 9px 22px rgba(25, 35, 29, 0.1);
+}
+.reports-page .metric-action {
+  cursor: pointer;
+}
+.reports-page .metric-action:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
+}
+.reports-page .metric-red {
+  --accent: var(--red);
+}
+.reports-page .metric-blue {
+  --accent: var(--blue);
+}
+.reports-page .metric-amber {
+  --accent: var(--gold);
+}
+.reports-page .metric-green {
+  --accent: var(--green);
+}
+.reports-page .metric-card small.trend-up {
+  color: var(--green);
+}
+.reports-page .metric-card small.trend-down {
+  color: var(--red);
+}
+.reports-page .metric-card small.trend-flat {
+  color: var(--muted);
+}
+.reports-page .data-icon {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, white);
+  font-size: 14px;
+}
+.reports-page .metric-label {
+  display: block;
+  color: var(--muted);
+  font:
+    10px "DM Mono",
+    monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.reports-page .metric-card strong {
+  display: block;
+  margin-top: 12px;
+  color: var(--ink);
+  font:
+    700 24px "Barlow Condensed",
+    sans-serif;
+}
+.reports-page .metric-card small {
+  display: block;
+  margin-top: 3px;
+  color: var(--accent);
+  font:
+    10px "DM Mono",
+    monospace;
+}
+.reports-page .dashboard-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr 1fr;
+  gap: 12px;
+}
+.reports-page .report-panel {
+  min-width: 0;
+  padding: 16px;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  animation: panel-in 0.5s 0.18s both;
+}
+.reports-page .panel-wide {
+  grid-column: span 2;
+}
+.reports-page .panel-heading {
+  display: flex;
+  align-items: center;
+  min-height: 22px;
+  gap: 7px;
+  margin-bottom: 14px;
+}
+.reports-page .panel-icon {
+  flex: 0 0 23px;
+  display: grid;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  color: var(--blue);
+  background: rgba(43, 117, 145, 0.1);
+  border-radius: 3px;
+  font-size: 13px;
+}
+.reports-page .panel-heading h2 {
+  flex: 1;
+  margin: 0;
+  color: var(--ink);
+  font:
+    700 16px "Barlow Condensed",
+    sans-serif;
+  letter-spacing: 0.06em;
+}
+.reports-page .panel-note {
+  color: var(--muted);
+  font:
+    10px "DM Mono",
+    monospace;
+}
+.reports-page .trend-panel {
+  min-height: 235px;
+}
+.reports-page .trend-chart {
+  position: relative;
+  height: 150px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 36px,
+    rgba(217, 215, 205, 0.65) 37px
+  );
+}
+.reports-page .trend-y-axis {
+  display: flex;
+  flex: 0 0 38px;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0 6px 2px 0;
+  color: var(--muted);
+  text-align: right;
+  font:
+    9px "DM Mono",
+    monospace;
+}
+.reports-page .trend-plot {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 36px,
+    rgba(217, 215, 205, 0.65) 37px
+  );
+}
+.reports-page .trend-columns {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: end;
+  justify-content: space-around;
+  gap: 8px;
+  padding: 0 8px;
+}
+.reports-page .trend-columns i {
+  display: block;
+  width: min(30px, 8%);
+  min-height: 3px;
+  border-radius: 4px 4px 0 0;
+  background: linear-gradient(to top, var(--blue), #53a7bd);
+  transform-origin: bottom;
+  animation: bar-rise 0.8s 0.25s both;
+}
+.reports-page .trend-columns i:hover {
+  background: linear-gradient(to top, var(--red), #ef806d);
+  filter: brightness(1.05);
+}
+.reports-page .trend-chart::before {
+  content: "";
+  position: absolute;
+  inset: 15px 0 0;
+  background: linear-gradient(
+    150deg,
+    transparent 0 9%,
+    rgba(43, 117, 145, 0.12) 10% 12%,
+    transparent 13% 20%,
+    rgba(43, 117, 145, 0.12) 21% 23%,
+    transparent 24% 30%,
+    rgba(43, 117, 145, 0.12) 31% 33%,
+    transparent 34% 42%,
+    rgba(43, 117, 145, 0.12) 43% 45%,
+    transparent 46% 100%
+  );
+  clip-path: polygon(
+    0 64%,
+    15% 56%,
+    30% 71%,
+    45% 42%,
+    60% 62%,
+    75% 51%,
+    90% 66%,
+    100% 25%,
+    100% 100%,
+    0 100%
+  );
+}
+.reports-page .trend-plot::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    150deg,
+    transparent 0 9%,
+    rgba(43, 117, 145, 0.1) 10% 12%,
+    transparent 13% 20%,
+    rgba(43, 117, 145, 0.1) 21% 23%,
+    transparent 24% 30%,
+    rgba(43, 117, 145, 0.1) 31% 33%,
+    transparent 34% 42%,
+    rgba(43, 117, 145, 0.1) 43% 45%,
+    transparent 46% 100%
+  );
+  clip-path: polygon(
+    0 64%,
+    15% 56%,
+    30% 71%,
+    45% 42%,
+    60% 62%,
+    75% 51%,
+    90% 66%,
+    100% 25%,
+    100% 100%,
+    0 100%
+  );
+}
+.reports-page .trend-line {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.reports-page .trend-line polyline:first-child {
+  stroke-dasharray: 500;
+  stroke-dashoffset: 500;
+  animation: draw-line 1.4s 0.35s ease-out forwards;
+}
+.reports-page .trend-line polyline:last-child {
+  opacity: 0;
+  animation: fade-area 0.7s 1s ease-out forwards;
+}
+.reports-page .chart-labels {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  padding-top: 7px;
+  color: var(--muted);
+  text-align: center;
+  font:
+    9px "DM Mono",
+    monospace;
+}
+.reports-page .period-panel {
+  min-height: 218px;
+}
+.reports-page .weekly-panel {
+  grid-column: span 2;
+}
+.reports-page .period-chart {
+  position: relative;
+  display: flex;
+  height: 175px;
+  padding: 10px 5px 20px;
+  border-bottom: 1px solid var(--line);
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 27px,
+    rgba(217, 215, 205, 0.55) 28px
+  );
+}
+.reports-page .period-y-axis {
+  display: flex;
+  flex: 0 0 42px;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0 6px 2px 0;
+  color: var(--muted);
+  text-align: right;
+  font:
+    9px "DM Mono",
+    monospace;
+}
+.reports-page .period-plot {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 140px;
+}
+.reports-page .period-plot {
+  cursor: crosshair;
+  touch-action: none;
+}
+.reports-page .period-columns {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: end;
+  justify-content: space-around;
+  gap: 8px;
+  padding: 0 7px;
+}
+.reports-page .period-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: end;
+  gap: 4px;
+  height: 100%;
+  min-width: 0;
+  color: var(--muted);
+  font:
+    9px "DM Mono",
+    monospace;
+}
+.reports-page .period-stack {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-start;
+  width: min(24px, 70%);
+  height: 125px;
+}
+.reports-page .period-stack i {
+  display: block;
+  width: 100%;
+  min-height: 2px;
+  transform-origin: bottom;
+  animation: bar-rise 0.8s 0.25s both;
+}
+.reports-page .period-column > span {
+  position: absolute;
+  bottom: -19px;
+  width: 48px;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reports-page .period-tooltip {
+  position: absolute;
+  z-index: 5;
+  top: 8px;
+  display: flex;
+  flex-direction: column;
+  min-width: 112px;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: rgba(255, 254, 251, 0.96);
+  box-shadow: 0 5px 14px rgba(25, 35, 29, 0.14);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%);
+  transition: opacity 0.15s ease;
+}
+.reports-page .period-tooltip.visible {
+  opacity: 1;
+}
+.reports-page .period-tooltip b {
+  color: var(--muted);
+  font:
+    10px "DM Mono",
+    monospace;
+}
+.reports-page .period-tooltip strong {
+  margin-top: 3px;
+  color: var(--red);
+  font:
+    700 17px "Barlow Condensed",
+    sans-serif;
+}
+.reports-page .period-tooltip small {
+  color: var(--muted);
+  font:
+    9px "DM Mono",
+    monospace;
+}
+.reports-page .period-columns i:hover {
+  filter: brightness(1.1);
+}
+.reports-page .period-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: end;
+  gap: 5px;
+  min-width: 0;
+  height: 100%;
+  color: var(--muted);
+  font:
+    9px "DM Mono",
+    monospace;
+}
+.reports-page .period-column strong {
+  min-height: 14px;
+  color: var(--ink);
+  font:
+    10px "DM Mono",
+    monospace;
+  opacity: 0;
+  transform: translateY(3px);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+.reports-page .period-column:hover strong {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reports-page .period-bar {
+  width: min(24px, 80%);
+  min-height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(to top, var(--blue), var(--green));
+  transform-origin: bottom;
+  animation: bar-rise 0.8s 0.3s both;
+}
+.reports-page .monthly-panel .period-bar {
+  background: linear-gradient(to top, var(--gold), var(--red));
+}
+.reports-page .period-column span {
+  width: 100%;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reports-page .period-line {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 140px;
+  overflow: visible;
+}
+.reports-page .period-line polyline:first-child {
+  stroke-dasharray: 500;
+  stroke-dashoffset: 500;
+  animation: draw-line 1.2s 0.2s ease-out forwards;
+}
+.reports-page .period-line polyline:last-child {
+  opacity: 0;
+  animation: fade-area 0.6s 0.8s ease-out forwards;
+}
+.reports-page .period-point {
+  position: absolute;
+  z-index: 2;
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--blue);
+  border-radius: 50%;
+  background: var(--white);
+  transform: translate(-50%, -50%);
+}
+.reports-page .monthly-point {
+  border-color: var(--red);
+}
+.reports-page .period-point strong {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  display: none;
+  padding: 3px 5px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--white);
+  color: var(--ink);
+  white-space: nowrap;
+  transform: translateX(-50%);
+  font:
+    9px "DM Mono",
+    monospace;
+  box-shadow: 0 2px 5px rgba(25, 35, 29, 0.1);
+}
+.reports-page .period-point:hover strong {
+  display: block;
+}
+.reports-page .period-label {
+  position: absolute;
+  bottom: -20px;
+  width: 40px;
+  color: var(--muted);
+  text-align: center;
+  transform: translateX(-50%);
+  font:
+    9px "DM Mono",
+    monospace;
+}
+.reports-page .category-panel {
+  min-height: 255px;
+}
+.reports-page .donut-wrap {
+  display: grid;
+  place-items: center;
+  height: 162px;
+}
+.reports-page .donut-chart {
+  position: relative;
+  display: grid;
+  place-content: center;
+  width: 148px;
+  height: 148px;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--blue) 0 25%,
+    var(--gold) 25% 50%,
+    var(--green) 50% 100%
+  );
+  color: var(--ink);
+  text-align: center;
+  box-shadow:
+    inset 0 0 0 37px var(--white),
+    inset 0 -5px 0 rgba(24, 35, 29, 0.16),
+    0 7px 15px rgba(25, 35, 29, 0.15);
+  filter: saturate(1.08);
+  animation: donut-in 0.8s 0.35s both;
+}
+.reports-page .donut-chart::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 12deg,
+    rgba(255, 255, 255, 0.35),
+    transparent 15%,
+    rgba(24, 35, 29, 0.12) 42%,
+    transparent 60%,
+    rgba(255, 255, 255, 0.2)
+  );
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+}
+.reports-page .donut-chart::after {
+  content: "";
+  position: absolute;
+  inset: 37px;
+  border: 1px solid rgba(217, 215, 205, 0.8);
+  border-radius: 50%;
+  box-shadow: inset 0 2px 4px rgba(24, 35, 29, 0.08);
+}
+.reports-page .donut-chart > span {
+  position: relative;
+  z-index: 1;
+  font:
+    700 22px "Barlow Condensed",
+    sans-serif;
+}
+.reports-page .donut-chart > small {
+  position: relative;
+  z-index: 1;
+  color: var(--muted);
+  font:
+    10px "DM Mono",
+    monospace;
+}
+.reports-page .donut-labels {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.reports-page .donut-label {
+  position: absolute;
+  width: 39px;
+  padding: 3px 2px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--ink);
+  text-align: center;
+  text-shadow: none;
+  font:
+    600 10px "DM Mono",
+    monospace;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 1px 3px rgba(24, 35, 29, 0.18);
+}
+.reports-page .legend {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  color: var(--muted);
+  font:
+    10px "DM Mono",
+    monospace;
+}
+.reports-page .legend span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  padding: 4px 5px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+.reports-page .legend span:hover {
+  background: #f7f6f0;
+  border-color: var(--line);
+}
+.reports-page .legend i,
+.reports-page .bar-legend i {
+  display: inline-block;
+  flex: 0 0 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--legend);
+}
+.reports-page .legend b {
+  overflow: hidden;
+  color: var(--ink);
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reports-page .legend em {
+  margin-left: auto;
+  color: var(--ink);
+  font-style: normal;
+}
+.reports-page .top-panel {
+  grid-column: span 2;
+  min-height: 220px;
+}
+.reports-page .report-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.reports-page .report-list li {
+  display: grid;
+  grid-template-columns: 29px minmax(0, 1fr) 100px 48px;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  border-bottom: 1px dotted var(--line);
+  font-size: 13px;
+  transition:
+    background 0.2s ease,
+    padding 0.2s ease;
+}
+.reports-page .report-list li:hover {
+  padding-left: 4px;
+  background: #faf9f4;
+}
+.reports-page .report-list li:last-child {
+  border-bottom: 0;
+}
+.reports-page .report-rank {
+  color: var(--blue);
+  font:
+    10px "DM Mono",
+    monospace;
+}
+.reports-page .rank-badge {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #eef3f1;
+  color: var(--blue);
+  font:
+    10px "DM Mono",
+    monospace;
+}
+.reports-page .rank-1 {
+  background: rgba(230, 173, 53, 0.2);
+  color: #9b7014;
+}
+.reports-page .rank-2 {
+  background: rgba(43, 117, 145, 0.12);
+}
+.reports-page .rank-3 {
+  background: rgba(39, 114, 85, 0.12);
+  color: var(--green);
+}
+.reports-page .product-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reports-page .report-quantity {
+  color: var(--muted);
+  text-align: right;
+  font:
+    10px "DM Mono",
+    monospace;
+}
+.reports-page .product-meter {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #e3e8e5;
+}
+.reports-page .product-meter i {
+  display: block;
+  width: var(--fill, 0%);
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--blue), var(--green));
+  transform-origin: left;
+  animation: meter-fill 0.8s 0.45s both;
+}
+.reports-page .inventory-panel {
+  min-height: 220px;
+  overflow: hidden;
+}
+.reports-page .inventory-bars {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: end;
+  gap: 10px 7px;
+  min-height: 170px;
+  padding: 4px 4px 10px;
+  border-bottom: 1px solid var(--line);
+}
+.reports-page .inventory-bar {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: end;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  height: 142px;
+  color: var(--muted);
+  font:
+    10px "DM Mono",
+    monospace;
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+.reports-page .inventory-bar:hover {
+  color: var(--ink);
+  transform: translateY(-3px);
+}
+.reports-page .inventory-bar.active {
+  color: var(--ink);
+  transform: translateY(-3px);
+}
+.reports-page .inventory-bar strong {
+  min-height: 14px;
+  color: var(--blue);
+  font:
+    10px "DM Mono",
+    monospace;
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+.reports-page .inventory-bar:hover strong,
+.reports-page .inventory-bar.is-low strong,
+.reports-page .inventory-bar.active strong {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reports-page .bar-stack {
+  position: relative;
+  display: flex;
+  align-items: end;
+  width: 18px;
+  height: 100px;
+}
+.reports-page .bar-stock {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  background: var(--green);
+  border-radius: 3px 3px 0 0;
+  transform-origin: bottom;
+  animation: bar-rise 0.8s 0.35s both;
+}
+.reports-page .bar-threshold {
+  position: absolute;
+  left: -2px;
+  width: calc(100% + 4px);
+  height: 2px;
+  background: var(--red);
+}
+.reports-page .inventory-bar:hover .bar-stock,
+.reports-page .inventory-bar:hover .bar-threshold,
+.reports-page .inventory-bar.active .bar-stock,
+.reports-page .inventory-bar.active .bar-threshold {
+  filter: brightness(1.12);
+}
+.reports-page .inventory-bar > span:last-child {
+  width: 100%;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reports-page .bar-legend {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  padding-top: 10px;
+  color: var(--muted);
+  font:
+    9px "DM Mono",
+    monospace;
+}
+.reports-page .legend-category {
+  --legend: conic-gradient(
+    var(--blue) 0 25%,
+    var(--red) 25% 50%,
+    var(--gold) 50% 75%,
+    var(--green) 75% 100%
+  );
+}
+.reports-page .legend-threshold {
+  --legend: var(--red);
+}
+.reports-page .recent-panel {
+  margin-top: 12px;
+}
+.reports-page .sale-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 9px 0;
+  border-bottom: 1px dotted var(--line);
+  font-size: 12px;
+}
+.reports-page .sale-row:last-child {
+  border-bottom: 0;
+}
+.reports-page .sale-details {
+  color: #4f5e54;
+  line-height: 1.7;
+}
+.reports-page .sale-date {
+  color: var(--blue);
+  font:
+    10px "DM Mono",
+    monospace;
+}
+.reports-page .sale-total {
+  color: var(--red);
+  font:
+    700 16px "Barlow Condensed",
+    sans-serif;
+  white-space: nowrap;
+}
+.reports-page .low-stock-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(24, 35, 29, 0.55);
+}
+.reports-page .low-stock-modal[hidden] {
+  display: none;
+}
+.reports-page .low-stock-dialog {
+  width: min(100%, 460px);
+  max-height: min(620px, 90vh);
+  overflow: auto;
+  padding: 20px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--red);
+  border-radius: 4px;
+  box-shadow: 0 18px 50px rgba(24, 35, 29, 0.22);
+  animation: panel-in 0.25s both;
+}
+.reports-page .low-stock-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.reports-page .low-stock-header h2 {
+  margin: 3px 0 0;
+  font:
+    700 24px "Barlow Condensed",
+    sans-serif;
+}
+.reports-page .low-stock-close {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 25px;
+  line-height: 1;
+}
+.reports-page .low-stock-intro {
+  margin: 14px 0;
+  color: var(--muted);
+  font:
+    11px "DM Mono",
+    monospace;
+}
+.reports-page .low-stock-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 11px 0;
+  border-bottom: 1px dotted var(--line);
+}
+.reports-page .low-stock-row:last-child {
+  border-bottom: 0;
+}
+.reports-page .low-stock-row strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+}
+.reports-page .low-stock-row small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font:
+    10px "DM Mono",
+    monospace;
+}
+.reports-page .low-stock-amount {
+  color: var(--red);
+  font:
+    700 18px "Barlow Condensed",
+    sans-serif;
+}
+.reports-page .low-stock-empty {
+  padding: 22px 0;
+  color: var(--green);
+  font:
+    12px "DM Mono",
+    monospace;
+  text-align: center;
+}
+.reports-page .low-stock-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 18px;
+}
+.reports-page .low-stock-actions a,
+.reports-page .low-stock-actions button {
+  border: 0;
+  border-radius: 3px;
+  padding: 10px 13px;
+  cursor: pointer;
+  text-decoration: none;
+  font:
+    600 13px "Barlow Condensed",
+    sans-serif;
+  letter-spacing: 0.04em;
+}
+.reports-page .low-stock-actions a {
+  background: var(--ink);
+  color: var(--white);
+}
+.reports-page .low-stock-actions button {
+  background: #e8e7df;
+  color: var(--ink);
+}
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes draw-line {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes fade-area {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes donut-in {
+  from {
+    opacity: 0;
+    transform: scale(0.75) rotate(-20deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+@keyframes bar-rise {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@keyframes meter-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes live-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(39, 114, 85, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(39, 114, 85, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reports-page *,
+  .reports-page *::before,
+  .reports-page *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+@media (max-width: 850px) {
+  .reports-page .report-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .reports-page .dashboard-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .reports-page .panel-wide,
+  .reports-page .weekly-panel,
+  .reports-page .top-panel {
+    grid-column: span 2;
+  }
+}
+@media (max-width: 550px) {
+  .reports-page .report-metrics,
+  .reports-page .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  .reports-page .panel-wide,
+  .reports-page .weekly-panel,
+  .reports-page .top-panel {
+    grid-column: span 1;
+  }
+  .reports-page .metric-card {
+    min-height: 96px;
+  }
+}

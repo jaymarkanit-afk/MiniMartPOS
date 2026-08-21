@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reports | Mini Mart POS</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="css/reports.css" />
+  </head>
+  <body class="reports-page">
+    <div class="shell">
+      <header>
+        <div>
+          <div class="brand">
+            <div class="brand-mark">
+              <img src="Icons/grocery-store.png" alt="Mini Mart" />
+            </div>
+            <div>
+              <div class="eyebrow">REGISTER 01</div>
+              <h1>Mini Mart</h1>
+            </div>
+          </div>
+          <nav aria-label="Main navigation">
+            <a href="Index.html">⌑ CHECKOUT</a>
+            <a href="inventory.html">◈ INVENTORY</a>
+            <a class="active" href="reports.html">▥ REPORTS</a>
+          </nav>
+        </div>
+        <div class="date">Fri, Aug 21</div>
+      </header>
+
+      <main class="workspace report-dashboard">
+        <div class="report-livebar">
+          <span class="live-dot"></span><strong>LIVE REPORTS</strong
+          ><span>Updates when a sale is completed</span
+          ><time id="lastUpdated">Updated just now</time>
+        </div>
+        <section class="report-metrics" aria-label="Sales summary">
+          <article class="metric-card metric-green">
+            <span class="data-icon">▣</span
+            ><span class="metric-label">Today's Revenue</span
+            ><strong id="todayRevenue">&#8369;0.00</strong
+            ><small id="todayRevenueNote">From today's sales</small>
+          </article>
+          <article class="metric-card metric-blue">
+            <span class="data-icon">▤</span
+            ><span class="metric-label">Today's Sales</span
+            ><strong id="todaySales">0</strong
+              ><small id="todaySalesNote">Completed transactions</small>
+          </article>
+            <article class="metric-card metric-amber">
+            <span class="data-icon">⌁</span
+            ><span class="metric-label">Products Sold</span
+            ><strong id="productsSold">0</strong
+            ><small id="productsSoldNote">Across all sales</small>
+          </article>
+          <article
+            class="metric-card metric-red metric-action"
+            id="lowStockMetric"
+            role="button"
+            tabindex="0"
+            aria-haspopup="dialog"
+            aria-controls="lowStockModal"
+          >
+            <span class="data-icon">△</span
+            ><span class="metric-label">Low Stock Items</span
+            ><strong id="lowStockItems">0</strong
+            ><small id="lowStockNote">Click to view products</small>
+          </article>
+        </section>
+
+        <section class="dashboard-grid" aria-label="Sales visualizations">
+          <article class="report-panel trend-panel panel-wide">
+            <div class="panel-heading">
+              <span class="panel-icon">⌁</span>
+              <h2>SALES TREND</h2>
+              <span class="panel-note">Last 7 days</span>
+            </div>
+            <div
+              class="trend-chart"
+              id="trendChart"
+              aria-label="Sales trend chart"
+            ></div>
+            <div class="chart-labels" id="trendLabels"></div>
+          </article>
+          <article class="report-panel category-panel">
+            <div class="panel-heading">
+              <span class="panel-icon">◉</span>
+              <h2>SALES BY CATEGORY</h2>
+            </div>
+            <div class="donut-wrap">
+              <div class="donut-chart" id="categoryChart" title="Total products sold by category">
+                <span id="categoryTotal">0</span>
+                <div class="donut-labels" id="categoryLabels"></div>
+              </div>
+            </div>
+            <div class="legend" id="categoryLegend"></div>
+          </article>
+          <article class="report-panel period-panel weekly-panel">
+            <div class="panel-heading">
+              <span class="panel-icon">▤</span>
+              <h2>WEEKLY SALES</h2>
+              <span class="panel-note">Transactions</span>
+            </div>
+            <div
+              class="period-chart"
+              id="weeklyChart"
+              aria-label="Weekly transactions chart"
+            ></div>
+          </article>
+          <article class="report-panel period-panel monthly-panel">
+            <div class="panel-heading">
+              <span class="panel-icon">▥</span>
+              <h2>MONTHLY SALES</h2>
+              <span class="panel-note">Revenue</span>
+            </div>
+            <div
+              class="period-chart"
+              id="monthlyChart"
+              aria-label="Monthly sales chart"
+            ></div>
+          </article>
+          <article class="report-panel top-panel">
+            <div class="panel-heading">
+              <span class="panel-icon">◇</span>
+              <h2>TOP PRODUCTS</h2>
+            </div>
+            <ol class="report-list" id="topProducts"></ol>
+          </article>
+          <article class="report-panel inventory-panel">
+            <div class="panel-heading">
+              <span class="panel-icon">▥</span>
+              <h2>INVENTORY LEVELS</h2>
+            </div>
+            <div class="inventory-bars" id="inventoryBars"></div>
+            <div class="bar-legend">
+              <span><i class="legend-category"></i> Category total stock</span
+              ><span><i class="legend-threshold"></i> Low-stock threshold (10 units)</span>
+            </div>
+          </article>
+        </section>
+
+        <section
+          class="report-panel recent-panel"
+          aria-labelledby="recent-sales-title"
+        >
+          <div class="panel-heading">
+            <span class="panel-icon">▣</span>
+            <h2 id="recent-sales-title">RECENT SALES</h2>
+          </div>
+          <div id="recentSales"></div>
+        </section>
+      </main>
+    </div>
+    <div class="low-stock-modal" id="lowStockModal" hidden>
+      <section
+        class="low-stock-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="lowStockTitle"
+      >
+        <div class="low-stock-header">
+          <div>
+            <div class="eyebrow">INVENTORY ALERT</div>
+            <h2 id="lowStockTitle">Low Stock Products</h2>
+          </div>
+          <button
+            class="low-stock-close"
+            id="closeLowStock"
+            type="button"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+        <p class="low-stock-intro" id="lowStockIntro">
+          Products with 10 units or fewer remaining.
+        </p>
+        <div class="low-stock-list" id="lowStockList"></div>
+        <div class="low-stock-actions">
+          <a href="inventory.html">VIEW INVENTORY</a
+          ><button id="cancelLowStock" type="button">CLOSE</button>
+        </div>
+      </section>
+    </div>
+    <script src="js/database.js"></script>
+    <script src="js/reports.js"></script>
+  </body>
+</html>

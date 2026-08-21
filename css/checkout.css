@@ -1,0 +1,155 @@
+/* Checkout page layout and cart presentation. */
+.checkout-page .products {
+  align-items: start;
+}
+.checkout-page .checkout-category {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 8px 11px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  border-radius: 3px;
+  background: #f7f6f0;
+  color: var(--ink);
+  cursor: pointer;
+  font:
+    700 15px "Barlow Condensed",
+    sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.checkout-page .checkout-category:hover,
+.checkout-page .checkout-category:focus-visible {
+  background: #eeeee7;
+  outline: 2px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  outline-offset: 1px;
+}
+.checkout-page .category-toggle {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 3px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 11%, white);
+  font-size: 12px;
+}
+.checkout-page .category-toggle img,
+.checkout-page .product-icon img {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+}
+.checkout-page .product-icon img {
+  width: 13px;
+  height: 13px;
+}
+.checkout-page .checkout-category small {
+  margin-left: 2px;
+  color: var(--muted);
+  font:
+    10px "DM Mono",
+    monospace;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.checkout-page .checkout-category b {
+  margin-left: auto;
+  color: var(--accent);
+  font:
+    18px "Barlow Condensed",
+    sans-serif;
+}
+.checkout-page .checkout-category[data-open="true"] b {
+  font-size: 0;
+}
+.checkout-page .checkout-category[data-open="true"] b::after {
+  content: "−";
+  font-size: 18px;
+}
+.checkout-page .receipt {
+  width: 100%;
+}
+.checkout-page .payment-panel {
+  display: grid;
+  grid-template-columns: 1fr 180px;
+  gap: 9px 14px;
+  align-items: center;
+  margin: 13px 20px 0;
+  padding: 12px 0;
+  border-top: 1px dashed var(--line);
+}
+.checkout-page .payment-panel[hidden] {
+  display: none;
+}
+.checkout-page .payment-panel > label,
+.checkout-page .change-row span {
+  color: var(--muted);
+  font:
+    10px "DM Mono",
+    monospace;
+  letter-spacing: 0.04em;
+}
+.checkout-page .payment-input-wrap {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  border: 1px solid #d5d2c7;
+  border-radius: 3px;
+  background: var(--white);
+}
+.checkout-page .payment-input-wrap:focus-within {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(43, 117, 145, 0.1);
+}
+.checkout-page .payment-input-wrap span {
+  padding-left: 10px;
+  color: var(--muted);
+  font:
+    14px "DM Mono",
+    monospace;
+}
+.checkout-page .payment-input-wrap input {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  padding: 0 10px 0 5px;
+  background: transparent;
+  color: var(--ink);
+  font:
+    16px "DM Mono",
+    monospace;
+}
+.checkout-page .payment-input-wrap input::-webkit-inner-spin-button {
+  display: none;
+}
+.checkout-page .change-row {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.checkout-page .change-row strong {
+  color: var(--green);
+  font:
+    700 20px "Barlow Condensed",
+    sans-serif;
+}
+.checkout-page .payment-error {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--red);
+  font:
+    10px "DM Mono",
+    monospace;
+}
+.checkout-page .payment-error[hidden] {
+  display: none;
+}
+.checkout-page .sell-button {
+  min-height: 42px;
+}

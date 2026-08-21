@@ -1,0 +1,706 @@
+@import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=DM+Mono:wght@400;500&family=Outfit:wght@400;500;600&display=swap");
+
+:root {
+  --paper: #f5f4ee;
+  --white: #fffefb;
+  --ink: #18231d;
+  --muted: #637067;
+  --line: #d9d7cd;
+  --red: #d23720;
+  --blue: #2b7591;
+  --gold: #e6ad35;
+  --green: #277255;
+  --shadow: 0 5px 14px rgba(25, 35, 29, 0.05);
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: Outfit, sans-serif;
+}
+body::before {
+  content: "";
+  display: block;
+  height: 3px;
+  background: var(--ink);
+}
+.shell {
+  max-width: 1600px;
+  margin: auto;
+  padding: 18px 20px 34px;
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 13px;
+}
+.brand {
+  display: flex;
+  gap: 11px;
+  align-items: center;
+}
+.brand-mark {
+  width: 37px;
+  height: 37px;
+  display: grid;
+  place-items: center;
+  background: var(--ink);
+  color: var(--white);
+  border-radius: 6px;
+  transform: rotate(-2deg);
+  font-size: 21px;
+}
+.brand-mark img {
+  width: 23px;
+  height: 23px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+.eyebrow,
+.category,
+.date,
+.stock,
+.receipt-date {
+  font-family: "DM Mono", monospace;
+}
+.eyebrow {
+  color: var(--red);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  margin-bottom: 2px;
+}
+h1 {
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 26px;
+  letter-spacing: 0.01em;
+  margin: 0;
+  line-height: 1;
+}
+.date {
+  color: #4d5c52;
+  font-size: 11px;
+  padding-top: 24px;
+}
+nav {
+  display: flex;
+  gap: 25px;
+  margin-top: 12px;
+}
+nav button {
+  border: 0;
+  background: transparent;
+  padding: 0 0 10px;
+  color: #59655c;
+  cursor: pointer;
+  font:
+    600 16px "Barlow Condensed",
+    sans-serif;
+  letter-spacing: 0.04em;
+  border-bottom: 2px solid transparent;
+}
+nav a {
+  padding: 0 0 10px;
+  color: #59655c;
+  text-decoration: none;
+  font:
+    600 16px "Barlow Condensed",
+    sans-serif;
+  letter-spacing: 0.04em;
+  border-bottom: 2px solid transparent;
+}
+nav button.active {
+  color: var(--ink);
+  border-color: var(--red);
+}
+nav a.active {
+  color: var(--ink);
+  border-color: var(--red);
+}
+.workspace {
+  padding-top: 20px;
+}
+.search-wrap {
+  position: relative;
+  margin-bottom: 16px;
+}
+.search-wrap span {
+  position: absolute;
+  left: 12px;
+  top: 10px;
+  color: #68756d;
+  font-size: 18px;
+}
+#search,
+#inventorySearch {
+  width: 100%;
+  height: 42px;
+  background: var(--white);
+  border: 1px solid #d5d2c7;
+  border-radius: 3px;
+  outline: none;
+  padding: 0 14px 0 36px;
+  font:
+    14px Outfit,
+    sans-serif;
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+#search:focus,
+#inventorySearch:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(43, 117, 145, 0.1);
+}
+.products {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 13px;
+}
+.product {
+  min-height: 109px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #d7d4ca;
+  border-top: 4px solid var(--accent);
+  border-radius: 3px;
+  padding: 13px 12px 11px;
+  background: var(--white);
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
+}
+.product:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(25, 35, 29, 0.1);
+}
+.product:active {
+  transform: translateY(0);
+}
+.product-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent);
+}
+.product-icon {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--accent) 11%, white);
+  border-radius: 3px;
+  font-size: 12px;
+}
+.category {
+  font-size: 10px;
+}
+.product h2 {
+  margin: 9px 0 8px;
+  font-size: 15px;
+  font-weight: 500;
+}
+.price {
+  margin: 0;
+  color: var(--red);
+  font:
+    700 20px "Barlow Condensed",
+    sans-serif;
+}
+.stock {
+  position: absolute;
+  right: 12px;
+  bottom: 14px;
+  color: #47534b;
+  font-size: 10px;
+}
+.empty-results {
+  display: none;
+  grid-column: 1/-1;
+  padding: 35px;
+  text-align: center;
+  color: var(--muted);
+  background: var(--white);
+  border: 1px solid var(--line);
+}
+.receipt {
+  margin-top: 40px;
+  min-height: 230px;
+  background: var(--white);
+  border: 1px solid #d8d5ca;
+  border-radius: 4px 4px 0 0;
+  box-shadow: var(--shadow);
+}
+.receipt-top {
+  text-align: center;
+  padding: 17px 20px 14px;
+  border-bottom: 1px dashed var(--line);
+}
+.receipt-title {
+  font:
+    700 16px "Barlow Condensed",
+    sans-serif;
+  letter-spacing: 0.1em;
+}
+.receipt-date {
+  color: var(--blue);
+  font-size: 10px;
+  margin-top: 5px;
+}
+.cart-empty {
+  display: grid;
+  place-items: center;
+  min-height: 155px;
+  color: #8a7663;
+  font:
+    12px "DM Mono",
+    monospace;
+  gap: 8px;
+}
+.cart-empty .cart-icon {
+  color: #7b725f;
+  font-size: 25px;
+}
+.cart-empty .cart-icon img {
+  display: block;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+.cart-items {
+  padding: 12px 20px 0;
+  display: none;
+}
+.inventory-page .workspace {
+  padding-top: 20px;
+}
+.inventory-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+.inventory-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font:
+    700 18px "Barlow Condensed",
+    sans-serif;
+  letter-spacing: 0.04em;
+}
+.inventory-heading span {
+  font-size: 18px;
+  font-weight: 400;
+}
+.add-product {
+  border: 0;
+  border-radius: 3px;
+  padding: 9px 14px;
+  background: var(--ink);
+  color: var(--white);
+  cursor: pointer;
+  font:
+    600 14px "Barlow Condensed",
+    sans-serif;
+  letter-spacing: 0.04em;
+}
+.add-product:hover {
+  background: var(--green);
+}
+.inventory-table-wrap {
+  overflow-x: auto;
+  background: var(--white);
+  border: 1px solid #d8d5ca;
+  border-radius: 4px;
+  box-shadow: var(--shadow);
+}
+.inventory-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
+}
+.inventory-table th {
+  padding: 12px;
+  background: #f7f6f0;
+  color: var(--muted);
+  text-align: left;
+  font:
+    10px "DM Mono",
+    monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.inventory-table td {
+  padding: 12px;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+}
+.inventory-table th:nth-child(1),
+.inventory-table td:nth-child(1) {
+  width: 33%;
+}
+.inventory-table th:nth-child(2),
+.inventory-table td:nth-child(2) {
+  width: 31%;
+}
+.inventory-table th:nth-child(3),
+.inventory-table td:nth-child(3) {
+  width: 10%;
+  text-align: right;
+}
+.inventory-table th:nth-child(4),
+.inventory-table td:nth-child(4) {
+  width: 10%;
+  text-align: center;
+}
+.inventory-table th:nth-child(5),
+.inventory-table td:nth-child(5) {
+  width: 16%;
+  text-align: right;
+}
+.category-label {
+  display: inline-block;
+  padding: 5px 7px;
+  border-radius: 3px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, white);
+  font:
+    10px "DM Mono",
+    monospace;
+}
+.inventory-price {
+  font:
+    500 15px "DM Mono",
+    monospace;
+}
+.inventory-stock {
+  font:
+    13px "DM Mono",
+    monospace;
+}
+.row-actions {
+  white-space: nowrap;
+}
+.row-actions button {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font:
+    12px "DM Mono",
+    monospace;
+}
+.edit-action {
+  color: var(--green);
+}
+.delete-action {
+  color: var(--red);
+  margin-left: 8px;
+}
+.no-products {
+  display: none;
+  padding: 30px;
+  color: var(--muted);
+  text-align: center;
+}
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(24, 35, 29, 0.55);
+}
+.modal-backdrop[hidden] {
+  display: none;
+}
+.product-modal {
+  width: min(100%, 470px);
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--red);
+  border-radius: 4px;
+  box-shadow: 0 18px 50px rgba(24, 35, 29, 0.22);
+  padding: 20px;
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 19px;
+}
+.modal-header h2 {
+  margin: 3px 0 0;
+  font:
+    700 24px "Barlow Condensed",
+    sans-serif;
+}
+.modal-close {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 25px;
+  line-height: 1;
+}
+.product-modal label {
+  display: block;
+  color: var(--muted);
+  font:
+    10px "DM Mono",
+    monospace;
+  text-transform: uppercase;
+}
+.product-modal input,
+.product-modal select {
+  width: 100%;
+  height: 39px;
+  margin-top: 7px;
+  padding: 0 10px;
+  border: 1px solid #d5d2c7;
+  border-radius: 3px;
+  outline: none;
+  background: var(--white);
+  color: var(--ink);
+  font:
+    14px Outfit,
+    sans-serif;
+}
+.product-modal input:focus,
+.product-modal select:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(43, 117, 145, 0.1);
+}
+.modal-fields {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 10px;
+  margin-top: 15px;
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 22px;
+}
+.modal-actions button {
+  border: 0;
+  border-radius: 3px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font:
+    600 13px "Barlow Condensed",
+    sans-serif;
+  letter-spacing: 0.04em;
+}
+.modal-cancel {
+  background: #e8e7df;
+  color: var(--ink);
+}
+.modal-save {
+  background: var(--ink);
+  color: var(--white);
+}
+.modal-save:hover {
+  background: var(--green);
+}
+.cart-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px dotted var(--line);
+  font-size: 13px;
+}
+.cart-row small {
+  display: block;
+  color: var(--muted);
+  font:
+    10px "DM Mono",
+    monospace;
+  margin-top: 3px;
+}
+.cart-row strong {
+  color: var(--red);
+  font:
+    600 15px "Barlow Condensed",
+    sans-serif;
+}
+.remove {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  margin-left: 8px;
+}
+.total {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 20px;
+  font:
+    600 15px "Barlow Condensed",
+    sans-serif;
+  letter-spacing: 0.05em;
+}
+.total strong {
+  color: var(--red);
+  font-size: 20px;
+}
+.sell-button {
+  display: block;
+  width: calc(100% - 40px);
+  margin: 0 20px 16px;
+  padding: 11px 14px;
+  border: 0;
+  border-radius: 3px;
+  background: var(--red);
+  color: var(--white);
+  cursor: pointer;
+  font:
+    700 16px "Barlow Condensed",
+    sans-serif;
+  letter-spacing: 0.08em;
+}
+.sell-button:not(:disabled):hover {
+  background: #b82d1b;
+}
+.sell-button:disabled {
+  background: #c9c7be;
+  color: #f5f4ee;
+  cursor: not-allowed;
+}
+.reports-page .workspace {
+  padding-top: 20px;
+}
+.report-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.metric-card,
+.report-panel {
+  background: var(--white);
+  border: 1px solid #d8d5ca;
+  border-radius: 4px;
+  box-shadow: var(--shadow);
+}
+.metric-card {
+  min-height: 77px;
+  padding: 14px;
+  position: relative;
+}
+.metric-label {
+  color: var(--muted);
+  font:
+    10px "DM Mono",
+    monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.metric-icon {
+  position: absolute;
+  top: 14px;
+  right: 12px;
+  color: #6e756c;
+  font-size: 14px;
+}
+.metric-value {
+  margin-top: 8px;
+  font:
+    700 22px "Barlow Condensed",
+    sans-serif;
+}
+.report-panel {
+  padding: 17px 16px;
+  margin-bottom: 16px;
+}
+.report-panel h2 {
+  margin: 0 0 12px;
+  font:
+    700 16px "Barlow Condensed",
+    sans-serif;
+  letter-spacing: 0.04em;
+}
+.report-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.report-list li {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center;
+  min-height: 29px;
+  font-size: 14px;
+}
+.report-rank,
+.sale-date {
+  color: var(--blue);
+  font:
+    10px "DM Mono",
+    monospace;
+}
+.report-quantity {
+  color: #56635a;
+  font:
+    11px "DM Mono",
+    monospace;
+}
+.sale-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  font-size: 13px;
+}
+.sale-details {
+  color: #4f5e54;
+  line-height: 1.7;
+}
+.sale-total {
+  color: var(--ink);
+  font:
+    700 16px "Barlow Condensed",
+    sans-serif;
+  white-space: nowrap;
+}
+@media (max-width: 650px) {
+  .shell {
+    padding: 16px 12px 28px;
+  }
+  header {
+    align-items: center;
+  }
+  .date {
+    padding-top: 0;
+    font-size: 9px;
+  }
+  nav {
+    gap: 15px;
+  }
+  nav button {
+    font-size: 14px;
+  }
+  nav a {
+    font-size: 14px;
+  }
+  .products {
+    grid-template-columns: 1fr;
+  }
+  .receipt {
+    margin-top: 28px;
+  }
+  .report-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .metric-card {
+    min-height: 70px;
+  }
+}
