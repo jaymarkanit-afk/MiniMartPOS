@@ -7,6 +7,7 @@ const seedProducts = [
   {
     name: "Coke 1.5L",
     category: "Beverages",
+    costPrice: 52,
     price: 65,
     stock: 23,
     icon: "▣",
@@ -15,6 +16,7 @@ const seedProducts = [
   {
     name: "Sprite 1.5L",
     category: "Beverages",
+    costPrice: 52,
     price: 65,
     stock: 18,
     icon: "▣",
@@ -23,6 +25,7 @@ const seedProducts = [
   {
     name: "Nature's Spring 500ml",
     category: "Beverages",
+    costPrice: 8,
     price: 12,
     stock: 35,
     icon: "▣",
@@ -31,6 +34,7 @@ const seedProducts = [
   {
     name: "Nestea Lemon 1L",
     category: "Beverages",
+    costPrice: 45,
     price: 58,
     stock: 16,
     icon: "▣",
@@ -39,6 +43,7 @@ const seedProducts = [
   {
     name: "Lucky Me Pancit Canton",
     category: "Instant Food",
+    costPrice: 11,
     price: 15,
     stock: 50,
     icon: "⌁",
@@ -47,6 +52,7 @@ const seedProducts = [
   {
     name: "Lucky Me Chicken Noodles",
     category: "Instant Food",
+    costPrice: 10,
     price: 14,
     stock: 42,
     icon: "⌁",
@@ -55,6 +61,7 @@ const seedProducts = [
   {
     name: "Payless Xtra Big",
     category: "Instant Food",
+    costPrice: 13,
     price: 18,
     stock: 28,
     icon: "⌁",
@@ -63,6 +70,7 @@ const seedProducts = [
   {
     name: "Nissin Cup Noodles",
     category: "Instant Food",
+    costPrice: 24,
     price: 32,
     stock: 20,
     icon: "⌁",
@@ -71,6 +79,7 @@ const seedProducts = [
   {
     name: "Piattos 40g",
     category: "Snacks",
+    costPrice: 16,
     price: 22,
     stock: 29,
     icon: "◉",
@@ -79,6 +88,7 @@ const seedProducts = [
   {
     name: "Chippy Barbecue 110g",
     category: "Snacks",
+    costPrice: 13,
     price: 18,
     stock: 34,
     icon: "◉",
@@ -87,6 +97,7 @@ const seedProducts = [
   {
     name: "Choc Nut 24g",
     category: "Snacks",
+    costPrice: 7,
     price: 10,
     stock: 45,
     icon: "◉",
@@ -95,6 +106,7 @@ const seedProducts = [
   {
     name: "Nova Country 78g",
     category: "Snacks",
+    costPrice: 21,
     price: 28,
     stock: 25,
     icon: "◉",
@@ -103,6 +115,7 @@ const seedProducts = [
   {
     name: "Bear Brand 33g",
     category: "Dairy",
+    costPrice: 10,
     price: 14,
     stock: 40,
     icon: "♙",
@@ -111,6 +124,7 @@ const seedProducts = [
   {
     name: "Alaska Fortified Milk 1L",
     category: "Dairy",
+    costPrice: 78,
     price: 92,
     stock: 14,
     icon: "♙",
@@ -119,6 +133,7 @@ const seedProducts = [
   {
     name: "Selecta Ice Cream Cup",
     category: "Dairy",
+    costPrice: 26,
     price: 35,
     stock: 22,
     icon: "♙",
@@ -127,6 +142,7 @@ const seedProducts = [
   {
     name: "Yakult 5-Pack",
     category: "Dairy",
+    costPrice: 38,
     price: 48,
     stock: 19,
     icon: "♙",
@@ -135,6 +151,7 @@ const seedProducts = [
   {
     name: "Skyflakes Crackers",
     category: "Snacks",
+    costPrice: 6,
     price: 8,
     stock: 60,
     icon: "◉",
@@ -144,6 +161,12 @@ const seedProducts = [
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
+}
+
+function isKnownCost(value) {
+  if (value === null || value === undefined || value === "") return false;
+  const amount = Number(value);
+  return Number.isFinite(amount) && amount >= 0;
 }
 
 function read(key, fallback) {
@@ -172,11 +195,17 @@ function normalizeProducts(products) {
       category: product.category || seed.category || "Snacks",
       icon: product.icon || seed.icon || "◇",
       accent: product.accent || seed.accent || "var(--gold)",
+      costPrice: isKnownCost(product.costPrice)
+        ? Number(product.costPrice)
+        : isKnownCost(seed.costPrice)
+          ? Number(seed.costPrice)
+          : null,
     };
   });
 }
 
 window.miniMartDB = {
+  isKnownCost,
   categories() {
     const saved = localStorage.getItem(CATEGORIES_KEY);
     const categories = saved

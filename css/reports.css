@@ -43,7 +43,7 @@
 }
 .reports-page .report-metrics {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 16px;
 }
@@ -72,6 +72,9 @@
 }
 .reports-page .metric-card:nth-child(4) {
   animation-delay: 0.18s;
+}
+.reports-page .metric-card:nth-child(5) {
+  animation-delay: 0.24s;
 }
 .reports-page .metric-card:hover,
 .reports-page .report-panel:hover {
@@ -918,6 +921,84 @@
 .reports-page .recent-panel {
   margin-top: 12px;
 }
+.reports-page .profit-section {
+  margin-top: 18px;
+}
+.reports-page .profit-section-heading {
+  margin-bottom: 12px;
+}
+.reports-page .profit-section-heading h2 {
+  flex: 0 0 auto;
+  margin: 0;
+  color: var(--ink);
+  font:
+    700 16px "Barlow Condensed",
+    sans-serif;
+  letter-spacing: 0.06em;
+}
+.reports-page .profit-section .dashboard-grid {
+  margin-top: 0;
+}
+.reports-page .profit-table-panel {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+.reports-page .profit-table-wrap {
+  overflow-x: auto;
+}
+.reports-page .profit-table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+}
+.reports-page .profit-table th,
+.reports-page .profit-table td {
+  padding: 10px 8px;
+  border-bottom: 1px dotted var(--line);
+  font-size: 13px;
+}
+.reports-page .profit-table th {
+  color: var(--muted);
+  text-align: left;
+  font:
+    10px "DM Mono",
+    monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.reports-page .profit-table th:nth-child(n + 2),
+.reports-page .profit-table td:nth-child(n + 2) {
+  text-align: right;
+}
+.reports-page .profit-table th button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+.reports-page .profit-table th button[aria-sort="ascending"]::after {
+  content: " ▲";
+  color: var(--green);
+}
+.reports-page .profit-table th button[aria-sort="descending"]::after {
+  content: " ▼";
+  color: var(--green);
+}
+.reports-page .profit-table tbody tr:hover {
+  background: #faf9f4;
+}
+.reports-page .profit-table tr.no-cost td {
+  color: var(--muted);
+}
+.reports-page .profit-table tr.is-partial td:nth-child(4),
+.reports-page .profit-table tr.is-partial td:nth-child(5),
+.reports-page .profit-table tr.is-partial td:nth-child(6) {
+  color: var(--gold);
+}
 .reports-page .sale-row {
   display: flex;
   justify-content: space-between;
@@ -1124,6 +1205,11 @@
     transition-duration: 0.01ms !important;
   }
 }
+@media (max-width: 1100px) {
+  .reports-page .report-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
 @media (max-width: 850px) {
   .reports-page .report-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1133,7 +1219,8 @@
   }
   .reports-page .panel-wide,
   .reports-page .weekly-panel,
-  .reports-page .top-panel {
+  .reports-page .top-panel,
+  .reports-page .profit-table-panel {
     grid-column: span 2;
   }
 }
@@ -1144,7 +1231,8 @@
   }
   .reports-page .panel-wide,
   .reports-page .weekly-panel,
-  .reports-page .top-panel {
+  .reports-page .top-panel,
+  .reports-page .profit-table-panel {
     grid-column: span 1;
   }
   .reports-page .metric-card {

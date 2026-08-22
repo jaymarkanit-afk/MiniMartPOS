@@ -9,6 +9,7 @@ const productFields = document.getElementById("productFields");
 const categoryHelp = document.getElementById("categoryHelp");
 const productName = document.getElementById("productName");
 const productPrice = document.getElementById("productPrice");
+const productCost = document.getElementById("productCost");
 const productStock = document.getElementById("productStock");
 const categoryIconPicker = document.getElementById("categoryIconPicker");
 let editingName = null;
@@ -62,11 +63,11 @@ function renderRows() {
       const categoryProducts = products
         .filter((product) => product.category === category)
         .sort((first, second) => first.name.localeCompare(second.name));
-      const header = `<tr class="category-group" style="--accent:${categoryAccent(category)}" data-category="${category}" data-open="false" tabindex="0" aria-expanded="false"><td colspan="5"><span><img src="${categoryIconPath(category)}" alt="" /></span><strong>${category}</strong><small>${categoryProducts.length} products</small><b>＋</b></td></tr>`;
+      const header = `<tr class="category-group" style="--accent:${categoryAccent(category)}" data-category="${category}" data-open="false" tabindex="0" aria-expanded="false"><td colspan="6"><span><img src="${categoryIconPath(category)}" alt="" /></span><strong>${category}</strong><small>${categoryProducts.length} products</small><b>＋</b></td></tr>`;
       const productRows = categoryProducts
         .map(
           (product) =>
-            `<tr data-product="${product.name}" data-category="${product.category}"><td>${product.name}</td><td><span class="category-label" style="--accent:${categoryAccent(product.category)}"><img src="${categoryIconPath(product.category)}" alt="" />${product.category}</span></td><td class="inventory-price">&#8369;${product.price.toFixed(2)}</td><td class="inventory-stock">${product.stock}</td><td class="row-actions"><button class="edit-action" type="button">♢ Edit</button><button class="delete-action" type="button">♧ Delete</button></td></tr>`,
+            `<tr data-product="${product.name}" data-category="${product.category}"><td>${product.name}</td><td><span class="category-label" style="--accent:${categoryAccent(product.category)}"><img src="${categoryIconPath(product.category)}" alt="" />${product.category}</span></td><td class="inventory-price">${window.miniMartDB.isKnownCost(product.costPrice) ? `&#8369;${Number(product.costPrice).toFixed(2)}` : "—"}</td><td class="inventory-price">&#8369;${product.price.toFixed(2)}</td><td class="inventory-stock">${product.stock}</td><td class="row-actions"><button class="edit-action" type="button">♢ Edit</button><button class="delete-action" type="button">♧ Delete</button></td></tr>`,
         )
         .join("");
       return header + productRows;
@@ -121,6 +122,9 @@ function openModal(product) {
     ? "Update the product details and category."
     : "Create the category and add its first product.";
   productName.value = product?.name || "";
+  productCost.value = window.miniMartDB.isKnownCost(product?.costPrice)
+    ? product.costPrice
+    : "";
   productPrice.value = product?.price ?? "";
   productStock.value = product?.stock ?? "";
   categoryName.value = product?.category || "";
@@ -147,6 +151,7 @@ function openProductModal(category) {
     ? `Add a new product to ${category}.`
     : "Add a product to an existing or new category.";
   productName.value = "";
+  productCost.value = "";
   productPrice.value = "";
   productStock.value = "";
   modal.hidden = false;
@@ -201,8 +206,16 @@ form.addEventListener("submit", (event) => {
   const category = categoryName.value.trim();
   const name = productName.value.trim();
   const price = Number(productPrice.value);
+  const costPrice = Number(productCost.value);
   const stock = Number(productStock.value);
-  if (!category || !name || Number.isNaN(price) || Number.isNaN(stock)) return;
+  if (
+    !category ||
+    !name ||
+    Number.isNaN(price) ||
+    Number.isNaN(costPrice) ||
+    Number.isNaN(stock)
+  )
+    return;
 
   if (modalMode === "create-category") {
     const existing =
@@ -216,6 +229,7 @@ form.addEventListener("submit", (event) => {
     products.push({
       name,
       category,
+      costPrice,
       price,
       stock,
       icon: "◇",
@@ -229,7 +243,14 @@ form.addEventListener("submit", (event) => {
   } else if (modalMode === "edit-product") {
     const index = products.findIndex((entry) => entry.name === editingName);
     if (index !== -1)
-      products[index] = { ...products[index], name, category, price, stock };
+      products[index] = {
+        ...products[index],
+        name,
+        category,
+        costPrice,
+        price,
+        stock,
+      };
   } else {
     if (
       products.some((entry) => entry.name.toLowerCase() === name.toLowerCase())
@@ -247,6 +268,7 @@ form.addEventListener("submit", (event) => {
     products.push({
       name,
       category,
+      costPrice,
       price,
       stock,
       icon: "◇",

@@ -538,3 +538,297 @@ document.getElementById("recentSales").innerHTML =
       return `<div class="sale-row"><div class="sale-details"><div class="sale-date">${new Date(sale.date).toLocaleString()}</div><div>${items}</div></div><strong class="sale-total">${peso(sale.total)}</strong></div>`;
     })
     .join("") || `<div class="sale-details">No sales recorded yet.</div>`;
+
+function lineEconomics(item) {
+  const quantity = Number(item.quantity) || 0;
+  const sellPrice = Number(item.price) || 0;
+  const revenue = sellPrice * quantity;
+  if (!window.miniMartDB.isKnownCost(item.costPrice)) {
+    return {
+      quantity,
+      revenue,
+      cost: null,
+      profit: null,
+      margin: null,
+      known: false,
+    };
+  }
+  const costPrice = Number(item.costPrice);
+  const cost = costPrice * quantity;
+  const profit = (sellPrice - costPrice) * quantity;
+  return {
+    quantity,
+    revenue,
+    cost,
+    profit,
+    margin: revenue ? (profit / revenue) * 100 : 0,
+    known: true,
+  };
+}
+
+function economicsForSales(saleList) {
+  let profit = 0;
+  let revenue = 0;
+  let cost = 0;
+  let knownUnits = 0;
+  let unknownUnits = 0;
+  saleList.forEach((sale) => {
+    (sale.items || []).forEach((item) => {
+      const row = lineEconomics(item);
+      if (row.known) {
+        profit += row.profit;
+        revenue += row.revenue;
+        cost += row.cost;
+        knownUnits += row.quantity;
+      } else {
+        unknownUnits += row.quantity;
+      }
+    });
+  });
+  return {
+    profit,
+    revenue,
+    cost,
+    margin: revenue ? (profit / revenue) * 100 : null,
+    knownUnits,
+    unknownUnits,
+    hasKnown: knownUnits > 0,
+  };
+}
+
+const allProfitStats = economicsForSales(sales);
+const profitDataNote = document.getElementById("profitDataNote");
+if (allProfitStats.unknownUnits) {
+  profitDataNote.textContent = `Excludes ${allProfitStats.unknownUnits} sold unit${allProfitStats.unknownUnits === 1 ? "" : "s"} with no cost data`;
+}
+
+const todaySalesList = salesByDay.get(todayStats.day?.toDateString?.())
+  ? salesByDay.get(todayStats.day.toDateString())
+  : sales.filter(
+      (sale) =>
+        new Date(sale.date).toDateString() === new Date().toDateString(),
+    );
+const yesterdaySalesList =
+  salesByDay.get(yesterdayStats.day?.toDateString?.()) || [];
+const todayProfitStats = economicsForSales(todaySalesList);
+const yesterdayProfitStats = economicsForSales(yesterdaySalesList);
+const todayProfitCard = document.getElementById("todayProfit");
+const todayProfitNote = document.getElementById("todayProfitNote");
+if (!todayStats.transactions) {
+  todayProfitCard.innerHTML = peso(0);
+  todayProfitNote.textContent = "No sales today";
+  todayProfitNote.classList.add("trend-flat");
+} else if (!todayProfitStats.hasKnown) {
+  todayProfitCard.textContent = "—";
+  todayProfitNote.textContent = "No cost data";
+  todayProfitNote.classList.add("trend-flat");
+} else {
+  todayProfitCard.innerHTML = peso(todayProfitStats.profit);
+  const marginLabel = `${todayProfitStats.margin.toFixed(0)}% overall margin`;
+  const delta = percentageDelta(
+    todayProfitStats.profit,
+    yesterdayProfitStats.hasKnown ? yesterdayProfitStats.profit : 0,
+  );
+  if (!yesterdayProfitStats.hasKnown && todayProfitStats.hasKnown) {
+    todayProfitNote.textContent = marginLabel;
+  } else if (todayProfitStats.profit === yesterdayProfitStats.profit) {
+    todayProfitNote.textContent = `${marginLabel} · 0% vs yesterday`;
+    todayProfitNote.classList.add("trend-flat");
+  } else {
+    const direction = delta >= 0 ? "up" : "down";
+    const arrow = delta >= 0 ? "▲" : "▼";
+    todayProfitNote.textContent = `${marginLabel} · ${arrow} ${Math.abs(delta).toFixed(0)}% vs yesterday`;
+    todayProfitNote.classList.add(`trend-${direction}`);
+  }
+}
+
+const profitTrendValues = trendDays.map((day) => {
+  const daySales = salesByDay.get(day.toDateString()) || [];
+  const stats = economicsForSales(daySales);
+  return stats.hasKnown ? stats.profit : 0;
+});
+const maxProfitTrend = Math.max(...profitTrendValues.map(Math.abs), 1);
+const profitPoints = profitTrendValues
+  .map(
+    (value, index) =>
+      `${(index / 6) * 100},${138 - (Math.max(value, 0) / maxProfitTrend) * 112}`,
+  )
+  .join(" ");
+document.getElementById("profitTrendChart").innerHTML =
+  `<svg class="trend-line" viewBox="0 0 100 150" preserveAspectRatio="none" aria-hidden="true"><polyline points="${profitPoints}" fill="none" stroke="var(--green)" stroke-width="1.8" vector-effect="non-scaling-stroke"/><polyline points="${profitPoints} 100,150 0,150" fill="rgba(39,114,85,.08)" stroke="none"/></svg>`;
+document.getElementById("profitTrendLabels").innerHTML = trendDays
+  .map(
+    (day) =>
+      `<span>${day.toLocaleDateString("en-US", { weekday: "short" })}</span>`,
+  )
+  .join("");
+
+const profitByCategory = new Map();
+sales.forEach((sale) => {
+  (sale.items || []).forEach((item) => {
+    const row = lineEconomics(item);
+    if (!row.known) return;
+    const product = products.find((entry) => entry.name === item.name);
+    const category = product?.category || "Other";
+    profitByCategory.set(
+      category,
+      (profitByCategory.get(category) || 0) + row.profit,
+    );
+  });
+});
+const profitCategoryTotal = [...profitByCategory.values()].reduce(
+  (sum, value) => sum + value,
+  0,
+);
+const orderedProfitCategories = [
+  ...CATEGORY_ORDER.filter((category) => profitByCategory.has(category)),
+  ...[...profitByCategory.keys()].filter(
+    (category) => !CATEGORY_ORDER.includes(category),
+  ),
+];
+let profitCategoryPosition = 0;
+const profitCategoryStops = orderedProfitCategories
+  .map((category) => {
+    const amount = profitByCategory.get(category) || 0;
+    const start = profitCategoryPosition;
+    profitCategoryPosition += profitCategoryTotal
+      ? (amount / profitCategoryTotal) * 100
+      : 0;
+    return `${CATEGORY_COLORS[category] || CATEGORY_COLORS.Other} ${start}% ${profitCategoryPosition}%`;
+  })
+  .join(", ");
+document.getElementById("profitCategoryChart").style.background =
+  profitCategoryTotal
+    ? `conic-gradient(${profitCategoryStops})`
+    : "conic-gradient(#d9d7cd 0 100%)";
+document.getElementById("profitCategoryTotal").innerHTML = profitCategoryTotal
+  ? peso(profitCategoryTotal).replace(".00", "")
+  : "0";
+document.getElementById("profitCategoryLegend").innerHTML =
+  orderedProfitCategories
+    .map((category) => {
+      const amount = profitByCategory.get(category) || 0;
+      return `<span style="--legend:${CATEGORY_COLORS[category] || CATEGORY_COLORS.Other}"><i></i><b>${category}</b><em>${profitCategoryTotal ? Math.round((amount / profitCategoryTotal) * 100) : 0}%</em></span>`;
+    })
+    .join("") ||
+  '<span style="--legend:#d9d7cd"><i></i><b>No cost data</b><em>0%</em></span>';
+let profitLabelPosition = 0;
+document.getElementById("profitCategoryLabels").innerHTML =
+  orderedProfitCategories
+    .map((category) => {
+      const amount = profitByCategory.get(category) || 0;
+      const percentage = profitCategoryTotal
+        ? (amount / profitCategoryTotal) * 100
+        : 0;
+      const angle =
+        (((profitLabelPosition + percentage / 2) * 3.6 - 90) * Math.PI) / 180;
+      profitLabelPosition += percentage;
+      const left = 50 + Math.cos(angle) * 38;
+      const top = 50 + Math.sin(angle) * 38;
+      return `<span class="donut-label" style="left:${left}%;top:${top}%">${Math.round(percentage)}%</span>`;
+    })
+    .join("");
+
+const profitProductRows = [
+  ...sales
+    .reduce((groups, sale) => {
+      (sale.items || []).forEach((item) => {
+        const current = groups.get(item.name) || {
+          name: item.name,
+          units: 0,
+          revenue: 0,
+          knownRevenue: 0,
+          cost: 0,
+          profit: 0,
+          knownUnits: 0,
+          unknownUnits: 0,
+        };
+        const row = lineEconomics(item);
+        current.units += row.quantity;
+        current.revenue += row.revenue;
+        if (row.known) {
+          current.knownRevenue += row.revenue;
+          current.cost += row.cost;
+          current.profit += row.profit;
+          current.knownUnits += row.quantity;
+        } else {
+          current.unknownUnits += row.quantity;
+        }
+        groups.set(item.name, current);
+      });
+      return groups;
+    }, new Map())
+    .values(),
+].map((row) => ({
+  ...row,
+  hasKnown: row.knownUnits > 0,
+  margin: row.knownRevenue ? (row.profit / row.knownRevenue) * 100 : null,
+}));
+
+let profitSort = { key: "profit", dir: "desc" };
+
+function sortProfitRows(rows) {
+  return [...rows].sort((first, second) => {
+    const key = profitSort.key;
+    if (
+      (key === "profit" || key === "cost" || key === "margin") &&
+      first.hasKnown !== second.hasKnown
+    )
+      return first.hasKnown ? -1 : 1;
+    let result = 0;
+    if (key === "name") result = first.name.localeCompare(second.name);
+    else result = (first[key] ?? -Infinity) - (second[key] ?? -Infinity);
+    if (result === 0) result = first.name.localeCompare(second.name);
+    return profitSort.dir === "asc" ? result : -result;
+  });
+}
+
+function renderProfitProductTable() {
+  const body = document.getElementById("profitByProduct");
+  document.querySelectorAll("[data-profit-sort]").forEach((button) => {
+    button.setAttribute(
+      "aria-sort",
+      button.dataset.profitSort === profitSort.key
+        ? profitSort.dir === "asc"
+          ? "ascending"
+          : "descending"
+        : "none",
+    );
+  });
+  body.innerHTML =
+    sortProfitRows(profitProductRows)
+      .map((row) => {
+        const costCell = row.hasKnown ? peso(row.cost) : "—";
+        const profitCell = row.hasKnown ? peso(row.profit) : "No cost data";
+        const marginCell = row.hasKnown
+          ? `${row.margin.toFixed(0)}%`
+          : "—";
+        const note = row.unknownUnits
+          ? ` title="Excludes ${row.unknownUnits} unit${row.unknownUnits === 1 ? "" : "s"} with no cost data"`
+          : "";
+        const rowClass = row.hasKnown
+          ? row.unknownUnits
+            ? " class=\"is-partial\""
+            : ""
+          : " class=\"no-cost\"";
+        return `<tr${rowClass}${note}><td>${row.name}</td><td>${row.units}</td><td>${peso(row.revenue)}</td><td>${costCell}</td><td>${profitCell}</td><td>${marginCell}</td></tr>`;
+      })
+      .join("") ||
+    `<tr class="no-cost"><td colspan="6">No sales recorded yet.</td></tr>`;
+}
+
+renderProfitProductTable();
+document.querySelectorAll("[data-profit-sort]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const key = button.dataset.profitSort;
+    if (profitSort.key === key)
+      profitSort.dir = profitSort.dir === "desc" ? "asc" : "desc";
+    else {
+      profitSort = {
+        key,
+        dir: key === "name" ? "asc" : "desc",
+      };
+    }
+    renderProfitProductTable();
+  });
+});

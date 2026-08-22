@@ -62,6 +62,7 @@
               <tr>
                 <th>Name</th>
                 <th>Category</th>
+                <th>Cost</th>
                 <th>Price</th>
                 <th>Stock</th>
                 <th>Actions</th>
@@ -181,7 +182,15 @@
             /></label>
             <div class="modal-fields">
               <label
-                >Price<input
+                >Cost Price (&#8369;)<input
+                  id="productCost"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  required
+              /></label>
+              <label
+                >Sell Price (&#8369;)<input
                   id="productPrice"
                   type="number"
                   min="0"

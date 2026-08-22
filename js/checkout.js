@@ -148,8 +148,19 @@ sellButton.addEventListener("click", () => {
     const product = inventory.find((entry) => entry.name === item.name);
     if (product) product.stock -= item.quantity;
   });
+  const saleItems = entries.map((item) => {
+    const product = inventory.find((entry) => entry.name === item.name);
+    return {
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+      costPrice: window.miniMartDB.isKnownCost(product?.costPrice)
+        ? Number(product.costPrice)
+        : null,
+    };
+  });
   window.miniMartDB.saveProducts(inventory);
-  window.miniMartDB.recordSale(entries, getCartTotal());
+  window.miniMartDB.recordSale(saleItems, getCartTotal());
   cart.clear();
   amountGiven.value = "";
   renderProducts();

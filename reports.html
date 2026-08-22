@@ -64,8 +64,14 @@
           >
             <span class="data-icon">△</span
             ><span class="metric-label">Low Stock Items</span
-            ><strong id="lowStockItems">0</strong
+            >            <strong id="lowStockItems">0</strong
             ><small id="lowStockNote">Click to view products</small>
+          </article>
+          <article class="metric-card metric-green">
+            <span class="data-icon">₱</span
+            ><span class="metric-label">Today's Profit</span
+            ><strong id="todayProfit">&#8369;0.00</strong
+            ><small id="todayProfitNote">No sales today</small>
           </article>
         </section>
 
@@ -145,6 +151,98 @@
               >
             </div>
           </article>
+        </section>
+
+        <section class="profit-section" aria-label="Profit">
+          <div class="panel-heading profit-section-heading">
+            <span class="panel-icon">₱</span>
+            <h2>PROFIT</h2>
+            <span class="panel-note" id="profitDataNote"
+              >Based on cost recorded at sale time</span
+            >
+          </div>
+          <section class="dashboard-grid" aria-label="Profit visualizations">
+            <article class="report-panel trend-panel panel-wide">
+              <div class="panel-heading">
+                <span class="panel-icon">⌁</span>
+                <h2>PROFIT TREND</h2>
+                <span class="panel-note">Last 7 days</span>
+              </div>
+              <div
+                class="trend-chart"
+                id="profitTrendChart"
+                aria-label="Profit trend chart"
+              ></div>
+              <div class="chart-labels" id="profitTrendLabels"></div>
+            </article>
+            <article class="report-panel category-panel">
+              <div class="panel-heading">
+                <span class="panel-icon">◉</span>
+                <h2>PROFIT BY CATEGORY</h2>
+              </div>
+              <div class="donut-wrap">
+                <div
+                  class="donut-chart"
+                  id="profitCategoryChart"
+                  title="Total profit by category"
+                >
+                  <span id="profitCategoryTotal">0</span>
+                  <div class="donut-labels" id="profitCategoryLabels"></div>
+                </div>
+              </div>
+              <div class="legend" id="profitCategoryLegend"></div>
+            </article>
+            <article class="report-panel profit-table-panel">
+              <div class="panel-heading">
+                <span class="panel-icon">◇</span>
+                <h2>PROFIT BY PRODUCT</h2>
+                <span class="panel-note">Click a column to sort</span>
+              </div>
+              <div class="profit-table-wrap">
+                <table class="profit-table">
+                  <thead>
+                    <tr>
+                      <th>
+                        <button type="button" data-profit-sort="name">
+                          Product
+                        </button>
+                      </th>
+                      <th>
+                        <button type="button" data-profit-sort="units">
+                          Units
+                        </button>
+                      </th>
+                      <th>
+                        <button type="button" data-profit-sort="revenue">
+                          Revenue
+                        </button>
+                      </th>
+                      <th>
+                        <button type="button" data-profit-sort="cost">
+                          Cost
+                        </button>
+                      </th>
+                      <th>
+                        <button
+                          type="button"
+                          data-profit-sort="profit"
+                          aria-sort="descending"
+                        >
+                          Profit
+                        </button>
+                      </th>
+                      <th>
+                        <button type="button" data-profit-sort="margin">
+                          Margin
+                        </button>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody id="profitByProduct"></tbody>
+                </table>
+              </div>
+            </article>
+          </section>
         </section>
 
         <section
