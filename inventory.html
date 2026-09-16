@@ -20,7 +20,15 @@
               <h1>Mini Mart</h1>
             </div>
           </div>
-          <nav aria-label="Main navigation">
+          <button
+            class="mobile-menu-button"
+            type="button"
+            aria-expanded="false"
+            aria-controls="mainNavigation"
+          >
+            ☰ <span>MENU</span>
+          </button>
+          <nav id="mainNavigation" aria-label="Main navigation">
             <a href="index.html">⌑ CHECKOUT</a>
             <a class="active" href="inventory.html">◈ INVENTORY</a>
             <a href="reports.html">▥ REPORTS</a>
@@ -307,5 +315,6 @@
     </div>
     <script src="js/database.js"></script>
     <script src="js/inventory.js"></script>
+    <script src="js/navigation.js"></script>
   </body>
 </html>

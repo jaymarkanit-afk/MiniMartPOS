@@ -39,6 +39,9 @@ header {
   border-bottom: 1px solid var(--line);
   padding-bottom: 13px;
 }
+.mobile-menu-button {
+  display: none;
+}
 .brand {
   display: flex;
   gap: 11px;
@@ -705,5 +708,100 @@ nav a.active {
   }
   .metric-card {
     min-height: 70px;
+  }
+}
+@media (min-width: 900px) {
+  body:not(.suki-page) .shell,
+  .suki-page .shell {
+    max-width: none;
+    margin: 0;
+    padding: 18px 20px 34px 220px;
+  }
+  body:not(.suki-page) header,
+  .suki-page header {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 5;
+    display: flex;
+    width: 200px;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 22px 18px;
+    border-right: 1px solid var(--line);
+    border-bottom: 0;
+    background: var(--paper);
+  }
+  body:not(.suki-page) header > div:first-child,
+  .suki-page header > div:first-child {
+    width: 100%;
+  }
+  body:not(.suki-page) nav,
+  .suki-page nav {
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 28px;
+  }
+  body:not(.suki-page) nav a,
+  .suki-page nav a {
+    padding: 10px 8px;
+    border-bottom: 0;
+    border-left: 3px solid transparent;
+  }
+  body:not(.suki-page) nav a.active,
+  .suki-page nav a.active {
+    border-left-color: var(--red);
+  }
+  body:not(.suki-page) .date,
+  .suki-page .date {
+    margin-top: auto;
+    padding-top: 24px;
+  }
+}
+@media (max-width: 899px) {
+  header {
+    position: relative;
+    z-index: 5;
+  }
+  .mobile-menu-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+    padding: 7px 9px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: var(--white);
+    color: var(--ink);
+    cursor: pointer;
+    font:
+      600 13px "Barlow Condensed",
+      sans-serif;
+    letter-spacing: 0.04em;
+  }
+  .mobile-menu-button:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 2px;
+  }
+  header nav {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 6;
+    width: auto;
+    margin-top: 0;
+    padding: 10px 20px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    box-shadow: 0 5px 14px rgba(25, 35, 29, 0.08);
+  }
+  header nav.is-open {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  header nav a {
+    padding: 7px 0;
   }
 }

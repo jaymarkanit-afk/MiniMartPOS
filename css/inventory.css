@@ -174,3 +174,25 @@
   content: "−";
   font-size: 18px;
 }
+@media (max-width: 650px) {
+  .inventory-page .inventory-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .inventory-page .inventory-heading {
+    white-space: nowrap;
+  }
+  .inventory-page .inventory-toolbar-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .inventory-page .create-category,
+  .inventory-page .add-product {
+    width: 100%;
+    min-height: 48px;
+    padding: 8px 6px;
+    line-height: 1.1;
+  }
+}
