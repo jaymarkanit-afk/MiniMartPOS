@@ -1,3 +1,14 @@
+void (async () => {
+  const client = window.supabaseClient;
+  const { data, error } = client
+    ? await client.auth.getSession()
+    : { data: null, error: true };
+  if (error || !data.session?.user?.email_confirmed_at) {
+    if (client) await client.auth.signOut();
+    window.location.replace("login.html");
+  }
+})();
+
 const peso = (value) => `&#8369;${value.toFixed(2)}`;
 const products = window.miniMartDB.products();
 const sales = window.miniMartDB.sales();
@@ -800,17 +811,15 @@ function renderProfitProductTable() {
       .map((row) => {
         const costCell = row.hasKnown ? peso(row.cost) : "—";
         const profitCell = row.hasKnown ? peso(row.profit) : "No cost data";
-        const marginCell = row.hasKnown
-          ? `${row.margin.toFixed(0)}%`
-          : "—";
+        const marginCell = row.hasKnown ? `${row.margin.toFixed(0)}%` : "—";
         const note = row.unknownUnits
           ? ` title="Excludes ${row.unknownUnits} unit${row.unknownUnits === 1 ? "" : "s"} with no cost data"`
           : "";
         const rowClass = row.hasKnown
           ? row.unknownUnits
-            ? " class=\"is-partial\""
+            ? ' class="is-partial"'
             : ""
-          : " class=\"no-cost\"";
+          : ' class="no-cost"';
         return `<tr${rowClass}${note}><td>${row.name}</td><td>${row.units}</td><td>${peso(row.revenue)}</td><td>${costCell}</td><td>${profitCell}</td><td>${marginCell}</td></tr>`;
       })
       .join("") ||

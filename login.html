@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self'; connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co wss://*.supabase.in; object-src 'none'; base-uri 'self'; form-action 'self'"
+    />
+    <title>Sign in | Mini Mart</title>
+    <link rel="stylesheet" href="css/login.css" />
+  </head>
+  <body>
+    <main class="login-page">
+      <header class="login-brand">
+        <div class="brand-mark">
+          <img src="Icons/grocery-store.png" alt="Mini Mart" />
+        </div>
+        <div class="eyebrow">REGISTER 01</div>
+        <h1>Mini Mart</h1>
+      </header>
+      <section class="login-card" aria-labelledby="formTitle">
+        <div class="mode-tabs" role="tablist" aria-label="Authentication mode">
+          <button
+            class="mode-tab is-active"
+            id="signInTab"
+            type="button"
+            role="tab"
+            aria-selected="true"
+          >
+            Sign in</button
+          ><button
+            class="mode-tab"
+            id="signUpTab"
+            type="button"
+            role="tab"
+            aria-selected="false"
+          >
+            Sign up
+          </button>
+        </div>
+        <h2 id="formTitle">Sign in to your register</h2>
+        <p class="login-intro" id="formIntro">
+          Use your staff account to access the Mini Mart register.
+        </p>
+        <form id="authForm">
+          <label class="field signup-only" for="fullName" hidden
+            >Full name<input
+              id="fullName"
+              type="text"
+              minlength="2"
+              autocomplete="name" /><small
+              id="fullNameMessage"
+              class="field-message"
+            ></small
+          ></label>
+          <label class="field" for="email"
+            >Email<input
+              id="email"
+              type="email"
+              autocomplete="email"
+              required /><small id="emailMessage" class="field-message"></small
+          ></label>
+          <label class="field signup-only" for="role" hidden
+            >Role / position<select id="role">
+              <option value="">Choose a role (optional)</option>
+              <option>Owner</option>
+              <option>Cashier</option>
+              <option>Staff</option>
+            </select></label
+          >
+          <label class="field password-field" for="password"
+            >Password
+            <div class="password-control">
+              <input
+                id="password"
+                type="password"
+                autocomplete="current-password"
+                required
+              /><button
+                class="password-toggle"
+                type="button"
+                data-password-target="password"
+                aria-label="Show password"
+                title="Show password"
+              >
+                &#128065;
+              </button>
+            </div>
+            <small id="passwordMessage" class="field-message"></small
+            ><span id="passwordStrength" class="strength" hidden></span
+          ></label>
+          <label
+            class="field signup-only password-field"
+            for="confirmPassword"
+            hidden
+            >Confirm password
+            <div class="password-control">
+              <input
+                id="confirmPassword"
+                type="password"
+                autocomplete="new-password"
+              /><button
+                class="password-toggle"
+                type="button"
+                data-password-target="confirmPassword"
+                aria-label="Show confirm password"
+                title="Show confirm password"
+              >
+                &#128065;
+              </button>
+            </div>
+            <small id="confirmMessage" class="field-message"></small
+          ></label>
+          <label class="remember-field" id="rememberField"
+            ><input id="rememberMe" type="checkbox" checked /> Remember
+            me</label
+          >
+          <button
+            class="submit-button"
+            id="submitButton"
+            type="submit"
+            disabled
+          >
+            Sign in
+          </button>
+        </form>
+        <a class="helper-link" id="forgotPassword" href="#forgot-password"
+          >Forgot password?</a
+        >
+        <p class="message" id="message" role="status" aria-live="polite"></p>
+        <p class="login-footer">
+          <span id="footerPrompt">New staff account?</span>
+          <button id="footerToggle" type="button">Sign up</button>
+        </p>
+      </section>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/auth-client.js"></script>
+    <script src="js/login.js"></script>
+  </body>
+</html>

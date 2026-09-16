@@ -1,0 +1,234 @@
+@import url("https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Work+Sans:wght@400;500;600;700&display=swap");
+:root {
+  --login-paper: #fff8e7;
+  --login-edge: #f2e9ce;
+  --login-ink: #1d2e28;
+  --login-muted: #5b6b62;
+  --login-papaya: #e8871e;
+  --login-teal: #0f6e5d;
+  --login-red: #c1272d;
+  --login-radius: 18px;
+  --login-space: 20px;
+  --login-shadow: 0 5px 14px rgba(25, 35, 29, 0.05);
+  --login-display: "Baloo 2", "Trebuchet MS", sans-serif;
+  --login-body: "Work Sans", "Segoe UI", sans-serif;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  min-height: 100%;
+}
+body {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  margin: 0;
+  padding: var(--login-space);
+  background: var(--login-paper);
+  color: var(--login-ink);
+  font-family: var(--login-body);
+}
+button,
+input,
+select {
+  font: inherit;
+}
+.login-page {
+  width: min(100%, 420px);
+}
+.login-brand {
+  display: grid;
+  justify-items: center;
+  margin-bottom: 20px;
+  text-align: center;
+}
+.login-brand .brand-mark {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  background: var(--login-ink);
+}
+.brand-mark img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+.eyebrow {
+  color: var(--login-red);
+  font:
+    10px "DM Mono",
+    monospace;
+  letter-spacing: 0.14em;
+}
+.login-brand h1 {
+  margin: 3px 0 0;
+  font: 800 32px var(--login-display);
+}
+.login-card {
+  padding: 24px;
+  border: 1px solid var(--login-edge);
+  border-radius: var(--login-radius);
+  background: var(--login-paper);
+  box-shadow: var(--login-shadow);
+}
+.mode-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+.mode-tab {
+  padding: 10px;
+  border: 1px solid var(--login-edge);
+  border-radius: 16px;
+  background: transparent;
+  color: var(--login-muted);
+  cursor: pointer;
+  font-weight: 700;
+}
+.mode-tab.is-active {
+  border-color: var(--login-papaya);
+  background: var(--login-papaya);
+  color: var(--login-paper);
+}
+h2 {
+  margin: 0;
+  font: 800 26px var(--login-display);
+}
+.login-intro {
+  margin: 8px 0 20px;
+  color: var(--login-muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.field {
+  display: block;
+  margin-top: 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.field input,
+.field select {
+  display: block;
+  width: 100%;
+  height: 42px;
+  margin-top: 6px;
+  padding: 0 12px;
+  border: 1px solid var(--login-edge);
+  border-radius: 16px;
+  outline: 0;
+  background: var(--login-paper);
+  color: var(--login-ink);
+}
+.field input:focus,
+.field select:focus {
+  border-color: var(--login-teal);
+  box-shadow: 0 0 0 3px var(--login-edge);
+}
+.field-message {
+  display: block;
+  min-height: 16px;
+  margin-top: 4px;
+  color: var(--login-red);
+  font-size: 12px;
+  font-weight: 400;
+}
+.field-message.is-valid,
+.strength.is-strong {
+  color: var(--login-teal);
+}
+.strength {
+  display: block;
+  margin-top: 3px;
+  color: var(--login-muted);
+  font-size: 12px;
+}
+.strength.is-medium {
+  color: var(--login-papaya);
+}
+.password-control {
+  position: relative;
+}
+.password-control input {
+  padding-right: 44px;
+}
+.password-toggle {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  color: var(--login-teal);
+  cursor: pointer;
+  font-size: 16px;
+}
+.remember-field {
+  display: flex;
+  gap: 6px;
+  margin-top: 14px;
+  color: var(--login-muted);
+  font-size: 13px;
+}
+.remember-field input {
+  accent-color: var(--login-teal);
+}
+.submit-button {
+  width: 100%;
+  margin-top: 20px;
+  padding: 11px 16px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--login-papaya);
+  color: var(--login-paper);
+  cursor: pointer;
+  font-weight: 800;
+}
+.submit-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.helper-link {
+  display: block;
+  margin-top: 14px;
+  color: var(--login-teal);
+  font-size: 13px;
+  text-align: center;
+}
+.message {
+  min-height: 18px;
+  margin-top: 14px;
+  font-size: 13px;
+}
+.message.error {
+  color: var(--login-red);
+}
+.message.success {
+  color: var(--login-teal);
+}
+.login-footer {
+  margin: 20px 0 0;
+  color: var(--login-muted);
+  font-size: 13px;
+  text-align: center;
+}
+.login-footer button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--login-teal);
+  cursor: pointer;
+  text-decoration: underline;
+}
+[hidden] {
+  display: none !important;
+}

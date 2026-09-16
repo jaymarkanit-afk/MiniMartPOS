@@ -1,3 +1,14 @@
+void (async () => {
+  const client = window.supabaseClient;
+  const { data, error } = client
+    ? await client.auth.getSession()
+    : { data: null, error: true };
+  if (error || !data.session?.user?.email_confirmed_at) {
+    if (client) await client.auth.signOut();
+    window.location.replace("login.html");
+  }
+})();
+
 const STORAGE_KEY = "miniMartSukis";
 const scanButton = document.getElementById("scanButton");
 const scanStatus = document.getElementById("scanStatus");
