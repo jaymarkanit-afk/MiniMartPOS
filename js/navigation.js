@@ -1,5 +1,6 @@
 const mobileMenuButton = document.querySelector(".mobile-menu-button");
 const mainNavigation = document.getElementById("mainNavigation");
+const logoutButton = document.getElementById("logoutButton");
 const mobileLogoutButton = document.getElementById("mobileLogoutButton");
 
 if (mobileMenuButton && mainNavigation) {
@@ -16,7 +17,7 @@ if (mobileMenuButton && mainNavigation) {
   });
 }
 
-if (mobileLogoutButton) {
+if (logoutButton || mobileLogoutButton) {
   const signOut = async (button) => {
     button.disabled = true;
     try {
@@ -25,7 +26,6 @@ if (mobileLogoutButton) {
       window.location.replace("login.html");
     }
   };
-  mobileLogoutButton.addEventListener("click", () =>
-    signOut(mobileLogoutButton),
-  );
+  logoutButton?.addEventListener("click", () => signOut(logoutButton));
+  mobileLogoutButton?.addEventListener("click", () => signOut(mobileLogoutButton));
 }

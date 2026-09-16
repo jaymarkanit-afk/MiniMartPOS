@@ -114,6 +114,9 @@ h1 {
   font-size: 11px;
   padding-top: 24px;
 }
+.sidebar-logout {
+  display: none;
+}
 .mobile-logout {
   display: none;
 }
@@ -783,6 +786,31 @@ nav a.active {
   .suki-page .date {
     margin-top: 16px;
     padding-top: 24px;
+  }
+  body:not(.suki-page) .sidebar-logout,
+  .suki-page .sidebar-logout {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    width: 100%;
+    margin-top: auto;
+    padding: 10px 8px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: transparent;
+    color: var(--muted);
+    font:
+      600 13px "Barlow Condensed",
+      sans-serif;
+    letter-spacing: 0.04em;
+    text-align: left;
+  }
+  body:not(.suki-page) .sidebar-logout:hover,
+  body:not(.suki-page) .sidebar-logout:focus-visible,
+  .suki-page .sidebar-logout:hover,
+  .suki-page .sidebar-logout:focus-visible {
+    border-color: var(--red);
+    color: var(--red);
   }
 }
 @media (max-width: 899px) {
