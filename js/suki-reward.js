@@ -187,7 +187,12 @@ function setLinkButtonState(state) {
   linkNfcButton.textContent = "Tap card";
 }
 
-function showScanFailure(statusElement, message, mainScan = false, linkScan = false) {
+function showScanFailure(
+  statusElement,
+  message,
+  mainScan = false,
+  linkScan = false,
+) {
   nfcReaderActive = false;
   window.clearTimeout(nfcScanTimeout);
   nfcScanTimeout = null;
@@ -197,11 +202,17 @@ function showScanFailure(statusElement, message, mainScan = false, linkScan = fa
   vibrate([50, 70, 50]);
   window.clearTimeout(nfcResultTimer);
   nfcResultTimer = window.setTimeout(() => {
-    if (statusElement === scanStatus) setScanStatus("Press the NFC icon to start the reader");
+    if (statusElement === scanStatus)
+      setScanStatus("Press the NFC icon to start the reader");
   }, 4500);
 }
 
-function showDetectedCard(statusElement, cardId, mainScan = false, linkScan = false) {
+function showDetectedCard(
+  statusElement,
+  cardId,
+  mainScan = false,
+  linkScan = false,
+) {
   const text = `✓ Card detected: ...${cardSuffix(cardId)}`;
   statusElement.textContent = text;
   if (mainScan) setMainScanState("detected");
@@ -209,7 +220,12 @@ function showDetectedCard(statusElement, cardId, mainScan = false, linkScan = fa
   vibrate(100);
 }
 
-async function startNfcReader({ onReading, statusElement, mainScan = false, linkScan = false }) {
+async function startNfcReader({
+  onReading,
+  statusElement,
+  mainScan = false,
+  linkScan = false,
+}) {
   if (nfcReaderActive) return false;
   if (mainScan) setMainScanState("listening");
   if (linkScan) setLinkButtonState("scanning");
@@ -224,22 +240,28 @@ async function startNfcReader({ onReading, statusElement, mainScan = false, link
   }
   nfcReaderActive = true;
   let reader;
-  const fail = (message) => showScanFailure(statusElement, message, mainScan, linkScan);
+  const fail = (message) =>
+    showScanFailure(statusElement, message, mainScan, linkScan);
   try {
     reader = new NDEFReader();
     await reader.scan();
     nfcScanTimeout = window.setTimeout(() => {
       reader.onreading = null;
       reader.onreadingerror = null;
-      fail("No card detected. Try again and hold the card steady against the back of the phone.");
+      fail(
+        "No card detected. Try again and hold the card steady against the back of the phone.",
+      );
     }, 15000);
     statusElement.textContent = "Hold an NFC card near the back of the phone";
     reader.onreading = (event) => {
-      const cardId = typeof event.serialNumber === "string" ? event.serialNumber.trim() : "";
+      const cardId =
+        typeof event.serialNumber === "string" ? event.serialNumber.trim() : "";
       if (!cardId) {
         reader.onreading = null;
         reader.onreadingerror = null;
-        fail("No card detected. Try again and hold the card steady against the back of the phone.");
+        fail(
+          "No card detected. Try again and hold the card steady against the back of the phone.",
+        );
         return;
       }
       window.clearTimeout(nfcScanTimeout);
@@ -257,7 +279,9 @@ async function startNfcReader({ onReading, statusElement, mainScan = false, link
     reader.onreadingerror = () => {
       reader.onreading = null;
       reader.onreadingerror = null;
-      fail("No card detected. Try again and hold the card steady against the back of the phone.");
+      fail(
+        "No card detected. Try again and hold the card steady against the back of the phone.",
+      );
     };
     return true;
   } catch (error) {
@@ -285,7 +309,9 @@ function handlePurchaseScan(cardId) {
     scanStatus.innerHTML = `This card isn't linked to any Suki yet. <button class="detail-action" id="registerScannedCard" type="button">Register as new Suki</button>`;
     document
       .getElementById("registerScannedCard")
-      .addEventListener("click", () => openAddSukiForCard(pendingScannedCardId));
+      .addEventListener("click", () =>
+        openAddSukiForCard(pendingScannedCardId),
+      );
     return;
   }
   const nextStampCount = Math.min(10, suki.stamps + 1);
