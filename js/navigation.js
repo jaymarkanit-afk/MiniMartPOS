@@ -1,6 +1,6 @@
 const mobileMenuButton = document.querySelector(".mobile-menu-button");
 const mainNavigation = document.getElementById("mainNavigation");
-const logoutButton = document.getElementById("logoutButton");
+const mobileLogoutButton = document.getElementById("mobileLogoutButton");
 
 if (mobileMenuButton && mainNavigation) {
   mobileMenuButton.addEventListener("click", () => {
@@ -16,13 +16,14 @@ if (mobileMenuButton && mainNavigation) {
   });
 }
 
-if (logoutButton) {
-  logoutButton.addEventListener("click", async () => {
-    logoutButton.disabled = true;
+if (mobileLogoutButton) {
+  const signOut = async (button) => {
+    button.disabled = true;
     try {
       if (window.supabaseClient) await window.supabaseClient.auth.signOut();
     } finally {
       window.location.replace("login.html");
     }
-  });
+  };
+  mobileLogoutButton.addEventListener("click", () => signOut(mobileLogoutButton));
 }
