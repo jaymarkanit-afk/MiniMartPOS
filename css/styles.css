@@ -15,6 +15,31 @@
 * {
   box-sizing: border-box;
 }
+body,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+span,
+label,
+button,
+.logo,
+.brand-text,
+.nav-item,
+.status-label,
+.stamp-progress {
+  cursor: default;
+  user-select: none;
+}
+input,
+textarea,
+[contenteditable="true"] {
+  cursor: text;
+  user-select: text;
+}
 body {
   margin: 0;
   background: var(--paper);
@@ -88,6 +113,31 @@ h1 {
   color: #4d5c52;
   font-size: 11px;
   padding-top: 24px;
+}
+.sidebar-logout {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  margin-top: 20px;
+  padding: 10px 8px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--muted);
+  font:
+    600 13px "Barlow Condensed",
+    sans-serif;
+  letter-spacing: 0.04em;
+  text-align: left;
+}
+.sidebar-logout:hover,
+.sidebar-logout:focus-visible {
+  border-color: var(--red);
+  color: var(--red);
+}
+.sidebar-logout:disabled {
+  opacity: 0.6;
 }
 nav {
   display: flex;
@@ -753,8 +803,12 @@ nav a.active {
   }
   body:not(.suki-page) .date,
   .suki-page .date {
-    margin-top: auto;
+    margin-top: 16px;
     padding-top: 24px;
+  }
+  body:not(.suki-page) .sidebar-logout,
+  .suki-page .sidebar-logout {
+    margin-top: auto;
   }
 }
 @media (max-width: 899px) {
@@ -804,4 +858,21 @@ nav a.active {
   header nav a {
     padding: 7px 0;
   }
+  .sidebar-logout {
+    width: auto;
+    margin-top: 12px;
+    white-space: nowrap;
+  }
+}
+
+button,
+a {
+  cursor: default !important;
+  user-select: none;
+}
+input,
+textarea,
+[contenteditable="true"] {
+  cursor: text;
+  user-select: text;
 }

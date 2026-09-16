@@ -16,6 +16,31 @@
 * {
   box-sizing: border-box;
 }
+body,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+span,
+label,
+button,
+.logo,
+.brand-text,
+.nav-item,
+.status-label,
+.stamp-progress {
+  cursor: default;
+  user-select: none;
+}
+input,
+textarea,
+[contenteditable="true"] {
+  cursor: text;
+  user-select: text;
+}
 html,
 body {
   min-height: 100%;
@@ -231,4 +256,15 @@ h2 {
 }
 [hidden] {
   display: none !important;
+}
+button,
+a {
+  cursor: default !important;
+  user-select: none;
+}
+input,
+textarea,
+[contenteditable="true"] {
+  cursor: text;
+  user-select: text;
 }
