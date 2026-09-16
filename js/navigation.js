@@ -27,5 +27,7 @@ if (logoutButton || mobileLogoutButton) {
     }
   };
   logoutButton?.addEventListener("click", () => signOut(logoutButton));
-  mobileLogoutButton?.addEventListener("click", () => signOut(mobileLogoutButton));
+  mobileLogoutButton?.addEventListener("click", () =>
+    signOut(mobileLogoutButton),
+  );
 }
