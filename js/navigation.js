@@ -25,5 +25,7 @@ if (mobileLogoutButton) {
       window.location.replace("login.html");
     }
   };
-  mobileLogoutButton.addEventListener("click", () => signOut(mobileLogoutButton));
+  mobileLogoutButton.addEventListener("click", () =>
+    signOut(mobileLogoutButton),
+  );
 }
