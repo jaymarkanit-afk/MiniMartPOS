@@ -31,6 +31,34 @@
 .inventory-page .modal-backdrop {
   backdrop-filter: blur(2px);
 }
+.inventory-page .delete-modal-backdrop {
+  z-index: 20;
+}
+.inventory-page .delete-product-modal {
+  border-top-color: var(--red);
+}
+.inventory-page .delete-modal-copy {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.inventory-page .modal-delete {
+  border: 0;
+  border-radius: 3px;
+  padding: 10px 14px;
+  background: var(--red);
+  color: var(--white);
+  cursor: pointer;
+  font:
+    600 13px "Barlow Condensed",
+    sans-serif;
+  letter-spacing: 0.04em;
+}
+.inventory-page .modal-delete:hover,
+.inventory-page .modal-delete:focus-visible {
+  background: #b82d1b;
+}
 .inventory-page .category-group td {
   padding: 10px 12px 7px;
   border-top: 1px solid var(--line);

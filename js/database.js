@@ -2,6 +2,7 @@ const PRODUCTS_KEY = "miniMartProducts";
 const SALES_KEY = "miniMartSales";
 const CATEGORIES_KEY = "miniMartCategories";
 const CATEGORY_ICONS_KEY = "miniMartCategoryIcons";
+const DELETED_PRODUCTS_KEY = "miniMartDeletedProducts";
 
 const seedProducts = [
   {
@@ -237,11 +238,21 @@ window.miniMartDB = {
   products() {
     const saved = localStorage.getItem(PRODUCTS_KEY);
     if (!saved) write(PRODUCTS_KEY, seedProducts);
-    const products = normalizeProducts(read(PRODUCTS_KEY, seedProducts));
+    const deletedNames = new Set(read(DELETED_PRODUCTS_KEY, []));
+    const products = normalizeProducts(read(PRODUCTS_KEY, seedProducts)).filter(
+      (product) => !deletedNames.has(product.name),
+    );
     localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
     return products;
   },
   saveProducts(products) {
+    const names = new Set(products.map((product) => product.name));
+    const deletedNames = new Set(read(DELETED_PRODUCTS_KEY, []));
+    seedProducts.forEach((product) => {
+      if (names.has(product.name)) deletedNames.delete(product.name);
+      else deletedNames.add(product.name);
+    });
+    write(DELETED_PRODUCTS_KEY, [...deletedNames]);
     write(PRODUCTS_KEY, products);
   },
   sales() {

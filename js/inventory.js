@@ -12,6 +12,9 @@ const productPrice = document.getElementById("productPrice");
 const productCost = document.getElementById("productCost");
 const productStock = document.getElementById("productStock");
 const categoryIconPicker = document.getElementById("categoryIconPicker");
+const deleteProductModal = document.getElementById("deleteProductModal");
+const deleteProductCopy = document.getElementById("deleteProductCopy");
+let pendingDeleteName = null;
 let editingName = null;
 let modalMode = "create-category";
 let selectedCategoryIcon = "Icons/bread.png";
@@ -185,11 +188,39 @@ tbody.addEventListener("click", (event) => {
   const product = products.find((entry) => entry.name === row.dataset.product);
   if (event.target.closest(".edit-action") && product) openModal(product);
   if (event.target.closest(".delete-action")) {
-    window.miniMartDB.saveProducts(
-      products.filter((entry) => entry.name !== row.dataset.product),
-    );
-    renderRows();
+    event.preventDefault();
+    event.stopPropagation();
+    pendingDeleteName = row.dataset.product;
+    deleteProductCopy.textContent = `${pendingDeleteName} will be removed from inventory. This action cannot be undone.`;
+    deleteProductModal.hidden = false;
+    document.getElementById("confirmDeleteProduct").focus();
   }
+});
+
+function closeDeleteProductModal() {
+  deleteProductModal.hidden = true;
+  pendingDeleteName = null;
+}
+
+document
+  .getElementById("confirmDeleteProduct")
+  .addEventListener("click", () => {
+    if (!pendingDeleteName) return;
+    const products = window.miniMartDB.products();
+    window.miniMartDB.saveProducts(
+      products.filter((entry) => entry.name !== pendingDeleteName),
+    );
+    closeDeleteProductModal();
+    renderRows();
+  });
+document
+  .getElementById("closeDeleteProduct")
+  .addEventListener("click", closeDeleteProductModal);
+document
+  .getElementById("cancelDeleteProduct")
+  .addEventListener("click", closeDeleteProductModal);
+deleteProductModal.addEventListener("click", (event) => {
+  if (event.target === deleteProductModal) closeDeleteProductModal();
 });
 
 tbody.addEventListener("keydown", (event) => {
@@ -303,4 +334,6 @@ modal.addEventListener("click", (event) => {
 });
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !modal.hidden) closeModal();
+  if (event.key === "Escape" && !deleteProductModal.hidden)
+    closeDeleteProductModal();
 });

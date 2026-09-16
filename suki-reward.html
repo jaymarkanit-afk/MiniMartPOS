@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Suki Rewards</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="css/suki-reward.css" />
+  </head>
+  <body class="suki-page">
+    <div class="shell">
+      <header>
+        <div>
+          <div class="brand">
+            <div class="brand-mark">
+              <img src="Icons/grocery-store.png" alt="Mini Mart" />
+            </div>
+            <div>
+              <div class="eyebrow">REGISTER 01</div>
+              <h1>Mini Mart</h1>
+            </div>
+          </div>
+          <nav aria-label="Main navigation">
+            <a href="index.html">⌑ CHECKOUT</a
+            ><a href="inventory.html">◈ INVENTORY</a
+            ><a href="reports.html">▥ REPORTS</a
+            ><a
+              class="suki-link active"
+              href="suki-reward.html"
+              aria-current="page"
+              >♡ SUKI REWARDS</a
+            >
+          </nav>
+        </div>
+        <div class="date">Fri, Aug 21</div>
+      </header>
+      <main class="phone" aria-label="Suki merchant rewards">
+        <section class="suki-content">
+          <div class="suki-toolbar">
+            <div>
+              <div class="eyebrow">CUSTOMER LOYALTY</div>
+              <h2 class="suki-heading">Suki Rewards</h2>
+            </div>
+            <button class="add-suki-button" id="openAddSuki" type="button">
+              + Add Suki
+            </button>
+          </div>
+          <div class="suki-tabs" role="tablist" aria-label="Suki views">
+            <button
+              class="suki-tab is-active"
+              id="scanTab"
+              type="button"
+              role="tab"
+              aria-selected="true"
+              aria-controls="scanView"
+            >
+              Scan
+            </button>
+            <button
+              class="suki-tab"
+              id="allSukisTab"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="allSukisView"
+            >
+              All Sukis
+            </button>
+          </div>
+          <section
+            class="suki-view scan-view"
+            id="scanView"
+            role="tabpanel"
+            aria-labelledby="scanTab"
+          >
+            <button
+              class="nfc-button"
+              id="scanButton"
+              type="button"
+              aria-label="Start NFC reader"
+            >
+              <span class="nfc-wave" aria-hidden="true"></span>
+            </button>
+            <h1 id="scanTitle">Ready for NFC card</h1>
+            <p class="scan-copy">Hold an NFC card near the back of the phone</p>
+            <p class="scan-hint" id="scanStatus">
+              Press the NFC icon to start the reader
+            </p>
+          </section>
+          <section
+            class="suki-view all-sukis-view"
+            id="allSukisView"
+            role="tabpanel"
+            aria-labelledby="allSukisTab"
+            hidden
+          >
+            <label class="suki-search" for="sukiSearch"
+              ><span aria-hidden="true">⌕</span
+              ><input
+                id="sukiSearch"
+                type="search"
+                placeholder="Search sukis by name..."
+                autocomplete="off"
+            /></label>
+            <div class="suki-list" id="sukiList" aria-live="polite"></div>
+          </section>
+        </section>
+      </main>
+    </div>
+    <div class="suki-modal" id="addSukiModal" hidden>
+      <section
+        class="suki-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="addSukiTitle"
+      >
+        <div class="dialog-heading">
+          <div>
+            <div class="eyebrow" id="sukiFormEyebrow">NEW CUSTOMER</div>
+            <h2 id="addSukiTitle">Add a Suki</h2>
+          </div>
+          <button
+            class="dialog-close"
+            id="closeAddSuki"
+            type="button"
+            aria-label="Close Suki form"
+          >
+            ×
+          </button>
+        </div>
+        <form id="addSukiForm">
+          <label class="field-label" for="sukiName"
+            >Full name <span aria-hidden="true">*</span
+            ><input id="sukiName" name="name" type="text" required
+          /></label>
+          <label class="field-label" for="sukiPhone"
+            >Phone number <span class="optional">(optional)</span
+            ><input id="sukiPhone" name="phone" type="tel"
+          /></label>
+          <label class="field-label" for="sukiJoined"
+            >Date joined
+            <input id="sukiJoined" name="joined" type="date" required
+          /></label>
+          <div class="nfc-link-row">
+            <div>
+              <strong>Link NFC card</strong
+              ><small id="linkStatus">Optional. You can link one later.</small>
+            </div>
+            <button class="secondary-button" id="linkNfcButton" type="button">
+              Tap card
+            </button>
+          </div>
+          <div class="dialog-actions">
+            <button class="cancel-button" id="cancelAddSuki" type="button">
+              Cancel</button
+            ><button class="save-button" id="saveSukiButton" type="submit">
+              Save Suki
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+    <div class="suki-modal" id="detailModal" hidden>
+      <section
+        class="suki-dialog detail-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="detailTitle"
+      >
+        <div class="dialog-heading">
+          <div>
+            <div class="eyebrow">SUKI DETAILS</div>
+            <h2 id="detailTitle">Customer</h2>
+          </div>
+          <button
+            class="dialog-close"
+            id="closeDetail"
+            type="button"
+            aria-label="Close customer details"
+          >
+            ×
+          </button>
+        </div>
+        <div id="detailContent"></div>
+      </section>
+    </div>
+    <div class="suki-modal" id="deleteSukiModal" hidden>
+      <section
+        class="suki-dialog delete-suki-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="deleteSukiTitle"
+      >
+        <div class="dialog-heading">
+          <div>
+            <div class="eyebrow">CUSTOMER MANAGEMENT</div>
+            <h2 id="deleteSukiTitle">Delete Suki?</h2>
+          </div>
+          <button
+            class="dialog-close"
+            id="closeDeleteSuki"
+            type="button"
+            aria-label="Close delete confirmation"
+          >
+            ×
+          </button>
+        </div>
+        <p class="delete-suki-copy" id="deleteSukiCopy">
+          This customer will be removed from Suki Rewards.
+        </p>
+        <div class="dialog-actions">
+          <button class="cancel-button" id="cancelDeleteSuki" type="button">
+            Keep Suki</button
+          ><button
+            class="secondary-button"
+            id="confirmDeleteSuki"
+            type="button"
+          >
+            Delete Suki
+          </button>
+        </div>
+      </section>
+    </div>
+    <script src="js/suki-reward.js"></script>
+  </body>
+</html>
