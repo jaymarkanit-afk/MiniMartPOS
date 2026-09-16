@@ -339,11 +339,7 @@ function openDetail(id) {
   detailTitle.textContent = suki.name;
   detailContent.innerHTML = `<div class="detail-customer"><span class="suki-avatar" aria-hidden="true">${escapeHtml(suki.name.trim().charAt(0).toUpperCase())}</span><div><strong class="detail-name">${escapeHtml(suki.name)}</strong><p class="detail-meta">Suki since ${formatDate(suki.joined)}${suki.phone ? ` · ${escapeHtml(suki.phone)}` : ""}</p></div></div>
     <div class="detail-progress">${stampDots(suki.stamps, true)}<p class="progress-text">${suki.stamps} / 10 stamps</p><p class="detail-status ${status.className}">${status.label}</p></div>
-    <div class="detail-actions"><button class="detail-action" id="detailAddStamp" type="button" ${suki.stamps >= 10 || suki.redeemed ? "disabled" : ""}>Add stamp</button><button class="secondary-button" id="detailRedeem" type="button" ${suki.stamps < 10 || suki.redeemed ? "disabled" : ""}>Mark redeemed</button><button class="secondary-button" id="detailEdit" type="button">Edit Suki</button><button class="secondary-button delete-suki-button" id="detailDelete" type="button">Delete Suki</button></div><p class="detail-scan-status" id="detailScanStatus" aria-live="polite">Manual stamping does not require an NFC card.</p>`;
-  document.getElementById("detailAddStamp").addEventListener("click", () => {
-    const nextStampCount = Math.min(10, suki.stamps + 1);
-    updateSuki({ stamps: nextStampCount });
-  });
+    <div class="detail-actions"><button class="secondary-button" id="detailRedeem" type="button" ${suki.stamps < 10 || suki.redeemed ? "disabled" : ""}>Mark redeemed</button><button class="secondary-button" id="detailEdit" type="button">Edit Suki</button><button class="secondary-button delete-suki-button" id="detailDelete" type="button">Delete Suki</button></div><p class="detail-scan-status" id="detailScanStatus" aria-live="polite">Scan this Suki's NFC card to add a stamp.</p>`;
   document
     .getElementById("detailRedeem")
     .addEventListener("click", () => updateSuki({ redeemed: true }));
