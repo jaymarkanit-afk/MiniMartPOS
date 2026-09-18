@@ -23,6 +23,8 @@ const addSukiModal = document.getElementById("addSukiModal");
 const addSukiForm = document.getElementById("addSukiForm");
 const sukiName = document.getElementById("sukiName");
 const sukiPhone = document.getElementById("sukiPhone");
+const sukiNameMessage = document.getElementById("sukiNameMessage");
+const sukiPhoneMessage = document.getElementById("sukiPhoneMessage");
 const sukiJoined = document.getElementById("sukiJoined");
 const linkNfcButton = document.getElementById("linkNfcButton");
 const linkStatus = document.getElementById("linkStatus");
@@ -43,6 +45,10 @@ let nfcReaderActive = false;
 let pendingScannedCardId = "";
 let nfcScanTimeout = null;
 let nfcResultTimer = null;
+let nameMessageTimer = null;
+
+const sukiNamePattern = /^[A-Za-z\s'-]+$/;
+const sukiPhonePattern = /^(\+63|0)9\d{9}$/;
 
 function readSukis() {
   try {
@@ -55,6 +61,72 @@ function readSukis() {
 
 function saveSukis() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(sukis));
+}
+
+function setFieldMessage(element, text, valid = false) {
+  element.textContent = text;
+  element.classList.toggle("is-valid", valid);
+}
+
+function showBlockedNameMessage() {
+  setFieldMessage(sukiNameMessage, "Only letters, spaces, and hyphens are allowed");
+  window.clearTimeout(nameMessageTimer);
+  nameMessageTimer = window.setTimeout(() => {
+    if (sukiNameMessage.textContent === "Only letters, spaces, and hyphens are allowed")
+      setFieldMessage(sukiNameMessage, "");
+  }, 1800);
+}
+
+function validateSukiName(showError = false) {
+  const value = sukiName.value.trim();
+  const valid =
+    value.length >= 2 &&
+    sukiNamePattern.test(value) &&
+    /[A-Za-z]/.test(value);
+  if (!valid && showError) {
+    setFieldMessage(
+      sukiNameMessage,
+      value.length < 2
+        ? "Enter at least 2 characters"
+        : "Only letters, spaces, and hyphens are allowed",
+    );
+  } else if (valid && sukiNameMessage.textContent !== "Only letters, spaces, and hyphens are allowed") {
+    setFieldMessage(sukiNameMessage, "");
+  }
+  saveSukiButton.disabled = !valid;
+  return valid;
+}
+
+function validateSukiPhone(showError = false) {
+  const value = sukiPhone.value.trim();
+  const valid = !value || sukiPhonePattern.test(value);
+  if (!valid && showError) {
+    setFieldMessage(
+      sukiPhoneMessage,
+      "Enter a valid PH mobile number (e.g. 0917xxxxxxx or +639xxxxxxxx or +639xxxxxxxxx)",
+    );
+  } else if (valid) {
+    setFieldMessage(sukiPhoneMessage, "");
+  }
+  return valid;
+}
+
+function filterSukiName() {
+  const original = sukiName.value;
+  const filtered = original.replace(/[^A-Za-z\s'-]/g, "");
+  if (filtered !== original) showBlockedNameMessage();
+  if (filtered !== original) sukiName.value = filtered;
+  validateSukiName();
+}
+
+function formatSukiPhone() {
+  const original = sukiPhone.value;
+  const hasLeadingPlus = original.trimStart().startsWith("+");
+  const digits = original.replace(/\D/g, "");
+  let formatted = hasLeadingPlus ? `+${digits}` : digits;
+  if (!hasLeadingPlus && formatted.startsWith("9")) formatted = `+63${formatted}`;
+  if (formatted !== original) sukiPhone.value = formatted;
+  validateSukiPhone();
 }
 
 function escapeHtml(value) {
@@ -376,6 +448,10 @@ function resetAddForm(cardId = "") {
     ? `Card linked successfully (UID ...${cardSuffix(cardId)})`
     : "Optional. You can link one later.";
   linkNfcButton.textContent = cardId ? "Card linked" : "Tap card";
+  linkNfcButton.disabled = false;
+  setFieldMessage(sukiNameMessage, "");
+  setFieldMessage(sukiPhoneMessage, "");
+  validateSukiName();
 }
 
 function openAddSukiForCard(cardId) {
@@ -397,6 +473,10 @@ function openEditSuki(suki) {
     ? "NFC card is linked. Tap to replace it."
     : "No NFC card linked yet.";
   linkNfcButton.textContent = linkedCardId ? "Relink card" : "Tap card";
+  linkNfcButton.disabled = false;
+  setFieldMessage(sukiNameMessage, "");
+  setFieldMessage(sukiPhoneMessage, "");
+  validateSukiName();
   closeModal(detailModal);
   openModal(addSukiModal);
   sukiName.focus();
@@ -412,6 +492,16 @@ scanButton.addEventListener("click", () =>
 scanTab.addEventListener("click", () => setView("scan"));
 allSukisTab.addEventListener("click", () => setView("all"));
 sukiSearch.addEventListener("input", renderSukiList);
+sukiName.addEventListener("beforeinput", (event) => {
+  if (event.data && /[^A-Za-z\s'-]/.test(event.data)) {
+    event.preventDefault();
+    showBlockedNameMessage();
+  }
+});
+sukiName.addEventListener("input", filterSukiName);
+sukiName.addEventListener("blur", () => validateSukiName(true));
+sukiPhone.addEventListener("input", formatSukiPhone);
+sukiPhone.addEventListener("blur", () => validateSukiPhone(true));
 sukiList.addEventListener("click", (event) => {
   const row = event.target.closest("[data-suki-id]");
   if (row) openDetail(row.dataset.sukiId);
@@ -481,8 +571,15 @@ linkNfcButton.addEventListener("click", () =>
 );
 addSukiForm.addEventListener("submit", (event) => {
   event.preventDefault();
+  const nameValid = validateSukiName(true);
+  const phoneValid = validateSukiPhone(true);
+  if (!nameValid || !phoneValid) {
+    const firstInvalid = nameValid ? sukiPhone : sukiName;
+    firstInvalid.focus();
+    return;
+  }
   const name = sukiName.value.trim();
-  if (!name) return;
+  const phone = sukiPhone.value.trim();
   const existingSuki = findCardOwner(linkedCardId, editingSukiId);
   if (existingSuki) {
     linkedCardId = "";
@@ -497,7 +594,7 @@ addSukiForm.addEventListener("submit", (event) => {
       sukis[index] = {
         ...sukis[index],
         name,
-        phone: sukiPhone.value.trim(),
+        phone,
         joined: sukiJoined.value,
         cardId: linkedCardId,
       };
@@ -505,7 +602,7 @@ addSukiForm.addEventListener("submit", (event) => {
     sukis.push({
       id: crypto.randomUUID(),
       name,
-      phone: sukiPhone.value.trim(),
+      phone,
       joined: sukiJoined.value,
       stamps: 0,
       redeemed: false,

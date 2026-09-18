@@ -115,7 +115,7 @@ function updateVisibleRows() {
         : "none";
   });
   count.textContent = query ? visible : rows.length;
-  noProducts.style.display = query && !visible ? "block" : "none";
+  noProducts.style.display = visible === 0 ? "block" : "none";
 }
 
 function openModal(product) {

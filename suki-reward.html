@@ -46,7 +46,7 @@
         <button class="sidebar-logout" id="logoutButton" type="button">
           ↪ LOG OUT
         </button>
-        <div class="date">Fri, Aug 21</div>
+        <div class="date" aria-label="Current date"></div>
       </header>
       <main class="phone" aria-label="Suki merchant rewards">
         <section class="suki-content">
@@ -145,12 +145,18 @@
         <form id="addSukiForm">
           <label class="field-label" for="sukiName"
             >Full name <span aria-hidden="true">*</span
-            ><input id="sukiName" name="name" type="text" required
-          /></label>
+            ><input id="sukiName" name="name" type="text" required /><small
+              id="sukiNameMessage"
+              class="field-message"
+              aria-live="polite"
+            ></small></label>
           <label class="field-label" for="sukiPhone"
             >Phone number <span class="optional">(optional)</span
-            ><input id="sukiPhone" name="phone" type="tel"
-          /></label>
+            ><input id="sukiPhone" name="phone" type="tel" /><small
+              id="sukiPhoneMessage"
+              class="field-message"
+              aria-live="polite"
+            ></small></label>
           <label class="field-label" for="sukiJoined"
             >Date joined
             <input id="sukiJoined" name="joined" type="date" required
@@ -167,7 +173,7 @@
           <div class="dialog-actions">
             <button class="cancel-button" id="cancelAddSuki" type="button">
               Cancel</button
-            ><button class="save-button" id="saveSukiButton" type="submit">
+            ><button class="save-button" id="saveSukiButton" type="submit" disabled>
               Save Suki
             </button>
           </div>

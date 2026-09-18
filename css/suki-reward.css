@@ -472,6 +472,17 @@ h1 {
   border-color: var(--teal);
   box-shadow: 0 0 0 3px var(--paper-edge);
 }
+.field-message {
+  display: block;
+  min-height: 16px;
+  margin-top: 4px;
+  color: var(--red);
+  font-size: var(--text-subtext);
+  font-weight: 400;
+}
+.field-message.is-valid {
+  color: var(--teal);
+}
 .optional {
   color: var(--ink-soft);
   font-weight: 400;

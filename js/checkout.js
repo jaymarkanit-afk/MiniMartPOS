@@ -114,9 +114,8 @@ function filterProducts() {
       ? ""
       : "none";
   });
-  document.getElementById("emptyResults").style.display = visible
-    ? "none"
-    : "block";
+  document.getElementById("emptyResults").style.display =
+    visible === 0 ? "block" : "none";
 }
 
 receiptDate.textContent = new Date().toLocaleString("en-US", {

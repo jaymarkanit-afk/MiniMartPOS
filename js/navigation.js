@@ -3,6 +3,14 @@ const mainNavigation = document.getElementById("mainNavigation");
 const logoutButton = document.getElementById("logoutButton");
 const mobileLogoutButton = document.getElementById("mobileLogoutButton");
 
+document.querySelectorAll(".date").forEach((element) => {
+  element.textContent = new Date().toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+});
+
 if (mobileMenuButton && mainNavigation) {
   mobileMenuButton.addEventListener("click", () => {
     const isOpen = mainNavigation.classList.toggle("is-open");

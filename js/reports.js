@@ -38,16 +38,22 @@ const CATEGORY_COLORS = {
 };
 
 lastUpdated.textContent = `Updated ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+let reportRefreshPending = false;
+const refreshReports = () => {
+  if (reportRefreshPending) return;
+  reportRefreshPending = true;
+  setTimeout(() => window.location.reload(), 0);
+};
 window.addEventListener("storage", (event) => {
   if (event.key === "miniMartProducts" || event.key === "miniMartSales")
-    window.location.reload();
+    refreshReports();
 });
 window.addEventListener("miniMartDatabaseChanged", (event) => {
   if (
     event.detail.key === "miniMartProducts" ||
     event.detail.key === "miniMartSales"
   )
-    window.location.reload();
+    refreshReports();
 });
 
 sales.forEach((sale) =>

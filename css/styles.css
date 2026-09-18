@@ -116,6 +116,7 @@ h1 {
 }
 .sidebar-logout {
   display: none;
+  cursor: pointer;
 }
 .mobile-logout {
   display: none;
@@ -142,6 +143,7 @@ nav a {
   padding: 0 0 10px;
   color: #59655c;
   text-decoration: none;
+  cursor: pointer;
   font:
     600 16px "Barlow Condensed",
     sans-serif;
@@ -195,6 +197,10 @@ nav a.active {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px 13px;
 }
+.product,
+.product * {
+  cursor: pointer;
+}
 .product {
   min-height: 109px;
   position: relative;
@@ -204,7 +210,6 @@ nav a.active {
   border-radius: 3px;
   padding: 13px 12px 11px;
   background: var(--white);
-  cursor: pointer;
   box-shadow: var(--shadow);
   transition:
     transform 0.16s ease,
@@ -878,7 +883,6 @@ nav a.active {
 
 button,
 a {
-  cursor: default !important;
   user-select: none;
 }
 input,
