@@ -12,7 +12,6 @@
   padding: 35px 0 60px;
 }
 
-
 /* =========================================================
    TOOLBAR
 ========================================================= */
@@ -48,7 +47,6 @@
 .add-suki-button:hover {
   background: #1f55ce;
 }
-
 
 /* =========================================================
    TABS
@@ -91,7 +89,6 @@
   background: #2864e8;
 }
 
-
 /* =========================================================
    VIEWS
 ========================================================= */
@@ -103,7 +100,6 @@
 .suki-view[hidden] {
   display: none !important;
 }
-
 
 /* =========================================================
    MAIN NFC CARD
@@ -117,8 +113,7 @@
   border: 1px solid #dce3ef;
   border-radius: 16px;
 
-  box-shadow:
-    0 8px 25px rgba(34, 55, 90, 0.06);
+  box-shadow: 0 8px 25px rgba(34, 55, 90, 0.06);
 
   display: flex;
   flex-direction: column;
@@ -129,7 +124,6 @@
 
   padding: 45px 25px;
 }
-
 
 /* =========================================================
    NFC BUTTON
@@ -163,7 +157,6 @@
     box-shadow 0.2s ease;
 }
 
-
 /* =========================================================
    NFC LOGO
 ========================================================= */
@@ -180,7 +173,6 @@
 
   flex-shrink: 0;
 }
-
 
 /* =========================================================
    NFC WAVES
@@ -226,7 +218,6 @@
   top: 2px;
 }
 
-
 /* =========================================================
    NFC HOVER / CLICK
 ========================================================= */
@@ -252,7 +243,6 @@
   outline: 3px solid rgba(40, 100, 232, 0.3);
   outline-offset: 5px;
 }
-
 
 /* =========================================================
    SCANNING
@@ -283,7 +273,6 @@
   }
 }
 
-
 /* =========================================================
    MAIN NFC TEXT
 ========================================================= */
@@ -312,7 +301,6 @@
 
   font-size: 13px;
 }
-
 
 /* =========================================================
    NFC WARNING
@@ -351,7 +339,6 @@
 .nfc-scan-actions {
   display: none !important;
 }
-
 
 /* =========================================================
    SCANNED CARD
@@ -450,7 +437,6 @@
   cursor: pointer;
 }
 
-
 /* =========================================================
    SEARCH
 ========================================================= */
@@ -498,7 +484,6 @@
   font-size: 14px;
 }
 
-
 /* =========================================================
    SUKI LIST
 ========================================================= */
@@ -506,15 +491,10 @@
 .suki-list {
   display: grid;
 
-  grid-template-columns:
-    repeat(
-      auto-fill,
-      minmax(280px, 1fr)
-    );
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 
   gap: 15px;
 }
-
 
 /* =========================================================
    SUKI CARD
@@ -557,8 +537,7 @@
 
   border-color: #c5d3eb;
 
-  box-shadow:
-    0 8px 22px rgba(34, 55, 90, 0.08);
+  box-shadow: 0 8px 22px rgba(34, 55, 90, 0.08);
 }
 
 .suki-card > div:first-child {
@@ -595,7 +574,6 @@
   font-size: 14px;
 }
 
-
 /* =========================================================
    EMPTY RESULTS
 ========================================================= */
@@ -615,7 +593,6 @@
 
   font-size: 13px;
 }
-
 
 /* =========================================================
    MODALS
@@ -644,6 +621,39 @@
   display: none !important;
 }
 
+.suki-toast {
+  position: fixed;
+
+  right: 20px;
+  bottom: 20px;
+
+  z-index: 1100;
+
+  max-width: min(360px, calc(100% - 40px));
+
+  padding: 12px 15px;
+
+  border: 1px solid #e2e7ef;
+  border-radius: 10px;
+
+  background: #ffffff;
+
+  box-shadow: 0 12px 30px rgba(20, 35, 60, 0.16);
+
+  color: #526078;
+
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.suki-toast-error {
+  border-left: 4px solid #c43e38;
+}
+
+.suki-toast-success {
+  border-left: 4px solid #247443;
+}
+
 .suki-dialog {
   width: min(520px, 100%);
 
@@ -659,10 +669,8 @@
 
   padding: 25px;
 
-  box-shadow:
-    0 25px 70px rgba(20, 35, 60, 0.25);
+  box-shadow: 0 25px 70px rgba(20, 35, 60, 0.25);
 }
-
 
 /* =========================================================
    DIALOG HEADING
@@ -705,7 +713,6 @@
 
   cursor: pointer;
 }
-
 
 /* =========================================================
    FORM
@@ -750,8 +757,7 @@
 .field-label input:focus {
   border-color: #2864e8;
 
-  box-shadow:
-    0 0 0 3px rgba(40, 100, 232, 0.1);
+  box-shadow: 0 0 0 3px rgba(40, 100, 232, 0.1);
 }
 
 .field-label .optional {
@@ -760,6 +766,16 @@
   font-weight: 400;
 }
 
+.field-error {
+  display: block;
+
+  margin-top: 6px;
+
+  color: #c43e38;
+
+  font-size: 11px;
+  font-weight: 500;
+}
 
 /* =========================================================
    ADD SUKI NFC
@@ -819,7 +835,6 @@
   text-align: center;
 }
 
-
 /* =========================================================
    CARD ID
 ========================================================= */
@@ -862,7 +877,6 @@
 
   word-break: break-all;
 }
-
 
 /* =========================================================
    ACTIONS
@@ -910,7 +924,6 @@
   cursor: not-allowed;
 }
 
-
 /* =========================================================
    DELETE
 ========================================================= */
@@ -927,6 +940,26 @@
   color: #c43e38;
 }
 
+.secondary-button {
+  border: 0;
+
+  border-radius: 8px;
+
+  padding: 11px 18px;
+
+  background: #edf0f4;
+
+  color: #526078;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.secondary-button:hover {
+  background: #e3e8ef;
+}
 
 /* =========================================================
    CLEAN SUKI DETAILS
@@ -952,7 +985,6 @@
   border-radius: 999px;
 }
 
-
 /* =========================================================
    SUKI PROFILE
 ========================================================= */
@@ -964,7 +996,6 @@
 
   gap: 18px;
 }
-
 
 /* =========================================================
    PROFILE HEADER
@@ -1055,7 +1086,6 @@
   font-weight: 700;
 }
 
-
 /* =========================================================
    DETAIL SECTIONS
 ========================================================= */
@@ -1120,7 +1150,6 @@
   font-size: 11px;
 }
 
-
 /* =========================================================
    CUSTOMER INFORMATION
 ========================================================= */
@@ -1128,8 +1157,7 @@
 .suki-info-grid {
   display: grid;
 
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 
   gap: 10px;
 }
@@ -1183,6 +1211,150 @@
   font-weight: 500;
 }
 
+/* =========================================================
+   NFC CARD DETAILS
+========================================================= */
+
+.suki-nfc-card {
+  display: grid;
+
+  grid-template-columns: auto minmax(0, 1fr) auto;
+
+  align-items: center;
+
+  gap: 14px;
+
+  padding: 14px;
+
+  background: #f7f9fc;
+
+  border-radius: 10px;
+}
+
+.suki-nfc-icon {
+  width: 38px;
+  height: 38px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 10px;
+
+  background: #eaf1ff;
+
+  color: #2864e8;
+
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.suki-nfc-info {
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: flex-start;
+
+  gap: 5px;
+}
+
+.suki-nfc-info > span {
+  color: #8994a7;
+
+  font-size: 10px;
+  font-weight: 800;
+
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.suki-nfc-serial {
+  display: block;
+
+  color: #263149;
+
+  font-size: 13px;
+  line-height: 1.4;
+
+  word-break: break-word;
+}
+
+.suki-nfc-serial-empty {
+  color: #8994a7;
+
+  font-weight: 500;
+}
+
+.suki-nfc-actions {
+  display: flex;
+
+  align-items: center;
+  flex-wrap: wrap;
+
+  gap: 8px;
+
+  margin-top: 3px;
+}
+
+.suki-nfc-link-button {
+  border: 0;
+
+  border-radius: 8px;
+
+  padding: 9px 12px;
+
+  background: #edf0f4;
+
+  color: #526078;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.suki-nfc-link-button:hover {
+  background: #e3e8ef;
+}
+
+.suki-nfc-link-button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.suki-nfc-link-status {
+  color: #8994a7;
+
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.suki-nfc-status {
+  padding: 5px 9px;
+
+  border-radius: 999px;
+
+  font-size: 10px;
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+.suki-nfc-status-linked {
+  background: #e9f8ef;
+
+  color: #247443;
+}
+
+.suki-nfc-status-unlinked {
+  background: #edf0f4;
+
+  color: #8994a7;
+}
 
 /* =========================================================
    REWARD STATS
@@ -1191,8 +1363,7 @@
 .suki-reward-grid {
   display: grid;
 
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 
   gap: 10px;
 
@@ -1236,7 +1407,6 @@
   font-size: 12px;
   font-weight: 600;
 }
-
 
 /* =========================================================
    PROGRESS
@@ -1305,7 +1475,6 @@
 
   font-size: 10px;
 }
-
 
 /* =========================================================
    TRANSACTION HISTORY
@@ -1384,7 +1553,6 @@
   font-weight: 700;
 }
 
-
 /* =========================================================
    EMPTY HISTORY
 ========================================================= */
@@ -1439,7 +1607,6 @@
 
   line-height: 1.5;
 }
-
 
 /* =========================================================
    DETAIL ACTIONS
@@ -1508,13 +1675,11 @@
   background: #ffe3e1;
 }
 
-
 /* =========================================================
    MOBILE
 ========================================================= */
 
 @media (max-width: 700px) {
-
   .suki-content {
     width: min(100% - 24px, 1100px);
 
@@ -1586,7 +1751,6 @@
     grid-template-columns: 1fr;
   }
 
-
   /* =======================================================
      MOBILE SUKI DETAILS
   ======================================================= */
@@ -1622,6 +1786,16 @@
     grid-template-columns: 1fr;
   }
 
+  .suki-nfc-card {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .suki-nfc-status {
+    grid-column: 2;
+
+    justify-self: start;
+  }
+
   .suki-info-full {
     grid-column: auto;
   }
@@ -1643,13 +1817,11 @@
   }
 }
 
-
 /* =========================================================
    SMALL PHONES
 ========================================================= */
 
 @media (max-width: 430px) {
-
   .suki-content {
     width: calc(100% - 18px);
   }
@@ -1742,13 +1914,11 @@
   }
 }
 
-
 /* =========================================================
    TOUCH DEVICES
 ========================================================= */
 
 @media (hover: none) {
-
   .nfc-button:hover,
   .nfc-link-icon-button:hover {
     transform: none;
@@ -1766,7 +1936,6 @@
   }
 }
 
-
 /* =========================================================
    ACCESSIBILITY
 ========================================================= */
@@ -1778,13 +1947,11 @@ input:focus-visible {
   outline-offset: 2px;
 }
 
-
 /* =========================================================
    REDUCED MOTION
 ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
-
   .nfc-button,
   .nfc-link-icon-button,
   .suki-card,

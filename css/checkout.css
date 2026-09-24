@@ -82,6 +82,71 @@
   padding: 12px 0;
   border-top: 1px dashed var(--line);
 }
+.checkout-page #checkoutSukiPanel {
+  grid-column: 1 / -1;
+  margin: 12px 0 0;
+  padding: 12px 0;
+  border-bottom: 1px dashed var(--line);
+}
+.checkout-page .checkout-suki-heading {
+  margin-bottom: 8px;
+  color: var(--ink);
+  font:
+    700 14px "Barlow Condensed",
+    sans-serif;
+}
+.checkout-page .checkout-suki-scan-button {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--white);
+  color: var(--ink);
+  font:
+    700 13px "Barlow Condensed",
+    sans-serif;
+  cursor: pointer;
+}
+.checkout-page .checkout-suki-scan-button:hover {
+  background: #f7f6f0;
+}
+.checkout-page .checkout-suki-scan-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+.checkout-page .checkout-suki-scan-status {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font:
+    10px "DM Mono",
+    monospace;
+  line-height: 1.4;
+}
+.checkout-page .checkout-suki-scan-status.is-error {
+  color: var(--red);
+}
+.checkout-toast {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 1100;
+  max-width: min(360px, calc(100% - 40px));
+  padding: 12px 15px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--red);
+  border-radius: 4px;
+  background: var(--white);
+  box-shadow: 0 12px 30px rgba(35, 45, 40, 0.16);
+  color: var(--ink);
+  font:
+    12px "DM Mono",
+    monospace;
+  line-height: 1.4;
+}
+.checkout-toast-success {
+  border-left-color: var(--green);
+}
 .checkout-page .payment-panel[hidden] {
   display: none;
 }

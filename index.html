@@ -11,7 +11,6 @@
 
   <body class="checkout-page">
     <div class="shell">
-
       <!-- =========================
            HEADER / SIDEBAR
       ========================== -->
@@ -19,10 +18,7 @@
         <div>
           <div class="brand">
             <div class="brand-mark">
-              <img
-                src="Icons/grocery-store.png"
-                alt="Mini Mart"
-              />
+              <img src="Icons/grocery-store.png" alt="Mini Mart" />
             </div>
 
             <div>
@@ -40,61 +36,32 @@
             ☰ <span>MENU</span>
           </button>
 
-          <nav
-            id="mainNavigation"
-            aria-label="Main navigation"
-          >
-            <a
-              class="active"
-              href="index.html"
-            >
-              ⌑ CHECKOUT
-            </a>
+          <nav id="mainNavigation" aria-label="Main navigation">
+            <a class="active" href="index.html"> ⌑ CHECKOUT </a>
 
-            <a href="inventory.html">
-              ◈ INVENTORY
-            </a>
+            <a href="inventory.html"> ◈ INVENTORY </a>
 
-            <a href="reports.html">
-              ▥ REPORTS
-            </a>
+            <a href="reports.html"> ▥ REPORTS </a>
 
-            <a
-              class="suki-link"
-              href="suki-reward.html"
-            >
-              ♡ SUKI REWARDS
-            </a>
+            <a class="suki-link" href="suki-reward.html"> ♡ SUKI REWARDS </a>
 
-            <button
-              class="mobile-logout"
-              id="mobileLogoutButton"
-              type="button"
-            >
+            <button class="mobile-logout" id="mobileLogoutButton" type="button">
               ↪ LOG OUT
             </button>
           </nav>
         </div>
 
-        <button
-          class="sidebar-logout"
-          id="logoutButton"
-          type="button"
-        >
+        <button class="sidebar-logout" id="logoutButton" type="button">
           ↪ LOG OUT
         </button>
 
-        <div class="date">
-          Fri, Aug 21
-        </div>
+        <div class="date">Fri, Aug 21</div>
       </header>
-
 
       <!-- =========================
            CHECKOUT WORKSPACE
       ========================== -->
       <main class="workspace">
-
         <!-- PRODUCT SEARCH -->
         <div class="search-wrap">
           <span aria-hidden="true">⌕</span>
@@ -111,92 +78,49 @@
           />
         </div>
 
-
         <!-- =========================
              PRODUCTS
              Products are generated
              by checkout.js
         ========================== -->
-        <section
-          class="products"
-          id="products"
-          aria-label="Products"
-        >
+        <section class="products" id="products" aria-label="Products">
           <!--
             checkout.js will generate
             the product categories and cards here.
           -->
 
-          <div
-            class="empty-results"
-            id="emptyResults"
-          >
-            No products found.
-          </div>
+          <div class="empty-results" id="emptyResults">No products found.</div>
         </section>
-
 
         <!-- =========================
              RECEIPT / CART
         ========================== -->
-        <section
-          class="receipt"
-          aria-label="Shopping cart"
-        >
-
+        <section class="receipt" aria-label="Shopping cart">
           <!-- RECEIPT HEADER -->
           <div class="receipt-top">
-            <div class="receipt-title">
-              ▣ MINI MART
-            </div>
+            <div class="receipt-title">▣ MINI MART</div>
 
-            <div
-              class="receipt-date"
-              id="receiptDate"
-            ></div>
+            <div class="receipt-date" id="receiptDate"></div>
           </div>
-
 
           <!-- EMPTY CART -->
-          <div
-            class="cart-empty"
-            id="cartEmpty"
-          >
+          <div class="cart-empty" id="cartEmpty">
             <div class="cart-icon">
-              <img
-                src="Icons/grocery-store.png"
-                alt="Shopping cart"
-              />
+              <img src="Icons/grocery-store.png" alt="Shopping cart" />
             </div>
 
-            <div>
-              Cart is empty
-            </div>
+            <div>Cart is empty</div>
           </div>
-
 
           <!-- CART ITEMS -->
-          <div
-            class="cart-items"
-            id="cartItems"
-          ></div>
-
+          <div class="cart-items" id="cartItems"></div>
 
           <!-- TOTAL -->
-          <div
-            class="total"
-            id="total"
-            hidden
-          >
-            <span>
-              TOTAL
-            </span>
+          <div class="total" id="total" hidden>
+            <span> TOTAL </span>
 
-            <strong id="totalAmount">
-              &#8369;0.00
-            </strong>
+            <strong id="totalAmount"> &#8369;0.00 </strong>
           </div>
-
 
           <!-- =========================
                PAYMENT PANEL
@@ -208,17 +132,12 @@
                checkout.js dynamically adds
                the Suki Rewards controls here.
           ========================== -->
-          <div
-            class="payment-panel"
-            id="paymentPanel"
-            hidden
-          >
-
+          <div class="payment-panel" id="paymentPanel" hidden>
             <!--
               checkout.js creates:
 
               Suki Rewards
-              [ No Suki customer ▼ ]
+              [ Tap Suki's Card ]
 
               Customer information
 
@@ -227,16 +146,11 @@
               inside this payment panel.
             -->
 
-
             <!-- CUSTOMER PAYMENT -->
-            <label for="amountGiven">
-              CUSTOMER GIVES
-            </label>
+            <label for="amountGiven"> CUSTOMER GIVES </label>
 
             <div class="payment-input-wrap">
-              <span>
-                &#8369;
-              </span>
+              <span> &#8369; </span>
 
               <input
                 id="amountGiven"
@@ -248,54 +162,33 @@
               />
             </div>
 
-
             <!-- CHANGE -->
             <div class="change-row">
-              <span>
-                CHANGE
-              </span>
+              <span> CHANGE </span>
 
-              <strong id="changeAmount">
-                &#8369;0.00
-              </strong>
+              <strong id="changeAmount"> &#8369;0.00 </strong>
             </div>
 
-
             <!-- PAYMENT ERROR -->
-            <p
-              class="payment-error"
-              id="paymentError"
-              hidden
-            >
+            <p class="payment-error" id="paymentError" hidden>
               Payment is less than the total.
             </p>
-
           </div>
 
-
           <!-- SELL -->
-          <button
-            class="sell-button"
-            id="sellButton"
-            type="button"
-            disabled
-          >
+          <button class="sell-button" id="sellButton" type="button" disabled>
             SELL
           </button>
-
         </section>
       </main>
     </div>
-
 
     <!-- =========================
          SCRIPTS
     ========================== -->
 
     <!-- Supabase -->
-    <script
-      src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
-    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- Authentication -->
     <script src="js/auth-client.js"></script>
@@ -303,11 +196,13 @@
     <!-- Database -->
     <script src="js/database.js"></script>
 
+    <!-- Shared NFC scanning -->
+    <script src="js/nfc.js"></script>
+
     <!-- Checkout + Suki Rewards -->
     <script src="js/checkout.js"></script>
 
     <!-- Navigation -->
     <script src="js/navigation.js"></script>
-
   </body>
 </html>

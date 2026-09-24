@@ -1,925 +1,660 @@
 <!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
 
-<head>
-  <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  />
+    <title>Suki Rewards | Mini Mart</title>
 
-  <title>Suki Rewards | Mini Mart</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="css/suki-reward.css" />
+  </head>
 
-  <link rel="stylesheet" href="css/styles.css" />
-  <link rel="stylesheet" href="css/suki-reward.css" />
-</head>
-
-
-<body class="suki-page">
-
-  <div class="shell">
-
-    <!-- =====================================================
+  <body class="suki-page">
+    <div class="shell">
+      <!-- =====================================================
          HEADER
     ====================================================== -->
 
-    <header>
-
-      <div>
-
-        <div class="brand">
-
-          <div class="brand-mark">
-            <img
-              src="Icons/grocery-store.png"
-              alt="Mini Mart"
-            />
-          </div>
-
-          <div>
-            <div class="eyebrow">
-              REGISTER 01
+      <header>
+        <div>
+          <div class="brand">
+            <div class="brand-mark">
+              <img src="Icons/grocery-store.png" alt="Mini Mart" />
             </div>
 
-            <h1>
-              Mini Mart
-            </h1>
+            <div>
+              <div class="eyebrow">REGISTER 01</div>
+
+              <h1>Mini Mart</h1>
+            </div>
           </div>
 
-        </div>
-
-
-        <button
-          class="mobile-menu-button"
-          id="mobileMenuButton"
-          type="button"
-          aria-expanded="false"
-          aria-controls="mainNavigation"
-        >
-          ☰
-          <span>MENU</span>
-        </button>
-
-
-        <nav
-          id="mainNavigation"
-          aria-label="Main navigation"
-        >
-
-          <a href="index.html">
-            ⌑ CHECKOUT
-          </a>
-
-          <a href="inventory.html">
-            ◈ INVENTORY
-          </a>
-
-          <a href="reports.html">
-            ▥ REPORTS
-          </a>
-
-          <a
-            class="suki-link active"
-            href="suki-reward.html"
-            aria-current="page"
-          >
-            ♡ SUKI REWARDS
-          </a>
-
           <button
-            class="mobile-logout"
-            id="mobileLogoutButton"
+            class="mobile-menu-button"
+            id="mobileMenuButton"
             type="button"
+            aria-expanded="false"
+            aria-controls="mainNavigation"
           >
-            ↪ LOG OUT
+            ☰
+            <span>MENU</span>
           </button>
 
-        </nav>
+          <nav id="mainNavigation" aria-label="Main navigation">
+            <a href="index.html"> ⌑ CHECKOUT </a>
 
-      </div>
+            <a href="inventory.html"> ◈ INVENTORY </a>
 
+            <a href="reports.html"> ▥ REPORTS </a>
 
-      <button
-        class="sidebar-logout"
-        id="logoutButton"
-        type="button"
-      >
-        ↪ LOG OUT
-      </button>
+            <a
+              class="suki-link active"
+              href="suki-reward.html"
+              aria-current="page"
+            >
+              ♡ SUKI REWARDS
+            </a>
 
+            <button class="mobile-logout" id="mobileLogoutButton" type="button">
+              ↪ LOG OUT
+            </button>
+          </nav>
+        </div>
 
-      <div class="date" id="pageDate">
-        --
-      </div>
+        <button class="sidebar-logout" id="logoutButton" type="button">
+          ↪ LOG OUT
+        </button>
 
-    </header>
+        <div class="date" id="pageDate">--</div>
+      </header>
 
-
-    <!-- =====================================================
+      <!-- =====================================================
          MAIN
     ====================================================== -->
 
-    <main
-      class="phone"
-      aria-label="Suki merchant rewards"
-    >
-
-      <section class="suki-content">
-
-        <!-- =================================================
+      <main class="phone" aria-label="Suki merchant rewards">
+        <section class="suki-content">
+          <!-- =================================================
              TOOLBAR
         ================================================== -->
 
-        <div class="suki-toolbar">
+          <div class="suki-toolbar">
+            <div>
+              <div class="eyebrow">CUSTOMER LOYALTY</div>
 
-          <div>
-
-            <div class="eyebrow">
-              CUSTOMER LOYALTY
+              <h2 class="suki-heading">Suki Rewards</h2>
             </div>
 
-            <h2 class="suki-heading">
-              Suki Rewards
-            </h2>
-
+            <button class="add-suki-button" id="openAddSuki" type="button">
+              + Add Suki
+            </button>
           </div>
 
-
-          <button
-            class="add-suki-button"
-            id="openAddSuki"
-            type="button"
-          >
-            + Add Suki
-          </button>
-
-        </div>
-
-
-        <!-- =================================================
+          <!-- =================================================
              TABS
         ================================================== -->
 
-        <div
-          class="suki-tabs"
-          role="tablist"
-          aria-label="Suki views"
-        >
+          <div class="suki-tabs" role="tablist" aria-label="Suki views">
+            <button
+              class="suki-tab is-active"
+              id="scanTab"
+              type="button"
+              role="tab"
+              aria-selected="true"
+              aria-controls="scanView"
+            >
+              Scan
+            </button>
 
-          <button
-            class="suki-tab is-active"
-            id="scanTab"
-            type="button"
-            role="tab"
-            aria-selected="true"
-            aria-controls="scanView"
-          >
-            Scan
-          </button>
+            <button
+              class="suki-tab"
+              id="allSukisTab"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="allSukisView"
+            >
+              All Sukis
+            </button>
+          </div>
 
-
-          <button
-            class="suki-tab"
-            id="allSukisTab"
-            type="button"
-            role="tab"
-            aria-selected="false"
-            aria-controls="allSukisView"
-          >
-            All Sukis
-          </button>
-
-        </div>
-
-
-        <!-- =================================================
+          <!-- =================================================
              NFC SCAN VIEW
         ================================================== -->
 
-        <section
-          class="suki-view scan-view"
-          id="scanView"
-          role="tabpanel"
-          aria-labelledby="scanTab"
-        >
+          <section
+            class="suki-view scan-view"
+            id="scanView"
+            role="tabpanel"
+            aria-labelledby="scanTab"
+          >
+            <div class="nfc-reader-card">
+              <!-- NFC LOGO -->
 
-          <div class="nfc-reader-card">
-
-            <!-- NFC LOGO -->
-
-            <button
-              class="nfc-button"
-              id="scanButton"
-              type="button"
-              aria-label="Scan NFC card"
-              title="Scan NFC card"
-            >
-
-              <svg
-                class="nfc-logo"
-                viewBox="0 0 100 100"
-                xmlns="http://www.w3.org/2000/svg"
-                aria-hidden="true"
+              <button
+                class="nfc-button"
+                id="scanButton"
+                type="button"
+                aria-label="Scan NFC card"
+                title="Scan NFC card"
               >
+                <svg
+                  class="nfc-logo"
+                  viewBox="0 0 100 100"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <rect
+                    x="18"
+                    y="22"
+                    width="38"
+                    height="56"
+                    rx="7"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="7"
+                  />
 
-                <rect
-                  x="18"
-                  y="22"
-                  width="38"
-                  height="56"
-                  rx="7"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="7"
-                />
+                  <path
+                    d="M46 39 C55 44 55 56 46 61"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="6"
+                    stroke-linecap="round"
+                  />
 
-                <path
-                  d="M46 39 C55 44 55 56 46 61"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="6"
-                  stroke-linecap="round"
-                />
+                  <path
+                    d="M59 30 C75 41 75 59 59 70"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="6"
+                    stroke-linecap="round"
+                  />
 
-                <path
-                  d="M59 30 C75 41 75 59 59 70"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="6"
-                  stroke-linecap="round"
-                />
+                  <path
+                    d="M72 21 C94 37 94 63 72 79"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="6"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              </button>
 
-                <path
-                  d="M72 21 C94 37 94 63 72 79"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="6"
-                  stroke-linecap="round"
-                />
+              <h1 id="scanTitle">Ready for NFC card</h1>
 
-              </svg>
-
-            </button>
-
-
-            <h1 id="scanTitle">
-              Ready for NFC card
-            </h1>
-
-
-            <p class="scan-copy">
-              Hold an NFC card near the back
-              of the Android phone.
-            </p>
-
-
-            <p
-              class="scan-hint"
-              id="scanStatus"
-              aria-live="polite"
-            >
-              Press the NFC icon to start
-              the reader.
-            </p>
-
-
-            <!-- NFC WARNING -->
-
-            <div
-              class="nfc-browser-warning"
-              id="nfcBrowserWarning"
-              hidden
-            >
-
-              <strong>
-                NFC scanning is unavailable
-              </strong>
-
-              <p>
-                This browser or device does not
-                support Web NFC.
+              <p class="scan-copy">
+                Hold an NFC card near the back of the Android phone.
               </p>
 
+              <p class="scan-hint" id="scanStatus" aria-live="polite">
+                Press the NFC icon to start the reader.
+              </p>
+
+              <!-- NFC WARNING -->
+
+              <div class="nfc-browser-warning" id="nfcBrowserWarning" hidden>
+                <strong> NFC scanning is unavailable </strong>
+
+                <p>This browser or device does not support Web NFC.</p>
+              </div>
+
+              <!-- Compatibility buttons -->
+
+              <div class="nfc-scan-actions" hidden>
+                <button
+                  class="primary-nfc-button"
+                  id="startNfcButton"
+                  type="button"
+                >
+                  Start NFC Scan
+                </button>
+
+                <button
+                  class="stop-nfc-button"
+                  id="stopNfcButton"
+                  type="button"
+                  hidden
+                >
+                  Stop Scan
+                </button>
+              </div>
             </div>
 
-
-            <!-- Compatibility buttons -->
-
-            <div
-              class="nfc-scan-actions"
-              hidden
-            >
-
-              <button
-                class="primary-nfc-button"
-                id="startNfcButton"
-                type="button"
-              >
-                Start NFC Scan
-              </button>
-
-
-              <button
-                class="stop-nfc-button"
-                id="stopNfcButton"
-                type="button"
-                hidden
-              >
-                Stop Scan
-              </button>
-
-            </div>
-
-          </div>
-
-
-          <!-- =================================================
+            <!-- =================================================
                SCANNED CARD
           ================================================== -->
 
-          <section
-            class="scanned-card-section"
-            id="scannedCardSection"
-            hidden
-          >
+            <section
+              class="scanned-card-section"
+              id="scannedCardSection"
+              hidden
+            >
+              <div class="section-label">NFC CARD DETECTED</div>
 
-            <div class="section-label">
-              NFC CARD DETECTED
-            </div>
+              <div class="nfc-card-result">
+                <div>
+                  <strong> NFC card detected </strong>
 
+                  <p id="nfcCardId">Card ID:</p>
+                </div>
 
-            <div class="nfc-card-result">
-
-              <div>
-
-                <strong>
-                  NFC card detected
-                </strong>
-
-                <p id="nfcCardId">
-                  Card ID:
-                </p>
-
+                <span class="nfc-success"> ✓ </span>
               </div>
 
-
-              <span class="nfc-success">
-                ✓
-              </span>
-
-            </div>
-
-
-            <button
-              class="link-card-button"
-              id="linkScannedCardButton"
-              type="button"
-            >
-              Link Card to Suki
-            </button>
-
+              <button
+                class="link-card-button"
+                id="linkScannedCardButton"
+                type="button"
+              >
+                Link Card to Suki
+              </button>
+            </section>
           </section>
 
-        </section>
-
-
-        <!-- =================================================
+          <!-- =================================================
              ALL SUKIS
         ================================================== -->
 
-        <section
-          class="suki-view all-sukis-view"
-          id="allSukisView"
-          role="tabpanel"
-          aria-labelledby="allSukisTab"
-          hidden
-        >
-
-          <label
-            class="suki-search"
-            for="sukiSearch"
+          <section
+            class="suki-view all-sukis-view"
+            id="allSukisView"
+            role="tabpanel"
+            aria-labelledby="allSukisTab"
+            hidden
           >
+            <label class="suki-search" for="sukiSearch">
+              <span aria-hidden="true"> ⌕ </span>
 
-            <span aria-hidden="true">
-              ⌕
-            </span>
+              <input
+                id="sukiSearch"
+                type="search"
+                placeholder="Search sukis by name..."
+                autocomplete="off"
+              />
+            </label>
 
-
-            <input
-              id="sukiSearch"
-              type="search"
-              placeholder="Search sukis by name..."
-              autocomplete="off"
-            />
-
-          </label>
-
-
-          <div
-            class="suki-list"
-            id="sukiList"
-            aria-live="polite"
-          ></div>
-
+            <div class="suki-list" id="sukiList" aria-live="polite"></div>
+          </section>
         </section>
+      </main>
+    </div>
 
-      </section>
-
-    </main>
-
-  </div>
-
-
-  <!-- =======================================================
+    <!-- =======================================================
        ADD SUKI MODAL
   ======================================================== -->
 
-  <div
-    class="suki-modal"
-    id="addSukiModal"
-    hidden
-  >
+    <div class="suki-modal" id="addSukiModal" hidden>
+      <section
+        class="suki-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="addSukiTitle"
+      >
+        <div class="dialog-heading">
+          <div>
+            <div class="eyebrow">NEW CUSTOMER</div>
 
-    <section
-      class="suki-dialog"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="addSukiTitle"
-    >
-
-      <div class="dialog-heading">
-
-        <div>
-
-          <div class="eyebrow">
-            NEW CUSTOMER
+            <h2 id="addSukiTitle">Add a Suki</h2>
           </div>
 
-          <h2 id="addSukiTitle">
-            Add a Suki
-          </h2>
-
+          <button
+            class="dialog-close"
+            id="closeAddSuki"
+            type="button"
+            aria-label="Close Suki form"
+          >
+            ×
+          </button>
         </div>
 
-
-        <button
-          class="dialog-close"
-          id="closeAddSuki"
-          type="button"
-          aria-label="Close Suki form"
-        >
-          ×
-        </button>
-
-      </div>
-
-
-      <!-- =================================================
+        <!-- =================================================
            FORM
       ================================================== -->
 
-      <form id="addSukiForm">
-
-        <!-- =================================================
+        <form id="addSukiForm">
+          <!-- =================================================
              FULL NAME
         ================================================== -->
 
-        <label
-          class="field-label"
-          for="sukiName"
-        >
+          <label class="field-label" for="sukiName">
+            Full name
 
-          Full name
+            <span aria-hidden="true"> * </span>
 
-          <span aria-hidden="true">
-            *
-          </span>
+            <input
+              id="sukiName"
+              name="name"
+              type="text"
+              placeholder="Juan Dela Cruz"
+              autocomplete="name"
+              aria-describedby="sukiNameError"
+              title="Please enter the customer's proper full name, such as Juan Dela Cruz."
+              required
+            />
 
+            <small id="sukiNameError" hidden>Please enter a valid name</small>
+          </label>
 
-          <input
-            id="sukiName"
-            name="name"
-            type="text"
-            placeholder="Juan Dela Cruz"
-            autocomplete="name"
-            minlength="5"
-            pattern="[A-Za-zÀ-ÖØ-öø-ÿÑñ.]+(?:[ '-][A-Za-zÀ-ÖØ-öø-ÿÑñ.]+)+"
-            title="Please enter the customer's proper full name, such as Juan Dela Cruz."
-            required
-          />
-
-        </label>
-
-
-        <!-- =================================================
+          <!-- =================================================
              PHONE NUMBER
         ================================================== -->
 
-        <label
-          class="field-label"
-          for="sukiPhone"
-        >
+          <label class="field-label" for="sukiPhone">
+            Phone number
 
-          Phone number
+            <span class="optional"> (optional) </span>
 
-          <span class="optional">
-            (optional)
-          </span>
+            <div style="display: flex; align-items: stretch; width: 100%">
+              <span
+                aria-hidden="true"
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  padding: 0 14px;
+                  border: 1px solid #d6dce8;
+                  border-right: none;
+                  border-radius: 8px 0 0 8px;
+                  background: #f5f7fa;
+                  color: #333;
+                  font-weight: 600;
+                  white-space: nowrap;
+                "
+              >
+                +63
+              </span>
 
+              <input
+                id="sukiPhone"
+                name="phone"
+                type="tel"
+                inputmode="numeric"
+                autocomplete="tel-national"
+                placeholder="9171234567"
+                maxlength="11"
+                aria-describedby="sukiPhoneError"
+                title="Enter a valid Philippine mobile number with 10 digits, for example 9171234567."
+                style="flex: 1; min-width: 0; border-radius: 0 8px 8px 0"
+              />
+            </div>
 
-          <div
-            style="
-              display:flex;
-              align-items:stretch;
-              width:100%;
-            "
-          >
-
-            <span
-              aria-hidden="true"
-              style="
-                display:flex;
-                align-items:center;
-                justify-content:center;
-                padding:0 14px;
-                border:1px solid #d6dce8;
-                border-right:none;
-                border-radius:8px 0 0 8px;
-                background:#f5f7fa;
-                color:#333;
-                font-weight:600;
-                white-space:nowrap;
-              "
+            <small id="sukiPhoneError" hidden
+              >Please enter a valid PH mobile number</small
             >
-              +63
-            </span>
+          </label>
 
-
-            <input
-              id="sukiPhone"
-              name="phone"
-              type="tel"
-              inputmode="numeric"
-              autocomplete="tel-national"
-              placeholder="9171234567"
-              maxlength="10"
-              pattern="[0-9]{10}"
-              title="Enter a valid Philippine mobile number with 10 digits, for example 9171234567."
-              style="
-                flex:1;
-                min-width:0;
-                border-radius:0 8px 8px 0;
-              "
-            />
-
-          </div>
-
-        </label>
-
-
-        <!-- =================================================
+          <!-- =================================================
              DATE JOINED
         ================================================== -->
 
-        <label
-          class="field-label"
-          for="sukiJoined"
-        >
+          <label class="field-label" for="sukiJoined">
+            Date joined
 
-          Date joined
+            <input id="sukiJoined" name="joined" type="date" required />
 
+            <small id="sukiJoinedError" class="field-error" hidden
+              >Please select the date joined.</small
+            >
+          </label>
 
-          <input
-            id="sukiJoined"
-            name="joined"
-            type="date"
-            required
-          />
-
-        </label>
-
-
-        <!-- =================================================
+          <!-- =================================================
              NFC LINK
         ================================================== -->
 
-        <div class="nfc-link-box">
+          <div class="nfc-link-box">
+            <div class="nfc-link-action">
+              <!-- SAME NFC LOGO AS MAIN SCANNER -->
 
-          <div class="nfc-link-action">
-
-            <!-- SAME NFC LOGO AS MAIN SCANNER -->
-
-            <button
-              class="nfc-link-icon-button"
-              id="linkNfcButton"
-              type="button"
-              aria-label="Link NFC card"
-              title="Link NFC card"
-            >
-
-              <svg
-                class="small-nfc-logo"
-                viewBox="0 0 100 100"
-                xmlns="http://www.w3.org/2000/svg"
-                aria-hidden="true"
+              <button
+                class="nfc-link-icon-button"
+                id="linkNfcButton"
+                type="button"
+                aria-label="Link NFC card"
+                title="Link NFC card"
               >
+                <svg
+                  class="small-nfc-logo"
+                  viewBox="0 0 100 100"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <rect
+                    x="18"
+                    y="22"
+                    width="38"
+                    height="56"
+                    rx="7"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="7"
+                  />
 
-                <rect
-                  x="18"
-                  y="22"
-                  width="38"
-                  height="56"
-                  rx="7"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="7"
-                />
+                  <path
+                    d="M46 39 C55 44 55 56 46 61"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="6"
+                    stroke-linecap="round"
+                  />
 
-                <path
-                  d="M46 39 C55 44 55 56 46 61"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="6"
-                  stroke-linecap="round"
-                />
+                  <path
+                    d="M59 30 C75 41 75 59 59 70"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="6"
+                    stroke-linecap="round"
+                  />
 
-                <path
-                  d="M59 30 C75 41 75 59 59 70"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="6"
-                  stroke-linecap="round"
-                />
+                  <path
+                    d="M72 21 C94 37 94 63 72 79"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="6"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              </button>
 
-                <path
-                  d="M72 21 C94 37 94 63 72 79"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="6"
-                  stroke-linecap="round"
-                />
+              <strong> Link NFC card </strong>
 
-              </svg>
-
-            </button>
-
-
-            <strong>
-              Link NFC card
-            </strong>
-
-
-            <small id="linkStatus">
-              No NFC card linked yet.
-            </small>
-
+              <small id="linkStatus"> No NFC card linked yet. </small>
+            </div>
           </div>
 
-        </div>
-
-
-        <!-- =================================================
+          <!-- =================================================
              CARD STATUS
         ================================================== -->
 
-        <div
-          class="card-id-display"
-          id="cardIdDisplay"
-          hidden
-        >
+          <div class="card-id-display" id="cardIdDisplay" hidden>
+            <span> NFC Card ID </span>
 
-          <span>
-            NFC Card ID
-          </span>
+            <strong id="cardIdText"> -- </strong>
+          </div>
 
-
-          <strong id="cardIdText">
-            --
-          </strong>
-
-        </div>
-
-
-        <!-- =================================================
+          <!-- =================================================
              ACTIONS
         ================================================== -->
 
-        <div class="dialog-actions">
+          <div class="dialog-actions">
+            <button class="cancel-button" id="cancelAddSuki" type="button">
+              Cancel
+            </button>
 
-          <button
-            class="cancel-button"
-            id="cancelAddSuki"
-            type="button"
-          >
-            Cancel
-          </button>
+            <button class="save-button" id="saveSukiButton" type="submit">
+              Save Suki
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
 
-
-          <button
-            class="save-button"
-            id="saveSukiButton"
-            type="submit"
-          >
-            Save Suki
-          </button>
-
-        </div>
-
-      </form>
-
-    </section>
-
-  </div>
-
-
-  <!-- =======================================================
+    <!-- =======================================================
        CUSTOMER DETAILS MODAL
   ======================================================== -->
 
-  <div
-    class="suki-modal"
-    id="detailModal"
-    hidden
-  >
+    <div class="suki-modal" id="detailModal" hidden>
+      <section
+        class="suki-dialog detail-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="detailTitle"
+      >
+        <div class="dialog-heading">
+          <div>
+            <div class="eyebrow">SUKI DETAILS</div>
 
-    <section
-      class="suki-dialog detail-dialog"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="detailTitle"
-    >
-
-      <div class="dialog-heading">
-
-        <div>
-
-          <div class="eyebrow">
-            SUKI DETAILS
+            <h2 id="detailTitle">Customer</h2>
           </div>
 
-          <h2 id="detailTitle">
-            Customer
-          </h2>
-
+          <button
+            class="dialog-close"
+            id="closeDetail"
+            type="button"
+            aria-label="Close customer details"
+          >
+            ×
+          </button>
         </div>
 
+        <div id="detailContent" class="detail-content"></div>
+      </section>
+    </div>
 
-        <button
-          class="dialog-close"
-          id="closeDetail"
-          type="button"
-          aria-label="Close customer details"
-        >
-          ×
-        </button>
-
-      </div>
-
-
-      <div
-        id="detailContent"
-        class="detail-content"
-      ></div>
-
-    </section>
-
-  </div>
-
-
-  <!-- =======================================================
+    <!-- =======================================================
        DELETE MODAL
   ======================================================== -->
 
-  <div
-    class="suki-modal"
-    id="deleteSukiModal"
-    hidden
-  >
+    <div class="suki-modal" id="deleteSukiModal" hidden>
+      <section
+        class="suki-dialog delete-suki-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="deleteSukiTitle"
+      >
+        <div class="dialog-heading">
+          <div>
+            <div class="eyebrow">CUSTOMER MANAGEMENT</div>
 
-    <section
-      class="suki-dialog delete-suki-dialog"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="deleteSukiTitle"
-    >
-
-      <div class="dialog-heading">
-
-        <div>
-
-          <div class="eyebrow">
-            CUSTOMER MANAGEMENT
+            <h2 id="deleteSukiTitle">Delete Suki?</h2>
           </div>
 
-          <h2 id="deleteSukiTitle">
-            Delete Suki?
-          </h2>
-
+          <button
+            class="dialog-close"
+            id="closeDeleteSuki"
+            type="button"
+            aria-label="Close delete confirmation"
+          >
+            ×
+          </button>
         </div>
 
+        <p class="delete-suki-copy" id="deleteSukiCopy">
+          This customer will be removed from Suki Rewards.
+        </p>
 
-        <button
-          class="dialog-close"
-          id="closeDeleteSuki"
-          type="button"
-          aria-label="Close delete confirmation"
-        >
-          ×
-        </button>
+        <div class="dialog-actions">
+          <button class="cancel-button" id="cancelDeleteSuki" type="button">
+            Keep Suki
+          </button>
 
-      </div>
+          <button
+            class="secondary-button delete-button"
+            id="confirmDeleteSuki"
+            type="button"
+          >
+            Delete Suki
+          </button>
+        </div>
+      </section>
+    </div>
 
+    <!-- =======================================================
+       UNLINK NFC MODAL
+  ======================================================== -->
 
-      <p
-        class="delete-suki-copy"
-        id="deleteSukiCopy"
+    <div class="suki-modal" id="unlinkNfcModal" hidden>
+      <section
+        class="suki-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="unlinkNfcTitle"
       >
-        This customer will be removed
-        from Suki Rewards.
-      </p>
+        <div class="dialog-heading">
+          <div>
+            <div class="eyebrow">CARD MANAGEMENT</div>
 
+            <h2 id="unlinkNfcTitle">Unlink NFC Card?</h2>
+          </div>
 
-      <div class="dialog-actions">
+          <button
+            class="dialog-close"
+            id="closeUnlinkNfc"
+            type="button"
+            aria-label="Close unlink confirmation"
+          >
+            ×
+          </button>
+        </div>
 
-        <button
-          class="cancel-button"
-          id="cancelDeleteSuki"
-          type="button"
-        >
-          Keep Suki
-        </button>
+        <p class="delete-suki-copy" id="unlinkNfcCopy">
+          This NFC card will be unlinked from the Suki customer.
+        </p>
 
+        <div class="dialog-actions">
+          <button class="cancel-button" id="cancelUnlinkNfc" type="button">
+            Keep Card
+          </button>
 
-        <button
-          class="secondary-button delete-button"
-          id="confirmDeleteSuki"
-          type="button"
-        >
-          Delete Suki
-        </button>
+          <button
+            class="secondary-button delete-button"
+            id="confirmUnlinkNfc"
+            type="button"
+          >
+            Unlink Card
+          </button>
+        </div>
+      </section>
+    </div>
 
-      </div>
-
-    </section>
-
-  </div>
-
-
-  <!-- =======================================================
+    <!-- =======================================================
        SUPABASE
   ======================================================== -->
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <script src="js/auth-client.js"></script>
+    <script src="js/auth-client.js"></script>
 
-  <script src="js/suki-reward.js"></script>
+    <script src="js/nfc.js"></script>
 
-  <script src="js/navigation.js"></script>
+    <script src="js/suki-reward.js"></script>
 
+    <script src="js/navigation.js"></script>
 
-  <!-- =======================================================
+    <!-- =======================================================
        PAGE INITIALIZATION
   ======================================================== -->
 
-  <script>
+    <script>
+      const pageDate = document.getElementById("pageDate");
 
-    const pageDate =
-      document.getElementById("pageDate");
-
-
-    if (pageDate) {
-
-      pageDate.textContent =
-        new Date().toLocaleDateString(
-          "en-US",
-          {
-            weekday: "short",
-            month: "short",
-            day: "2-digit"
-          }
-        );
-
-    }
-
-
-    const nfcWarning =
-      document.getElementById(
-        "nfcBrowserWarning"
-      );
-
-
-    if (!("NDEFReader" in window)) {
-
-      if (nfcWarning) {
-        nfcWarning.hidden = false;
+      if (pageDate) {
+        pageDate.textContent = new Date().toLocaleDateString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "2-digit",
+        });
       }
 
-    }
+      const nfcWarning = document.getElementById("nfcBrowserWarning");
 
-  </script>
-
-</body>
-
+      if (!("NDEFReader" in window)) {
+        if (nfcWarning) {
+          nfcWarning.hidden = false;
+        }
+      }
+    </script>
+  </body>
 </html>
