@@ -1,633 +1,1803 @@
-:root {
-  --paper: #f5f4ee;
-  --paper-edge: #d9d7cd;
-  --ink: #18231d;
-  --ink-soft: #637067;
-  --papaya: #2b7591;
-  --teal: #277255;
-  --red: #d23720;
-  --stamp-empty: #d9d7cd;
-  --radius-card: 18px;
-  --radius-control: 16px;
-  --space-page: 20px;
-  --space-small: 12px;
-  --space-medium: 16px;
-  --space-large: 24px;
-  --shadow-elevated: 0 5px 14px rgba(25, 35, 29, 0.05);
-  --display: "Barlow Condensed", sans-serif;
-  --body: Outfit, sans-serif;
-  --text-heading: 26px;
-  --text-name: 20px;
-  --text-body: 15px;
-  --text-subtext: 12px;
+/* =========================================================
+   SUKI REWARDS
+========================================================= */
+
+.suki-page {
+  background: #f5f7fb;
 }
-* {
-  box-sizing: border-box;
-}
-html,
-body {
-  min-height: 100%;
-  background: var(--paper);
-}
-body {
-  margin: 0;
-  color: var(--ink);
-  font-family: var(--body);
-}
-button,
-a {
-  font: inherit;
-}
-.suki-page .shell {
-  max-width: none;
-  padding: 0;
-}
-.suki-page header {
-  padding: var(--space-page) var(--space-page) 13px;
-}
-.suki-page .phone {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  min-height: calc(100vh - 112px);
-  overflow: visible;
-  background: transparent;
-}
-.screen {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-large) var(--space-page);
-  opacity: 1;
-  text-align: center;
-  transition:
-    opacity 180ms ease,
-    transform 180ms ease;
-}
-.nfc-button {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 132px;
-  height: 132px;
-  margin-bottom: var(--space-large);
-  border: 0;
-  border-radius: 50%;
-  background: var(--papaya);
-  color: var(--paper);
-  cursor: pointer;
-  font-size: 48px;
-  transition: transform 180ms ease;
-}
-.nfc-button::before,
-.nfc-button::after {
-  position: absolute;
-  inset: -16px;
-  border: 2px solid var(--papaya);
-  border-radius: 50%;
-  content: "";
-  opacity: 0.35;
-  animation: pulse 2.2s ease-out infinite;
-}
-.nfc-button::after {
-  inset: -34px;
-  opacity: 0.18;
-  animation-delay: 650ms;
-}
-.nfc-button:hover,
-.nfc-button:focus-visible {
-  transform: scale(1.04);
-}
-.nfc-button:active {
-  transform: scale(0.96);
-}
-.nfc-button:disabled {
-  cursor: wait;
-}
-.nfc-button.is-listening {
-  background: var(--teal);
-  transform: scale(1.02);
-}
-.nfc-button.is-listening::before,
-.nfc-button.is-listening::after {
-  border-color: var(--teal);
-  opacity: 0.7;
-  animation: none;
-}
-.nfc-button.is-detected {
-  background: var(--teal);
-  transform: scale(1.04);
-}
-.nfc-button.is-detected::before,
-.nfc-button.is-detected::after {
-  border-color: var(--teal);
-  opacity: 0.8;
-  animation: none;
-}
-.nfc-button.is-detected .nfc-wave::before {
-  content: "✓";
-  top: 0;
-  right: 0;
-  width: auto;
-  height: auto;
-  border: 0;
-  font-size: 42px;
-  line-height: 1;
-}
-.nfc-button.is-detected .nfc-wave::after {
-  display: none;
-}
-.nfc-button:focus-visible,
-.primary-button:focus-visible,
-.reset-link:focus-visible {
-  outline: 3px solid var(--teal);
-  outline-offset: 4px;
-}
-.nfc-wave {
-  position: relative;
-  z-index: 1;
-  display: block;
-  width: 38px;
-  height: 46px;
-  border-right: 6px solid currentColor;
-  border-radius: 50%;
-  transform: rotate(28deg);
-}
-.nfc-wave::before,
-.nfc-wave::after {
-  position: absolute;
-  top: 8px;
-  border: 5px solid currentColor;
-  border-top-color: transparent;
-  border-bottom-color: transparent;
-  border-radius: 50%;
-  content: "";
-}
-.nfc-wave::before {
-  right: 7px;
-  width: 24px;
-  height: 30px;
-}
-.nfc-wave::after {
-  right: 23px;
-  width: 9px;
-  height: 15px;
-}
-h1,
-h2,
-p {
-  margin: 0;
-}
-h1 {
-  font-family: var(--display);
-  font-size: var(--text-heading);
-  font-weight: 800;
-  line-height: 1.1;
-}
-.scan-copy {
-  max-width: 260px;
-  margin-top: var(--space-small);
-  color: var(--ink-soft);
-  font-size: var(--text-body);
-  line-height: 1.45;
-}
-.scan-hint {
-  margin-top: var(--space-large);
-  color: var(--ink-soft);
-  font-size: var(--text-subtext);
-}
+
 .suki-content {
-  width: min(100%, 980px);
+  width: min(1100px, calc(100% - 40px));
   margin: 0 auto;
-  padding: var(--space-large) var(--space-page);
+  padding: 35px 0 60px;
 }
+
+
+/* =========================================================
+   TOOLBAR
+========================================================= */
+
 .suki-toolbar {
   display: flex;
-  align-items: end;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-medium);
+  gap: 20px;
+  margin-bottom: 25px;
 }
+
 .suki-heading {
-  margin: 0;
-  color: var(--ink);
-  font-family: var(--display);
-  font-size: var(--text-heading);
-  font-weight: 800;
+  margin: 4px 0;
+  font-size: 30px;
+  line-height: 1.15;
+  color: #18233d;
 }
+
 .add-suki-button {
-  padding: 9px 14px;
   border: 0;
-  border-radius: 3px;
-  background: var(--ink);
-  color: var(--white);
-  cursor: pointer;
-  font-family: var(--display);
+  background: #2864e8;
+  color: #fff;
+  border-radius: 10px;
+  padding: 12px 18px;
   font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: 0.2s ease;
 }
-.add-suki-button:hover,
-.add-suki-button:focus-visible {
-  background: var(--ink);
+
+.add-suki-button:hover {
+  background: #1f55ce;
 }
+
+
+/* =========================================================
+   TABS
+========================================================= */
+
 .suki-tabs {
   display: flex;
-  gap: var(--space-large);
-  margin-top: var(--space-large);
-  border-bottom: 1px solid var(--paper-edge);
+  gap: 25px;
+  border-bottom: 1px solid #dbe1ec;
+  margin-bottom: 20px;
 }
+
 .suki-tab {
-  padding: 0 0 var(--space-small);
+  position: relative;
   border: 0;
-  border-bottom: 2px solid transparent;
   background: transparent;
-  color: var(--ink-soft);
+  color: #71809a;
+  padding: 0 18px 13px;
+  font-size: 15px;
+  font-weight: 600;
   cursor: pointer;
-  font-family: var(--display);
-  font-size: var(--text-body);
-  font-weight: 800;
 }
+
+.suki-tab::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 3px;
+  background: transparent;
+  border-radius: 3px 3px 0 0;
+}
+
 .suki-tab.is-active {
-  border-color: var(--teal);
-  color: var(--ink);
+  color: #2864e8;
 }
-.suki-tab:focus-visible,
-.add-suki-button:focus-visible,
-.secondary-button:focus-visible,
-.cancel-button:focus-visible,
-.save-button:focus-visible,
-.dialog-close:focus-visible,
-.suki-row:focus-visible {
-  outline: 3px solid var(--teal);
-  outline-offset: 3px;
+
+.suki-tab.is-active::after {
+  background: #2864e8;
 }
+
+
+/* =========================================================
+   VIEWS
+========================================================= */
+
+.suki-view {
+  width: 100%;
+}
+
 .suki-view[hidden] {
-  display: none;
+  display: none !important;
 }
-.scan-view {
+
+
+/* =========================================================
+   MAIN NFC CARD
+========================================================= */
+
+.nfc-reader-card {
+  min-height: 370px;
+
+  background: #ffffff;
+
+  border: 1px solid #dce3ef;
+  border-radius: 16px;
+
+  box-shadow:
+    0 8px 25px rgba(34, 55, 90, 0.06);
+
   display: flex;
-  min-height: 560px;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--space-large) var(--space-page);
+
   text-align: center;
+
+  padding: 45px 25px;
 }
-.all-sukis-view {
-  display: block;
-  padding-top: var(--space-large);
-}
-.suki-search {
-  position: relative;
-  display: block;
-}
-.suki-search span {
-  position: absolute;
-  top: 8px;
-  left: var(--space-small);
-  color: var(--ink-soft);
-  font-size: var(--text-body);
-}
-.suki-search input {
-  width: 100%;
-  height: 40px;
-  padding: 0 var(--space-small) 0 34px;
-  border: 1px solid var(--paper-edge);
-  border-radius: var(--radius-control);
-  outline: 0;
-  background: var(--paper);
-  color: var(--ink);
-  font-size: var(--text-body);
-}
-.suki-search input:focus {
-  border-color: var(--teal);
-  box-shadow: 0 0 0 3px var(--paper-edge);
-}
-.suki-list {
-  display: grid;
-  gap: var(--space-small);
-  margin-top: var(--space-medium);
-}
-.suki-row {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1.5fr) minmax(130px, 1fr) auto;
+
+
+/* =========================================================
+   NFC BUTTON
+========================================================= */
+
+.nfc-button,
+.nfc-link-icon-button {
+  width: 120px;
+  height: 120px;
+
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+
+  background: #2864e8;
+  color: #ffffff;
+
+  display: flex;
   align-items: center;
-  gap: var(--space-small);
-  width: 100%;
-  padding: var(--space-medium);
-  border: 1px solid var(--paper-edge);
-  border-radius: var(--radius-card);
-  background: var(--paper);
-  color: var(--ink);
+  justify-content: center;
+
   cursor: pointer;
+
+  box-shadow:
+    0 8px 25px rgba(40, 100, 232, 0.25),
+    0 0 0 9px rgba(40, 100, 232, 0.08);
+
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+
+/* =========================================================
+   NFC LOGO
+========================================================= */
+
+.nfc-logo {
+  position: relative;
+
+  width: 64px;
+  height: 64px;
+
+  display: block;
+
+  color: #ffffff;
+
+  flex-shrink: 0;
+}
+
+
+/* =========================================================
+   NFC WAVES
+========================================================= */
+
+.nfc-wave {
+  position: absolute;
+
+  display: block;
+
+  border: 5px solid #ffffff;
+
+  border-left: 0;
+
+  border-top-color: transparent;
+
+  border-bottom-color: transparent;
+
+  border-radius: 0 50% 50% 0;
+}
+
+.wave-1 {
+  width: 13px;
+  height: 27px;
+
+  left: 13px;
+  top: 18px;
+}
+
+.wave-2 {
+  width: 28px;
+  height: 43px;
+
+  left: 13px;
+  top: 10px;
+}
+
+.wave-3 {
+  width: 43px;
+  height: 58px;
+
+  left: 13px;
+  top: 2px;
+}
+
+
+/* =========================================================
+   NFC HOVER / CLICK
+========================================================= */
+
+.nfc-button:hover,
+.nfc-link-icon-button:hover {
+  transform: scale(1.05);
+
+  background: #1f55ce;
+
+  box-shadow:
+    0 12px 30px rgba(40, 100, 232, 0.35),
+    0 0 0 13px rgba(40, 100, 232, 0.1);
+}
+
+.nfc-button:active,
+.nfc-link-icon-button:active {
+  transform: scale(0.94);
+}
+
+.nfc-button:focus-visible,
+.nfc-link-icon-button:focus-visible {
+  outline: 3px solid rgba(40, 100, 232, 0.3);
+  outline-offset: 5px;
+}
+
+
+/* =========================================================
+   SCANNING
+========================================================= */
+
+.nfc-button.scanning,
+.nfc-link-icon-button.scanning {
+  animation: nfcPulse 1.5s infinite;
+}
+
+@keyframes nfcPulse {
+  0% {
+    box-shadow:
+      0 8px 25px rgba(40, 100, 232, 0.25),
+      0 0 0 9px rgba(40, 100, 232, 0.08);
+  }
+
+  50% {
+    box-shadow:
+      0 8px 30px rgba(40, 100, 232, 0.4),
+      0 0 0 20px rgba(40, 100, 232, 0.12);
+  }
+
+  100% {
+    box-shadow:
+      0 8px 25px rgba(40, 100, 232, 0.25),
+      0 0 0 9px rgba(40, 100, 232, 0.08);
+  }
+}
+
+
+/* =========================================================
+   MAIN NFC TEXT
+========================================================= */
+
+.nfc-reader-card h1 {
+  margin: 25px 0 8px;
+  font-size: 23px;
+  color: #18233d;
+}
+
+.scan-copy {
+  max-width: 450px;
+
+  margin: 0;
+
+  color: #68758c;
+
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.scan-hint {
+  margin: 15px 0 0;
+
+  color: #8a96aa;
+
+  font-size: 13px;
+}
+
+
+/* =========================================================
+   NFC WARNING
+========================================================= */
+
+.nfc-browser-warning {
+  width: min(500px, 100%);
+
+  margin-top: 20px;
+
+  padding: 14px 18px;
+
+  border-radius: 10px;
+
+  background: #fff5f4;
+
+  border: 1px solid #f2c7c3;
+
+  color: #a43c35;
+
   text-align: left;
 }
-.suki-row:hover,
-.suki-row:focus-visible {
-  border-color: var(--teal);
-}
-.suki-row.is-ready {
-  border-color: var(--red);
-}
-.suki-avatar {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: var(--teal);
-  color: var(--paper);
-  font-family: var(--display);
-  font-size: var(--text-name);
-  font-weight: 800;
-}
-.suki-row-name,
-.detail-name {
+
+.nfc-browser-warning strong {
   display: block;
-  font-family: var(--display);
-  font-size: var(--text-name);
-  font-weight: 800;
+  margin-bottom: 5px;
 }
-.suki-row-meta,
-.detail-meta {
-  display: block;
-  margin-top: 3px;
-  color: var(--ink-soft);
-  font-size: var(--text-subtext);
-}
-.stamp-dots {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-.stamp-dot {
-  width: 12px;
-  height: 12px;
-  border: 1px dashed var(--stamp-empty);
-  border-radius: 50%;
-}
-.stamp-dot.is-filled {
-  border-style: solid;
-  border-color: var(--teal);
-  background: var(--teal);
-}
-.progress-text {
-  margin-top: 4px;
-  color: var(--teal);
-  font-family: var(--display);
-  font-size: var(--text-subtext);
-  font-weight: 800;
-}
-.status-label {
-  justify-self: end;
-  color: var(--teal);
-  font-size: var(--text-subtext);
-  font-weight: 600;
-  white-space: nowrap;
-}
-.status-label.is-ready {
-  color: var(--red);
-}
-.status-label.is-redeemed {
-  color: var(--ink-soft);
-}
-.empty-list {
-  padding: var(--space-large);
-  border: 1px dashed var(--paper-edge);
-  border-radius: var(--radius-card);
-  color: var(--ink-soft);
-  font-size: var(--text-body);
-  text-align: center;
-}
-.suki-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 10;
-  display: grid;
-  place-items: center;
-  padding: var(--space-page);
-  background: var(--paper-edge);
-}
-.suki-modal[hidden] {
-  display: none;
-}
-.suki-dialog {
-  width: min(100%, 480px);
-  max-height: calc(100vh - (var(--space-page) * 2));
-  overflow: auto;
-  padding: var(--space-large);
-  border: 1px solid var(--paper-edge);
-  border-radius: var(--radius-card);
-  background: var(--paper);
-  box-shadow: var(--shadow-elevated);
-}
-.dialog-heading {
-  display: flex;
-  align-items: start;
-  justify-content: space-between;
-  gap: var(--space-small);
-  margin-bottom: var(--space-large);
-}
-.dialog-heading h2 {
+
+.nfc-browser-warning p {
   margin: 0;
-  font-family: var(--display);
-  font-size: var(--text-heading);
-  font-weight: 800;
-}
-.dialog-close {
-  border: 0;
-  background: transparent;
-  color: var(--ink-soft);
-  cursor: pointer;
-  font-size: var(--text-heading);
-  line-height: 1;
-}
-.field-label {
-  display: block;
-  margin-top: var(--space-medium);
-  color: var(--ink-soft);
-  font-size: var(--text-subtext);
-  font-weight: 600;
-}
-.field-label:first-of-type {
-  margin-top: 0;
-}
-.field-label input {
-  display: block;
-  width: 100%;
-  height: 40px;
-  margin-top: 5px;
-  padding: 0 var(--space-small);
-  border: 1px solid var(--paper-edge);
-  border-radius: var(--radius-control);
-  outline: 0;
-  background: var(--paper);
-  color: var(--ink);
-  font-size: var(--text-body);
-}
-.field-label input:focus {
-  border-color: var(--teal);
-  box-shadow: 0 0 0 3px var(--paper-edge);
-}
-.field-message {
-  display: block;
-  min-height: 16px;
-  margin-top: 4px;
-  color: var(--red);
-  font-size: var(--text-subtext);
-  font-weight: 400;
-}
-.field-message.is-valid {
-  color: var(--teal);
-}
-.optional {
-  color: var(--ink-soft);
-  font-weight: 400;
-}
-.nfc-link-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-small);
-  margin-top: var(--space-large);
-  padding-top: var(--space-medium);
-  border-top: 1px solid var(--paper-edge);
-}
-.nfc-link-row strong {
-  display: block;
-  font-family: var(--display);
-  font-size: var(--text-body);
-}
-.nfc-link-row small {
-  display: block;
-  margin-top: 3px;
-  color: var(--ink-soft);
-  font-size: var(--text-subtext);
-}
-.secondary-button,
-.cancel-button,
-.save-button,
-.detail-action {
-  padding: var(--space-small) var(--space-medium);
-  border: 0;
-  border-radius: var(--radius-control);
-  cursor: pointer;
-  font-family: var(--display);
-  font-size: var(--text-subtext);
-  font-weight: 800;
-}
-.secondary-button,
-.cancel-button {
-  background: var(--paper-edge);
-  color: var(--ink);
-}
-.save-button,
-.detail-action {
-  background: var(--papaya);
-  color: var(--paper);
-}
-.dialog-actions {
-  display: flex;
-  justify-content: end;
-  gap: var(--space-small);
-  margin-top: var(--space-large);
-}
-.detail-progress {
-  margin: var(--space-large) 0;
-  padding: var(--space-medium);
-  border: 1px solid var(--paper-edge);
-  border-radius: var(--radius-card);
-}
-.detail-progress .stamp-dots {
-  gap: var(--space-small);
-}
-.detail-progress .stamp-dot {
-  width: 20px;
-  height: 20px;
-}
-.detail-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-small);
-}
-.detail-actions button:disabled {
-  background: var(--paper-edge);
-  color: var(--ink-soft);
-  cursor: not-allowed;
-}
-.delete-suki-button {
-  color: var(--ink-soft);
-}
-.delete-suki-copy {
-  color: var(--ink-soft);
-  font-size: var(--text-body);
+
+  font-size: 13px;
   line-height: 1.5;
 }
-.delete-suki-dialog .secondary-button {
-  background: var(--ink);
-  color: var(--paper);
+
+.nfc-scan-actions {
+  display: none !important;
 }
-.delete-suki-dialog .secondary-button:hover,
-.delete-suki-dialog .secondary-button:focus-visible {
-  background: var(--teal);
+
+
+/* =========================================================
+   SCANNED CARD
+========================================================= */
+
+.scanned-card-section {
+  margin-top: 20px;
 }
-.detail-status {
-  margin-top: var(--space-small);
-  color: var(--teal);
-  font-size: var(--text-subtext);
+
+.scanned-card-section[hidden] {
+  display: none !important;
+}
+
+.section-label {
+  margin-bottom: 8px;
+
+  color: #7b879a;
+
+  font-size: 11px;
+  font-weight: 800;
+
+  letter-spacing: 0.08em;
+}
+
+.nfc-card-result {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  padding: 18px 20px;
+
+  background: #fff;
+
+  border: 1px solid #dce3ef;
+
+  border-radius: 12px;
+}
+
+.nfc-card-result strong {
+  color: #18233d;
+  font-size: 16px;
+}
+
+.nfc-card-result p {
+  margin: 6px 0 0;
+
+  color: #6e7b91;
+
+  font-size: 13px;
+
+  word-break: break-all;
+}
+
+.nfc-success {
+  width: 34px;
+  height: 34px;
+
+  flex-shrink: 0;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #e9f8ef;
+
+  color: #219653;
+
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.link-card-button {
+  width: 100%;
+
+  margin-top: 10px;
+
+  border: 0;
+
+  border-radius: 9px;
+
+  padding: 12px;
+
+  background: #2864e8;
+
+  color: #fff;
+
+  font-size: 14px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+
+/* =========================================================
+   SEARCH
+========================================================= */
+
+.suki-search {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  width: 100%;
+
+  box-sizing: border-box;
+
+  padding: 11px 14px;
+
+  background: #fff;
+
+  border: 1px solid #dce3ef;
+
+  border-radius: 10px;
+
+  margin-bottom: 15px;
+}
+
+.suki-search span {
+  color: #7c899d;
+  font-size: 20px;
+}
+
+.suki-search input {
+  flex: 1;
+
+  min-width: 0;
+
+  border: 0;
+
+  outline: 0;
+
+  background: transparent;
+
+  color: #18233d;
+
+  font-size: 14px;
+}
+
+
+/* =========================================================
+   SUKI LIST
+========================================================= */
+
+.suki-list {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fill,
+      minmax(280px, 1fr)
+    );
+
+  gap: 15px;
+}
+
+
+/* =========================================================
+   SUKI CARD
+========================================================= */
+
+.suki-card {
+  width: 100%;
+
+  box-sizing: border-box;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 15px;
+
+  padding: 16px;
+
+  border: 1px solid #dce3ef;
+
+  border-radius: 13px;
+
+  background: #ffffff;
+
+  color: #18233d;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.suki-card:hover {
+  transform: translateY(-2px);
+
+  border-color: #c5d3eb;
+
+  box-shadow:
+    0 8px 22px rgba(34, 55, 90, 0.08);
+}
+
+.suki-card > div:first-child {
+  min-width: 0;
+}
+
+.suki-card > div:last-child {
+  flex-shrink: 0;
+
+  text-align: right;
+}
+
+.suki-card strong {
+  display: block;
+
+  color: #18233d;
+
+  font-size: 14px;
+}
+
+.suki-card small {
+  display: block;
+
+  margin-top: 4px;
+
+  color: #7b879a;
+
+  font-size: 11px;
+}
+
+.suki-card > div:last-child strong {
+  color: #2864e8;
+
+  font-size: 14px;
+}
+
+
+/* =========================================================
+   EMPTY RESULTS
+========================================================= */
+
+.empty-results {
+  padding: 35px 20px;
+
+  background: #fff;
+
+  border: 1px dashed #d5dce7;
+
+  border-radius: 12px;
+
+  text-align: center;
+
+  color: #7c899d;
+
+  font-size: 13px;
+}
+
+
+/* =========================================================
+   MODALS
+========================================================= */
+
+.suki-modal {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 1000;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+
+  background: rgba(18, 28, 48, 0.5);
+
+  backdrop-filter: blur(3px);
+}
+
+.suki-modal[hidden] {
+  display: none !important;
+}
+
+.suki-dialog {
+  width: min(520px, 100%);
+
+  max-height: 90vh;
+
+  overflow-y: auto;
+
+  box-sizing: border-box;
+
+  background: #fff;
+
+  border-radius: 16px;
+
+  padding: 25px;
+
+  box-shadow:
+    0 25px 70px rgba(20, 35, 60, 0.25);
+}
+
+
+/* =========================================================
+   DIALOG HEADING
+========================================================= */
+
+.dialog-heading {
+  display: flex;
+
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  margin-bottom: 25px;
+}
+
+.dialog-heading h2 {
+  margin: 4px 0 0;
+
+  color: #18233d;
+
+  font-size: 24px;
+}
+
+.dialog-close {
+  width: 34px;
+  height: 34px;
+
+  flex-shrink: 0;
+
+  border: 0;
+
+  border-radius: 8px;
+
+  background: #f1f4f8;
+
+  color: #56647b;
+
+  font-size: 22px;
+
+  cursor: pointer;
+}
+
+
+/* =========================================================
+   FORM
+========================================================= */
+
+.field-label {
+  display: block;
+
+  margin-bottom: 16px;
+
+  color: #29344b;
+
+  font-size: 13px;
+
+  font-weight: 700;
+}
+
+.field-label input {
+  display: block;
+
+  width: 100%;
+
+  box-sizing: border-box;
+
+  margin-top: 7px;
+
+  padding: 11px 12px;
+
+  border: 1px solid #d5dce8;
+
+  border-radius: 8px;
+
+  outline: 0;
+
+  background: #fff;
+
+  color: #18233d;
+
+  font-size: 14px;
+}
+
+.field-label input:focus {
+  border-color: #2864e8;
+
+  box-shadow:
+    0 0 0 3px rgba(40, 100, 232, 0.1);
+}
+
+.field-label .optional {
+  color: #8b96a8;
+
+  font-weight: 400;
+}
+
+
+/* =========================================================
+   ADD SUKI NFC
+========================================================= */
+
+.nfc-link-box {
+  width: 100%;
+
+  box-sizing: border-box;
+
+  margin-top: 20px;
+
+  padding: 25px 15px;
+
+  background: #f8faff;
+
+  border: 1px solid #dce3ef;
+
+  border-radius: 12px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+}
+
+.nfc-link-action {
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  text-align: center;
+}
+
+.nfc-link-action strong {
+  margin-top: 22px;
+
+  color: #18233d;
+
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.nfc-link-action small {
+  margin-top: 6px;
+
+  color: #7c899d;
+
+  font-size: 12px;
+
+  line-height: 1.4;
+
+  text-align: center;
+}
+
+
+/* =========================================================
+   CARD ID
+========================================================= */
+
+.card-id-display {
+  margin-top: 12px;
+
+  padding: 12px 14px;
+
+  border-radius: 9px;
+
+  background: #edf8f1;
+
+  border: 1px solid #ccebd7;
+}
+
+.card-id-display[hidden] {
+  display: none !important;
+}
+
+.card-id-display span {
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: #568067;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  text-transform: uppercase;
+}
+
+.card-id-display strong {
+  display: block;
+
+  color: #247443;
+
+  font-size: 13px;
+
+  word-break: break-all;
+}
+
+
+/* =========================================================
+   ACTIONS
+========================================================= */
+
+.dialog-actions {
+  display: flex;
+
+  justify-content: flex-end;
+
+  gap: 10px;
+
+  margin-top: 25px;
+}
+
+.cancel-button,
+.save-button {
+  border: 0;
+
+  border-radius: 8px;
+
+  padding: 11px 18px;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.cancel-button {
+  background: #edf0f4;
+
+  color: #526078;
+}
+
+.save-button {
+  background: #2864e8;
+
+  color: #fff;
+}
+
+.save-button:disabled {
+  opacity: 0.5;
+
+  cursor: not-allowed;
+}
+
+
+/* =========================================================
+   DELETE
+========================================================= */
+
+.delete-suki-copy {
+  color: #68758c;
+
+  line-height: 1.6;
+
+  font-size: 14px;
+}
+
+.delete-button {
+  color: #c43e38;
+}
+
+
+/* =========================================================
+   CLEAN SUKI DETAILS
+========================================================= */
+
+.detail-dialog {
+  width: min(620px, 100%);
+
+  scrollbar-width: thin;
+  scrollbar-color: #cbd3df transparent;
+}
+
+.detail-dialog::-webkit-scrollbar {
+  width: 6px;
+}
+
+.detail-dialog::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.detail-dialog::-webkit-scrollbar-thumb {
+  background: #cbd3df;
+  border-radius: 999px;
+}
+
+
+/* =========================================================
+   SUKI PROFILE
+========================================================= */
+
+.suki-profile {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 18px;
+}
+
+
+/* =========================================================
+   PROFILE HEADER
+========================================================= */
+
+.suki-profile-header {
+  display: flex;
+
+  align-items: center;
+
+  gap: 15px;
+
+  padding: 4px 0 20px;
+
+  border-bottom: 1px solid #e5e9f0;
+}
+
+.suki-avatar {
+  width: 58px;
+  height: 58px;
+
+  flex-shrink: 0;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 14px;
+
+  background: #eaf1ff;
+
+  color: #2864e8;
+
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.suki-profile-heading {
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: flex-start;
+}
+
+.suki-profile-label {
+  margin-bottom: 3px;
+
+  color: #8792a5;
+
+  font-size: 10px;
+  font-weight: 800;
+
+  letter-spacing: 0.12em;
+}
+
+.suki-profile-heading h3 {
+  margin: 0;
+
+  color: #18233d;
+
+  font-size: 21px;
+
+  line-height: 1.25;
+
+  word-break: break-word;
+}
+
+.suki-active-badge {
+  margin-top: 6px;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  padding: 4px 9px;
+
+  border-radius: 999px;
+
+  background: #e9f8ef;
+
+  color: #247443;
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   DETAIL SECTIONS
+========================================================= */
+
+.suki-info-section,
+.suki-reward-section,
+.suki-history-section {
+  padding: 18px;
+
+  background: #ffffff;
+
+  border: 1px solid #e2e7ef;
+
+  border-radius: 14px;
+}
+
+.suki-section-heading {
+  display: flex;
+
+  align-items: center;
+
+  gap: 11px;
+
+  margin-bottom: 16px;
+}
+
+.suki-section-icon {
+  width: 32px;
+  height: 32px;
+
+  flex-shrink: 0;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 9px;
+
+  background: #f0f4fb;
+
+  color: #2864e8;
+
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.suki-section-heading h4 {
+  margin: 0;
+
+  color: #18233d;
+
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.suki-section-heading p {
+  margin: 3px 0 0;
+
+  color: #8a95a7;
+
+  font-size: 11px;
+}
+
+
+/* =========================================================
+   CUSTOMER INFORMATION
+========================================================= */
+
+.suki-info-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 10px;
+}
+
+.suki-info-item {
+  min-width: 0;
+
+  padding: 13px;
+
+  background: #f7f9fc;
+
+  border-radius: 10px;
+}
+
+.suki-info-full {
+  grid-column: 1 / -1;
+}
+
+.suki-info-label {
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: #8994a7;
+
+  font-size: 9px;
+  font-weight: 800;
+
+  letter-spacing: 0.08em;
+}
+
+.suki-info-item strong {
+  display: block;
+
+  color: #263149;
+
+  font-size: 13px;
+
+  line-height: 1.4;
+
+  word-break: break-word;
+}
+
+.suki-info-item .nfc-linked {
+  color: #247443;
+}
+
+.suki-info-item .nfc-not-linked {
+  color: #8994a7;
+
+  font-weight: 500;
+}
+
+
+/* =========================================================
+   REWARD STATS
+========================================================= */
+
+.suki-reward-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 10px;
+
+  margin-bottom: 14px;
+}
+
+.suki-reward-stat {
+  padding: 15px;
+
+  background: #f7f9fc;
+
+  border-radius: 10px;
+}
+
+.suki-reward-stat span {
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: #8994a7;
+
+  font-size: 9px;
+  font-weight: 800;
+
+  letter-spacing: 0.08em;
+}
+
+.suki-reward-stat strong {
+  display: block;
+
+  color: #18233d;
+
+  font-size: 21px;
+
+  line-height: 1.2;
+}
+
+.suki-reward-stat small {
+  color: #8a95a7;
+
+  font-size: 12px;
   font-weight: 600;
 }
-.detail-status.is-ready {
-  color: var(--red);
+
+
+/* =========================================================
+   PROGRESS
+========================================================= */
+
+.suki-progress-box {
+  padding: 14px;
+
+  border-radius: 11px;
+
+  background: #f7f9fc;
 }
-.detail-scan-status {
-  margin-top: var(--space-small);
-  color: var(--ink-soft);
-  font-size: var(--text-subtext);
+
+.suki-progress-header,
+.suki-progress-footer {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 10px;
 }
-@keyframes pulse {
-  0% {
-    opacity: 0.35;
-    transform: scale(0.82);
-  }
-  70%,
-  100% {
-    opacity: 0;
-    transform: scale(1.18);
-  }
+
+.suki-progress-header {
+  margin-bottom: 9px;
 }
-@media (max-width: 760px) {
-  .suki-page header {
-    padding: var(--space-small) var(--space-page) 13px;
-  }
-  .suki-page .date {
-    display: none;
-  }
-  .suki-page .phone {
-    min-height: calc(100vh - 92px);
-  }
-  .suki-row {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-  }
-  .suki-row .stamp-progress {
-    grid-column: 2 / -1;
-  }
+
+.suki-progress-header span {
+  color: #4e5c73;
+
+  font-size: 12px;
+  font-weight: 700;
 }
-@media (max-width: 480px) {
-  .suki-toolbar {
-    align-items: start;
-    flex-direction: column;
+
+.suki-progress-header strong {
+  color: #2864e8;
+
+  font-size: 12px;
+}
+
+.suki-progress-track {
+  width: 100%;
+  height: 8px;
+
+  overflow: hidden;
+
+  border-radius: 999px;
+
+  background: #e1e5eb;
+}
+
+.suki-progress-fill {
+  height: 100%;
+
+  border-radius: inherit;
+
+  background: #2864e8;
+
+  transition: width 0.3s ease;
+}
+
+.suki-progress-footer {
+  margin-top: 8px;
+
+  color: #8a95a7;
+
+  font-size: 10px;
+}
+
+
+/* =========================================================
+   TRANSACTION HISTORY
+========================================================= */
+
+.suki-history-list {
+  display: grid;
+
+  gap: 9px;
+}
+
+.suki-history-item {
+  padding: 13px;
+
+  border: 1px solid #e4e8ef;
+
+  border-radius: 10px;
+
+  background: #fafbfc;
+}
+
+.suki-history-main {
+  display: flex;
+
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 15px;
+
+  margin-bottom: 11px;
+}
+
+.suki-history-main strong {
+  color: #263149;
+
+  font-size: 13px;
+}
+
+.suki-history-main span {
+  flex-shrink: 0;
+
+  color: #8a95a7;
+
+  font-size: 10px;
+}
+
+.suki-history-details {
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: 7px;
+}
+
+.suki-history-details span {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 5px;
+
+  padding: 5px 8px;
+
+  border-radius: 6px;
+
+  background: #f0f3f7;
+
+  color: #7b8799;
+
+  font-size: 10px;
+}
+
+.suki-history-details strong {
+  color: #39465d;
+
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   EMPTY HISTORY
+========================================================= */
+
+.suki-empty-history {
+  padding: 25px 15px;
+
+  text-align: center;
+
+  border: 1px dashed #d8dee8;
+
+  border-radius: 10px;
+
+  background: #fafbfc;
+}
+
+.suki-empty-icon {
+  width: 38px;
+  height: 38px;
+
+  margin: 0 auto 9px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 10px;
+
+  background: #f0f3f7;
+
+  color: #8b96a8;
+
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.suki-empty-history strong {
+  display: block;
+
+  color: #4c5870;
+
+  font-size: 13px;
+}
+
+.suki-empty-history p {
+  margin: 4px 0 0;
+
+  color: #929cad;
+
+  font-size: 11px;
+
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   DETAIL ACTIONS
+========================================================= */
+
+.suki-detail-actions {
+  display: flex;
+
+  justify-content: flex-end;
+
+  align-items: center;
+
+  gap: 8px;
+
+  padding-top: 3px;
+}
+
+.suki-action-button {
+  border: 0;
+
+  border-radius: 8px;
+
+  padding: 10px 14px;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.suki-action-button:active {
+  transform: scale(0.97);
+}
+
+.suki-action-button.primary {
+  background: #2864e8;
+
+  color: #ffffff;
+}
+
+.suki-action-button.primary:hover {
+  background: #1f55ce;
+}
+
+.suki-action-button.secondary {
+  background: #edf1f6;
+
+  color: #526078;
+}
+
+.suki-action-button.secondary:hover {
+  background: #e3e8ef;
+}
+
+.suki-action-button.danger {
+  background: #fff0ef;
+
+  color: #c43e38;
+}
+
+.suki-action-button.danger:hover {
+  background: #ffe3e1;
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 700px) {
+
+  .suki-content {
+    width: min(100% - 24px, 1100px);
+
+    padding-top: 25px;
   }
+
+  .suki-heading {
+    font-size: 25px;
+  }
+
   .add-suki-button {
-    align-self: stretch;
+    padding: 10px 13px;
+
+    font-size: 13px;
   }
-  .suki-row {
-    padding: var(--space-small);
+
+  .nfc-reader-card {
+    min-height: 330px;
+
+    padding: 35px 18px;
   }
-  .suki-row .status-label {
-    font-size: 11px;
+
+  .nfc-button,
+  .nfc-link-icon-button {
+    width: 105px;
+    height: 105px;
+  }
+
+  .nfc-logo {
+    width: 58px;
+    height: 58px;
+  }
+
+  .wave-1 {
+    width: 12px;
+    height: 24px;
+
+    left: 12px;
+    top: 17px;
+  }
+
+  .wave-2 {
+    width: 25px;
+    height: 39px;
+
+    left: 12px;
+    top: 9px;
+  }
+
+  .wave-3 {
+    width: 39px;
+    height: 52px;
+
+    left: 12px;
+    top: 3px;
+  }
+
+  .nfc-reader-card h1 {
+    font-size: 21px;
+  }
+
+  .suki-dialog {
+    padding: 20px;
+
+    border-radius: 13px;
+  }
+
+  .suki-list {
+    grid-template-columns: 1fr;
+  }
+
+
+  /* =======================================================
+     MOBILE SUKI DETAILS
+  ======================================================= */
+
+  .detail-dialog {
+    width: 100%;
+
+    max-height: 92vh;
+  }
+
+  .suki-profile {
+    gap: 12px;
+  }
+
+  .suki-profile-header {
+    padding-bottom: 16px;
+  }
+
+  .suki-avatar {
+    width: 50px;
+    height: 50px;
+
+    border-radius: 12px;
+
+    font-size: 19px;
+  }
+
+  .suki-profile-heading h3 {
+    font-size: 18px;
+  }
+
+  .suki-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .suki-info-full {
+    grid-column: auto;
+  }
+
+  .suki-reward-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .suki-detail-actions {
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    padding-top: 5px;
+  }
+
+  .suki-action-button.primary {
+    grid-column: 1 / -1;
+  }
+}
+
+
+/* =========================================================
+   SMALL PHONES
+========================================================= */
+
+@media (max-width: 430px) {
+
+  .suki-content {
+    width: calc(100% - 18px);
+  }
+
+  .suki-heading {
+    font-size: 22px;
+  }
+
+  .suki-toolbar {
+    gap: 10px;
+  }
+
+  .nfc-reader-card {
+    min-height: 300px;
+
+    padding: 30px 14px;
+  }
+
+  .nfc-button,
+  .nfc-link-icon-button {
+    width: 95px;
+    height: 95px;
+  }
+
+  .nfc-logo {
+    width: 52px;
+    height: 52px;
+  }
+
+  .wave-1 {
+    width: 10px;
+    height: 21px;
+
+    left: 11px;
+    top: 15px;
+  }
+
+  .wave-2 {
+    width: 22px;
+    height: 35px;
+
+    left: 11px;
+    top: 8px;
+  }
+
+  .wave-3 {
+    width: 35px;
+    height: 47px;
+
+    left: 11px;
+    top: 2px;
+  }
+
+  .nfc-link-box {
+    padding: 22px 12px;
+  }
+
+  .dialog-actions {
+    flex-direction: column-reverse;
+  }
+
+  .dialog-actions button {
+    width: 100%;
+  }
+
+  .suki-info-section,
+  .suki-reward-section,
+  .suki-history-section {
+    padding: 14px;
+  }
+
+  .suki-profile-heading h3 {
+    font-size: 17px;
+  }
+
+  .suki-reward-stat strong {
+    font-size: 18px;
+  }
+
+  .suki-progress-footer {
+    flex-direction: column;
+
+    align-items: flex-start;
+  }
+
+  .suki-history-main {
+    flex-direction: column;
+
+    gap: 4px;
+  }
+}
+
+
+/* =========================================================
+   TOUCH DEVICES
+========================================================= */
+
+@media (hover: none) {
+
+  .nfc-button:hover,
+  .nfc-link-icon-button:hover {
+    transform: none;
+  }
+
+  .nfc-button:active,
+  .nfc-link-icon-button:active {
+    transform: scale(0.94);
+  }
+
+  .suki-card:hover {
+    transform: none;
+
+    box-shadow: none;
+  }
+}
+
+
+/* =========================================================
+   ACCESSIBILITY
+========================================================= */
+
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid rgba(40, 100, 232, 0.25);
+
+  outline-offset: 2px;
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+  .nfc-button,
+  .nfc-link-icon-button,
+  .suki-card,
+  .suki-action-button {
+    transition: none;
+  }
+
+  .nfc-button.scanning,
+  .nfc-link-icon-button.scanning {
+    animation: none;
+  }
+
+  .suki-progress-fill {
+    transition: none;
   }
 }
