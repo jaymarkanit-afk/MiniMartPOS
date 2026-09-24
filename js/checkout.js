@@ -238,6 +238,32 @@ async function scanSukiCard() {
         return;
       }
 
+      if (!suki.id || !suki.name) {
+        selectedSukiId = "";
+
+        if (scanButton) {
+          scanButton.disabled = false;
+
+          scanButton.textContent = "Tap Suki's Card";
+        }
+
+        if (scanStatus) {
+          scanStatus.textContent =
+            "This card can't be used right now. Please ask the manager to check the Suki account.";
+
+          scanStatus.classList.add("is-error");
+        }
+
+        showCheckoutToast(
+          "This card can't be used right now. Please ask the manager to check the Suki account.",
+        );
+
+        updateSukiCheckoutInfo();
+        updatePayment();
+
+        return;
+      }
+
       selectedSukiId = suki.id;
 
       updateSukiCheckoutInfo();

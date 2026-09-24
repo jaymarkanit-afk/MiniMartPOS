@@ -366,14 +366,8 @@ async function linkNfcCard() {
     if (existing) {
       pendingNfcId = "";
 
-      linkStatus.innerHTML = `
-          <strong>
-            ✕ Card already linked
-          </strong>
-          <br>
-          This card belongs to
-          ${escapeHtml(existing.name)}.
-        `;
+      linkStatus.textContent =
+        "This card is already linked to an existing account.";
 
       linkNfcButton.disabled = false;
 
@@ -444,7 +438,7 @@ function saveSuki(event) {
     const duplicate = sukis.find((suki) => suki.nfcId === pendingNfcId);
 
     if (duplicate) {
-      showSukiToast(`This card is already linked to ${duplicate.name}.`);
+      showSukiToast("This card is already linked to an existing account.");
 
       return;
     }
@@ -522,6 +516,23 @@ async function scanExistingSuki() {
 
       if (scanStatus) {
         scanStatus.textContent = `NFC ID ${nfcId} is not linked to a Suki customer.`;
+      }
+
+      if (scanButton) {
+        scanButton.disabled = false;
+      }
+
+      return;
+    }
+
+    if (!suki.id || !suki.name) {
+      if (scanTitle) {
+        scanTitle.textContent = "Suki Card Unavailable";
+      }
+
+      if (scanStatus) {
+        scanStatus.textContent =
+          "This card can't be used right now. Please ask the manager to check the Suki account.";
       }
 
       if (scanButton) {
@@ -1306,7 +1317,8 @@ async function linkNfcToSelectedSuki() {
       }
 
       if (linkStatus) {
-        linkStatus.textContent = `Card already linked to ${existing.name}.`;
+        linkStatus.textContent =
+          "This card is already linked to an existing account.";
       }
 
       return;
