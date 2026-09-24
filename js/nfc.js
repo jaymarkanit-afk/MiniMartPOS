@@ -91,6 +91,9 @@ window.scanNfcCard = async function scanNfcCard(onCardDetected, onError) {
 
     nfcReading = false;
 
-    showNfcError("Could not start NFC scanning: " + error.message, onError);
+    showNfcError(
+      "We couldn't access NFC. Please allow NFC permission for this site and try again.",
+      onError,
+    );
   }
 };

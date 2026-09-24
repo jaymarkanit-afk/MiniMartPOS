@@ -203,7 +203,7 @@ function errorText(error, signingUp) {
     return "Please check your email to verify your account before signing in.";
   if (text.includes("password"))
     return signingUp
-      ? "Your password does not meet Supabase's password policy."
+      ? "Your password does not meet the password requirements. Please choose a stronger password."
       : "Incorrect email or password.";
   if (text.includes("rate limit") || text.includes("too many"))
     return "Too many requests. Please wait a moment and try again.";
@@ -260,6 +260,8 @@ async function submitAuth(event) {
     failedAttempts = 0;
     window.location.replace("index.html");
   } catch (error) {
+    console.error("Authentication error:", error);
+
     if (mode === "signIn") {
       failedAttempts += 1;
       if (failedAttempts >= 5) startLockout();
@@ -315,7 +317,7 @@ authForm.addEventListener("submit", submitAuth);
 setMode("signIn");
 if (!window.supabaseAuthConfigured)
   showMessage(
-    "Authentication is not configured. Add the Supabase URL and anon key.",
+    "Sign-in is temporarily unavailable. Please contact the administrator.",
   );
 if (window.supabaseAuthIsLocalDemo)
   showMessage("Temporary local login: admin@gmail.com", "success");
