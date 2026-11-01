@@ -297,28 +297,28 @@ function reportStorageIssue(key, status, error = null) {
   window.dispatchEvent(new CustomEvent("storage-corrupt", { detail: issue }));
 }
 
-function read(key, fallback) {
+function read(key, fallback, validator = null) {
   let saved;
   try {
     saved = localStorage.getItem(key);
   } catch (error) {
     reportStorageIssue(key, "corrupt", error);
-    return { status: "corrupt", value: clone(fallback), error };
+    return { status: "corrupt", value: clone(fallback), error, raw: null };
   }
-  if (saved === null) return { status: "missing", value: clone(fallback), error: null };
+  if (saved === null) return { status: "missing", value: clone(fallback), error: null, raw: null };
   try {
     const value = JSON.parse(saved);
-    if (!isValidStoredValue(key, value, fallback)) {
+    if (!isValidStoredValue(key, value, fallback) || (validator && !validator(value))) {
       backupCorruptValue(key, saved);
       const error = new Error("Stored value has the wrong shape.");
       reportStorageIssue(key, "invalid", error);
-      return { status: "invalid", value: clone(fallback), error };
+      return { status: "invalid", value: clone(fallback), error, raw: saved };
     }
-    return { status: "ok", value, error: null };
+    return { status: "ok", value, error: null, raw: saved };
   } catch (error) {
     backupCorruptValue(key, saved);
     reportStorageIssue(key, "corrupt", error);
-    return { status: "corrupt", value: clone(fallback), error };
+    return { status: "corrupt", value: clone(fallback), error, raw: saved };
   }
 }
 
@@ -388,6 +388,9 @@ function normalizeProducts(products) {
 }
 
 window.miniMartDB = {
+  readStorage(key, fallback, validator = null) {
+    return read(key, fallback, validator);
+  },
   isKnownCost,
   units: () => UNIT_RULES,
   normalizeUnit,

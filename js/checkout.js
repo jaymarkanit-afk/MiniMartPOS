@@ -9,7 +9,10 @@ void (async () => {
     if (client) await client.auth.signOut();
 
     window.location.replace("login.html");
+    return;
   }
+  window.miniMartAuthReady = true;
+  window.dispatchEvent(new Event("miniMartAuthReady"));
 })();
 
 const cart = new Map();
@@ -51,9 +54,15 @@ let measuredEditName = null;
 let measuredMode = "quantity";
 let saleInProgress = false;
 let measureReturnFocus = null;
-const CART_STORAGE_KEY = "miniMartActiveCart";
 const HELD_CARTS_KEY = "miniMartHeldCarts";
 const SHIFT_STORAGE_KEY = "miniMartCurrentShift";
+const CHECKOUT_DRAFT_KEY = "miniMartCheckoutDraft";
+const CHECKOUT_DRAFT_VERSION = 1;
+const CHECKOUT_DRAFT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const draftStatus = document.getElementById("checkoutDraftStatus");
+let draftSaveTimer = null;
+let draftWriteFailed = false;
+let restoringDraft = false;
 
 const measureModal = document.getElementById("measureModal");
 const measureValue = document.getElementById("measureValue");
@@ -280,6 +289,163 @@ function showCheckoutToast(message, type = "error") {
   setTimeout(() => toast.remove(), 4000);
 }
 
+function setDraftStatus(message, isError = false) {
+  if (!draftStatus) return;
+  draftStatus.textContent = message;
+  draftStatus.classList.toggle("is-error", isError);
+}
+
+function draftSnapshot() {
+  return {
+    version: CHECKOUT_DRAFT_VERSION,
+    updatedAt: new Date().toISOString(),
+    items: [...cart.values()].map((item) => ({
+      name: item.name,
+      priceAtSave: Number(item.price),
+      quantity: item.quantity,
+      unit: item.unit || "piece",
+      amountMode: Boolean(item.amountMode),
+      inputValue: item.inputValue ?? "",
+    })),
+    selectedSukiId,
+    rewardAmount: document.getElementById("rewardAmount")?.value || "0",
+    paymentMethod: paymentMethod.value,
+    amountGiven: amountGiven.value,
+    cardGiven: cardGiven.value,
+  };
+}
+
+function saveCheckoutDraft() {
+  draftSaveTimer = null;
+  if (restoringDraft) return true;
+  if (!cart.size) {
+    const result = safeWrite(CHECKOUT_DRAFT_KEY, null, { remove: true });
+    draftWriteFailed = !result.ok;
+    if (result.ok) setDraftStatus("");
+    else {
+      setDraftStatus("Could not save draft", true);
+      showStorageError(storageErrorMessage(result));
+    }
+    return result.ok;
+  }
+  setDraftStatus("Saving...");
+  const result = safeWrite(CHECKOUT_DRAFT_KEY, draftSnapshot());
+  draftWriteFailed = !result.ok;
+  if (result.ok) setDraftStatus("Draft saved");
+  else {
+    setDraftStatus("Could not save draft", true);
+    showStorageError(storageErrorMessage(result));
+  }
+  return result.ok;
+}
+
+function scheduleCheckoutDraftSave() {
+  if (draftSaveTimer) window.clearTimeout(draftSaveTimer);
+  setDraftStatus("Saving...");
+  draftSaveTimer = window.setTimeout(saveCheckoutDraft, 300);
+}
+
+function clearCheckoutDraft() {
+  if (draftSaveTimer) window.clearTimeout(draftSaveTimer);
+  draftSaveTimer = null;
+  const result = safeWrite(CHECKOUT_DRAFT_KEY, null, { remove: true });
+  draftWriteFailed = !result.ok;
+  if (!result.ok) {
+    setDraftStatus("Could not save draft", true);
+    showStorageError(storageErrorMessage(result));
+  } else {
+    setDraftStatus("");
+  }
+  return result.ok;
+}
+
+function validDraft(value) {
+  return value?.version === CHECKOUT_DRAFT_VERSION &&
+    typeof value.updatedAt === "string" &&
+    Array.isArray(value.items) &&
+    value.items.every((item) =>
+      item && typeof item.name === "string" &&
+      Number.isFinite(Number(item.quantity)) &&
+      Number(item.quantity) > 0 &&
+      typeof item.unit === "string" &&
+      typeof item.amountMode === "boolean",
+    );
+}
+
+function restoreCheckoutDraft() {
+  const result = window.miniMartDB.readStorage(CHECKOUT_DRAFT_KEY, null, validDraft);
+  if (result.status === "missing") return;
+  if (result.status !== "ok") {
+    cart.clear();
+    return;
+  }
+  const updatedAt = new Date(result.value.updatedAt).getTime();
+  if (!Number.isFinite(updatedAt) || Date.now() - updatedAt > CHECKOUT_DRAFT_MAX_AGE_MS) {
+    clearCheckoutDraft();
+    return;
+  }
+
+  const products = window.miniMartDB.products();
+  let adjusted = 0;
+  restoringDraft = true;
+  result.value.items.forEach((saved) => {
+    const product = products.find((entry) => entry.name === saved.name);
+    if (!product) {
+      adjusted += 1;
+      return;
+    }
+    const unit = window.miniMartDB.normalizeUnit(product.unit);
+    const stock = Math.max(0, Number(product.stock) || 0);
+    let quantity;
+    let inputValue = saved.inputValue;
+    if (saved.amountMode) {
+      const amount = parseMeasureValue(saved.inputValue);
+      quantity = amount === null || Number(product.price) <= 0
+        ? 0
+        : floorQuantity(amount / Number(product.price), unit);
+      inputValue = amount === null ? "" : String(amount);
+    } else {
+      quantity = window.miniMartDB.roundQuantity(Number(saved.quantity), unit);
+    }
+    const clamped = Math.min(quantity, stock);
+    if (
+      clamped !== quantity ||
+      unit !== saved.unit ||
+      Number(product.price) !== Number(saved.priceAtSave)
+    ) adjusted += 1;
+    if (clamped <= 0) {
+      adjusted += 1;
+      return;
+    }
+    cart.set(product.name, {
+      name: product.name,
+      price: Number(product.price),
+      quantity: clamped,
+      unit,
+      amountMode: Boolean(saved.amountMode),
+      inputValue,
+      lineTotal: window.miniMartDB.roundMoney(
+        saved.amountMode
+          ? Math.min(Number(inputValue || 0), clamped * Number(product.price))
+          : clamped * Number(product.price),
+      ),
+    });
+  });
+  selectedSukiId = typeof result.value.selectedSukiId === "string"
+    ? result.value.selectedSukiId
+    : "";
+  const rewardInput = document.getElementById("rewardAmount");
+  if (rewardInput) rewardInput.value = result.value.rewardAmount || "0";
+  amountGiven.value = result.value.amountGiven || "";
+  cardGiven.value = result.value.cardGiven || "0";
+  paymentMethod.value = ["cash", "card", "gcash", "split"].includes(result.value.paymentMethod)
+    ? result.value.paymentMethod
+    : "cash";
+  updatePaymentMethodUI();
+  restoringDraft = false;
+  if (adjusted) showCheckoutToast(`${adjusted} item${adjusted === 1 ? "" : "s"} were adjusted because stock or prices changed.`, "error");
+}
+
 window.showNfcToast = showCheckoutToast;
 
 /* =========================================================
@@ -296,14 +462,12 @@ function legacySukiId(suki, index) {
 }
 
 function getSukis() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(SUKI_STORAGE_KEY) || "[]");
-
-    if (!Array.isArray(saved)) {
-      return [];
-    }
-
-    return saved.map((suki, index) => ({
+  const saved = window.miniMartDB.readStorage(
+    SUKI_STORAGE_KEY,
+    [],
+    (value) => Array.isArray(value),
+  ).value;
+  return saved.map((suki, index) => ({
       ...suki,
       id: suki.id || legacySukiId(suki, index),
       nfcId: window.normalizeNfcId ? window.normalizeNfcId(suki.nfcId || "") : String(suki.nfcId || "").trim().toUpperCase(),
@@ -320,9 +484,6 @@ function getSukis() {
 
       history: Array.isArray(suki.history) ? suki.history : [],
     }));
-  } catch {
-    return [];
-  }
 }
 
 function saveSukis(sukis) {
@@ -426,8 +587,10 @@ function refreshSukiSelector() {
     updateSukiCheckoutInfo();
   } else {
     selectedSukiId = "";
+    scheduleCheckoutDraftSave();
     updateSukiCheckoutInfo();
   }
+  scheduleCheckoutDraftSave();
 }
 
 async function scanSukiCard() {
@@ -452,6 +615,7 @@ async function scanSukiCard() {
 
       if (!suki) {
         selectedSukiId = "";
+        scheduleCheckoutDraftSave();
 
         if (scanButton) {
           scanButton.disabled = false;
@@ -500,6 +664,7 @@ async function scanSukiCard() {
       }
 
       selectedSukiId = suki.id;
+      scheduleCheckoutDraftSave();
 
       updateSukiCheckoutInfo();
       updatePayment();
@@ -551,12 +716,7 @@ function transactionNumber() {
 }
 
 function getCurrentShift() {
-  try {
-    return JSON.parse(localStorage.getItem(SHIFT_STORAGE_KEY) || "null");
-  } catch (error) {
-    console.error("Failed to read current shift:", error);
-    return null;
-  }
+  return window.miniMartDB.readStorage(SHIFT_STORAGE_KEY, null).value;
 }
 
 function ensureCurrentShift() {
@@ -620,7 +780,11 @@ function manageShift() {
     return;
   }
   const expectedCash = Number(current.openingCash) + Number(current.cashSales || 0);
-  const history = JSON.parse(localStorage.getItem("miniMartShiftHistory") || "[]");
+  const history = window.miniMartDB.readStorage(
+    "miniMartShiftHistory",
+    [],
+    (value) => Array.isArray(value),
+  ).value;
   history.unshift({
     ...current,
     closedAt: new Date().toISOString(),
@@ -633,34 +797,13 @@ function manageShift() {
     showStorageError(storageErrorMessage(historyResult));
     return;
   }
-  localStorage.removeItem(SHIFT_STORAGE_KEY);
+  const removeResult = safeWrite(SHIFT_STORAGE_KEY, null, { remove: true });
+  if (!removeResult.ok) {
+    showStorageError(storageErrorMessage(removeResult));
+    return;
+  }
   updateShiftButton();
   showCheckoutToast(`Shift closed. Variance: ${peso(closingCash - expectedCash)}.`, "success");
-}
-
-function saveActiveCart() {
-  const result = safeWrite(CART_STORAGE_KEY, {
-    items: [...cart.values()],
-    amountGiven: amountGiven.value,
-    paymentMethod: paymentMethod.value,
-    cardGiven: cardGiven.value,
-  });
-  if (!result.ok) showStorageError(storageErrorMessage(result));
-}
-
-function restoreActiveCart() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(CART_STORAGE_KEY) || "null");
-    if (!saved?.items?.length) return;
-    saved.items.forEach((item) => cart.set(item.name, item));
-    amountGiven.value = saved.amountGiven || "";
-    paymentMethod.value = saved.paymentMethod || "cash";
-    cardGiven.value = saved.cardGiven || "0";
-    updatePaymentMethodUI();
-  } catch (error) {
-    console.error("Failed to restore active cart:", error);
-    localStorage.removeItem(CART_STORAGE_KEY);
-  }
 }
 
 function getSelectedSuki() {
@@ -739,7 +882,11 @@ function safeAccent(value) {
 function renderProducts() {
   const products = window.miniMartDB.products();
   const favorites = new Set(
-    JSON.parse(localStorage.getItem("miniMartFavoriteProducts") || "[]"),
+    window.miniMartDB.readStorage(
+      "miniMartFavoriteProducts",
+      [],
+      (value) => Array.isArray(value),
+    ).value,
   );
 
   const categories = [
@@ -856,9 +1003,11 @@ function renderProducts() {
   });
   productCards = [...productsSection.querySelectorAll(".product")];
 
-  const recentNames = JSON.parse(
-    localStorage.getItem("miniMartRecentProducts") || "[]",
-  );
+  const recentNames = window.miniMartDB.readStorage(
+    "miniMartRecentProducts",
+    [],
+    (value) => Array.isArray(value),
+  ).value;
   const recentProducts = recentNames
     .map((name) => products.find((product) => product.name === name))
     .filter(Boolean)
@@ -885,7 +1034,11 @@ function renderProducts() {
     button.addEventListener("click", (event) => {
       event.stopPropagation();
       const current = new Set(
-        JSON.parse(localStorage.getItem("miniMartFavoriteProducts") || "[]"),
+        window.miniMartDB.readStorage(
+          "miniMartFavoriteProducts",
+          [],
+          (value) => Array.isArray(value),
+        ).value,
       );
       if (current.has(button.dataset.favorite)) {
         current.delete(button.dataset.favorite);
@@ -969,7 +1122,12 @@ function addProductToCart(product) {
   item.quantity += 1;
 
   cart.set(name, item);
-  const recent = JSON.parse(localStorage.getItem("miniMartRecentProducts") || "[]")
+  scheduleCheckoutDraftSave();
+  const recent = window.miniMartDB.readStorage(
+    "miniMartRecentProducts",
+    [],
+    (value) => Array.isArray(value),
+  ).value
     .filter((entry) => entry !== name);
   recent.unshift(name);
   const recentResult = safeWrite("miniMartRecentProducts", recent.slice(0, 8));
@@ -1277,9 +1435,9 @@ function completeSale() {
   saleInProgress = true;
   sellButton.disabled = true;
 
-  const productsSnapshot = localStorage.getItem("miniMartProducts");
-  const salesSnapshot = localStorage.getItem("miniMartSales");
-  const sukisSnapshot = localStorage.getItem(SUKI_STORAGE_KEY);
+  const productsSnapshot = window.miniMartDB.readStorage("miniMartProducts", null).raw;
+  const salesSnapshot = window.miniMartDB.readStorage("miniMartSales", null).raw;
+  const sukisSnapshot = window.miniMartDB.readStorage(SUKI_STORAGE_KEY, null).raw;
 
   const entries = [...cart.values()];
 
@@ -1562,17 +1720,17 @@ function completeSale() {
     if (!shiftResult.ok) throw shiftResult.error;
   } catch (error) {
     if (productsSnapshot === null) {
-      localStorage.removeItem("miniMartProducts");
+      safeWrite("miniMartProducts", null, { remove: true });
     } else {
       safeWrite("miniMartProducts", productsSnapshot, { raw: true });
     }
     if (salesSnapshot === null) {
-      localStorage.removeItem("miniMartSales");
+      safeWrite("miniMartSales", null, { remove: true });
     } else {
       safeWrite("miniMartSales", salesSnapshot, { raw: true });
     }
     if (sukisSnapshot === null) {
-      localStorage.removeItem(SUKI_STORAGE_KEY);
+      safeWrite(SUKI_STORAGE_KEY, null, { remove: true });
     } else {
       safeWrite(SUKI_STORAGE_KEY, sukisSnapshot, { raw: true });
     }
@@ -1592,7 +1750,7 @@ function completeSale() {
   cardGiven.value = "0";
   paymentMethod.value = "cash";
   updatePaymentMethodUI();
-  localStorage.removeItem(CART_STORAGE_KEY);
+  clearCheckoutDraft();
 
   /*
    * FIX:
@@ -1696,7 +1854,7 @@ function updatePayment() {
   sellButton.disabled =
     !cart.size || insufficient || invalidPayment || !validPayment;
   holdCartButton.disabled = !cart.size;
-  saveActiveCart();
+  scheduleCheckoutDraftSave();
 }
 
 amountGiven.addEventListener("input", updatePayment);
@@ -1825,6 +1983,7 @@ function renderCart() {
       }
 
       item.quantity += 1;
+      scheduleCheckoutDraftSave();
       renderCart();
     }),
   );
@@ -1838,6 +1997,7 @@ function renderCart() {
       } else {
         item.quantity -= 1;
       }
+      scheduleCheckoutDraftSave();
       renderCart();
     }),
   );
@@ -1845,7 +2005,7 @@ function renderCart() {
   cartItems.querySelectorAll("[data-remove]").forEach((button) =>
     button.addEventListener("click", () => {
       cart.delete(button.dataset.remove);
-
+      scheduleCheckoutDraftSave();
       renderCart();
     }),
   );
@@ -1864,7 +2024,11 @@ function renderCart() {
 
 function holdCurrentCart() {
   if (!cart.size) return;
-  const held = JSON.parse(localStorage.getItem(HELD_CARTS_KEY) || "[]");
+  const held = window.miniMartDB.readStorage(
+    HELD_CARTS_KEY,
+    [],
+    (value) => Array.isArray(value),
+  ).value;
   held.unshift({
     id: `HOLD-${Date.now()}`,
     createdAt: new Date().toISOString(),
@@ -1876,6 +2040,7 @@ function holdCurrentCart() {
     return;
   }
   cart.clear();
+  if (!clearCheckoutDraft()) return;
   amountGiven.value = "";
   cardGiven.value = "0";
   renderCart();
@@ -1883,7 +2048,11 @@ function holdCurrentCart() {
 }
 
 function resumeHeldCart() {
-  const held = JSON.parse(localStorage.getItem(HELD_CARTS_KEY) || "[]");
+  const held = window.miniMartDB.readStorage(
+    HELD_CARTS_KEY,
+    [],
+    (value) => Array.isArray(value),
+  ).value;
   if (!held.length) {
     showCheckoutToast("There are no held carts.");
     return;
@@ -1899,6 +2068,7 @@ function resumeHeldCart() {
   }
   cart.clear();
   next.items.forEach((item) => cart.set(item.name, item));
+  scheduleCheckoutDraftSave();
   renderCart();
   showCheckoutToast("Held cart restored.", "success");
 }
@@ -1907,9 +2077,25 @@ holdCartButton.addEventListener("click", holdCurrentCart);
 resumeCartButton.addEventListener("click", resumeHeldCart);
 shiftButton.addEventListener("click", manageShift);
 window.addEventListener("beforeunload", (event) => {
-  if (!cart.size) return;
+  if (!cart.size || !draftWriteFailed) return;
   event.preventDefault();
   event.returnValue = "";
+});
+window.addEventListener("pagehide", () => {
+  if (cart.size) saveCheckoutDraft();
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden" && cart.size) saveCheckoutDraft();
+});
+window.addEventListener("miniMartBeforeNavigate", () => {
+  if (cart.size) saveCheckoutDraft();
+});
+window.addEventListener("storage", (event) => {
+  if (event.key !== CHECKOUT_DRAFT_KEY || !event.newValue || event.newValue === JSON.stringify(draftSnapshot())) return;
+  showCheckoutToast("Cart updated in another tab.", "success");
+  cart.clear();
+  restoreCheckoutDraft();
+  renderCart();
 });
 document.addEventListener("keydown", (event) => {
   if (event.ctrlKey && event.key.toLowerCase() === "enter") {
@@ -1930,10 +2116,11 @@ createSukiCheckoutUI();
 
 renderProducts();
 
-restoreActiveCart();
+restoreCheckoutDraft();
 renderCart();
 
 refreshSukiSelector();
 updateShiftButton();
 
 search.focus({ preventScroll: true });
+window.miniMartInitialDataReady = true;

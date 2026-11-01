@@ -6,7 +6,10 @@ void (async () => {
   if (error || !data.session?.user?.email_confirmed_at) {
     if (client) await client.auth.signOut();
     window.location.replace("login.html");
+    return;
   }
+  window.miniMartAuthReady = true;
+  window.dispatchEvent(new Event("miniMartAuthReady"));
 })();
 
 const peso = (value) => window.miniMartSettings.formatCurrency(value);
@@ -1130,3 +1133,5 @@ document.querySelectorAll("[data-profit-sort]").forEach((button) => {
     renderProfitProductTable();
   });
 });
+
+window.miniMartInitialDataReady = true;

@@ -125,6 +125,17 @@ html[data-theme="dark"] .checkout-page .product-icon img {
 .checkout-page .cart-items {
   border-bottom: 1px solid var(--line);
 }
+
+.checkout-page .checkout-draft-status {
+  min-height: 16px;
+  margin-top: 6px;
+  color: var(--muted);
+  font: 10px "DM Mono", monospace;
+}
+
+.checkout-page .checkout-draft-status.is-error {
+  color: var(--red);
+}
 .checkout-page .total {
   border-bottom: 1px dashed var(--line);
 }

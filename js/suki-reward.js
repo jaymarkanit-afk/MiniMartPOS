@@ -1629,3 +1629,4 @@ if (normalizedSukis.length) {
 }
 
 renderSukiList();
+window.miniMartInitialDataReady = true;

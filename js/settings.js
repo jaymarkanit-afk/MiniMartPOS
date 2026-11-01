@@ -1908,10 +1908,16 @@ reportExportData.addEventListener("change", handleReportExportInput);
 salesRange.addEventListener("change", handleReportExportInput);
 salesStartDate.addEventListener("change", handleReportExportInput);
 salesEndDate.addEventListener("change", handleReportExportInput);
-exportExcel.addEventListener("click", exportExcelReport);
-exportPdf.addEventListener("click", exportPdfReport);
+exportExcel.addEventListener("click", (event) =>
+  window.withLoading?.("Preparing Excel report", () => exportExcelReport(), event.currentTarget),
+);
+exportPdf.addEventListener("click", (event) =>
+  window.withLoading?.("Preparing PDF report", () => exportPdfReport(), event.currentTarget),
+);
 updateReportExportUi();
-document.getElementById("downloadBackup").addEventListener("click", downloadBackupFile);
+document.getElementById("downloadBackup").addEventListener("click", (event) =>
+  window.withLoading?.("Preparing backup", () => downloadBackupFile(), event.currentTarget),
+);
 downloadProductTemplate.addEventListener("click", downloadProductTemplateFile);
 productImportFile.addEventListener("change", () => parseProductImportFile(productImportFile.files[0]));
 updateProductImportFileDisplay(Boolean(productImportFile.files?.length));
@@ -1928,7 +1934,9 @@ removeProductImportFile.addEventListener("click", () => {
 productDuplicateMode.addEventListener("change", renderProductImportPreview);
 productMissingCategoryMode.addEventListener("change", renderProductImportPreview);
 productImportFilter.addEventListener("change", renderProductImportPreview);
-confirmProductImport.addEventListener("click", importProducts);
+confirmProductImport.addEventListener("click", (event) =>
+  window.withLoading?.("Importing products", () => importProducts(), event.currentTarget),
+);
 downloadProductErrors.addEventListener("click", downloadProductErrorRows);
 closeProductImport.addEventListener("click", closeProductImportModal);
 cancelProductImport.addEventListener("click", closeProductImportModal);
@@ -1982,7 +1990,11 @@ restoreBackup.addEventListener("change", () => {
     showRestorePreview(data, file.name);
     setBackupStatus(summary);
     if (window.confirm(`${summary}\n\nContinue restoring this backup?`)) {
-      restoreBackupData(pendingRestoreData);
+      window.withLoading?.(
+        "Restoring backup",
+        () => restoreBackupData(pendingRestoreData),
+        restoreBackup,
+      );
       return;
     }
     setBackupStatus("Restore cancelled.");
@@ -2221,7 +2233,13 @@ themeToggle.addEventListener("click", () => {
   updateThemeToggle(settings.theme);
 });
 
-exportInventoryHistory.addEventListener("click", exportInventoryHistoryFile);
+exportInventoryHistory.addEventListener("click", (event) =>
+  window.withLoading?.(
+    "Preparing inventory history",
+    () => exportInventoryHistoryFile(),
+    event.currentTarget,
+  ),
+);
 resetStoreInfo.addEventListener("click", () => resetSettingsSection("store"));
 resetInventoryRules.addEventListener("click", () => resetSettingsSection("inventory"));
 resetSukiSettings.addEventListener("click", () => resetSettingsSection("suki"));
@@ -2282,6 +2300,7 @@ function hasUnsavedSettings() {
 
 markSettingsClean();
 updateBackupSummary();
+window.miniMartInitialDataReady = true;
 
 window.addEventListener("beforeunload", (event) => {
   if (!hasUnsavedSettings()) return;

@@ -325,3 +325,4 @@ if (!window.supabaseAuthConfigured)
   );
 if (window.supabaseAuthIsLocalDemo)
   showMessage("Temporary local login: admin@gmail.com", "success");
+window.miniMartInitialDataReady = true;

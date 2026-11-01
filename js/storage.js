@@ -12,7 +12,11 @@ function storageFailureReason(error) {
 
 function safeWrite(key, value, options = {}) {
   try {
-    localStorage.setItem(key, options.raw ? String(value) : JSON.stringify(value));
+    if (options.remove) {
+      localStorage.removeItem(key);
+    } else {
+      localStorage.setItem(key, options.raw ? String(value) : JSON.stringify(value));
+    }
     return { ok: true, error: null, reason: null };
   } catch (error) {
     return { ok: false, error, reason: storageFailureReason(error) };

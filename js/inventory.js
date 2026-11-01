@@ -6,7 +6,10 @@ void (async () => {
   if (error || !data.session?.user?.email_confirmed_at) {
     if (client) await client.auth.signOut();
     window.location.replace("login.html");
+    return;
   }
+  window.miniMartAuthReady = true;
+  window.dispatchEvent(new Event("miniMartAuthReady"));
 })();
 
 const tbody = document.getElementById("inventoryRows");
@@ -557,6 +560,8 @@ search.addEventListener("keydown", (event) => {
     search.select();
   }
 });
+
+window.miniMartInitialDataReady = true;
 productLookup.addEventListener("input", renderLookupResults);
 productLookup.addEventListener("keydown", (event) => {
   if (event.key === "Enter" && !event.isComposing) {
