@@ -32,6 +32,44 @@ html[data-theme="dark"] {
   color-scheme: light;
 }
 
+.category-icon-tooltip {
+  position: fixed;
+  z-index: 10000;
+  max-width: min(180px, calc(100vw - 12px));
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface-raised);
+  color: var(--ink);
+  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.18);
+  font: 11px/1.2 Outfit, sans-serif;
+  text-align: center;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.category-icon-tooltip::after {
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-raised);
+  content: "";
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.category-icon-tooltip.is-below::after {
+  top: -5px;
+  bottom: auto;
+  border-top: 1px solid var(--line);
+  border-right: 0;
+  border-bottom: 0;
+  border-left: 1px solid var(--line);
+}
+
 html[data-theme="dark"] {
   color-scheme: dark;
 }

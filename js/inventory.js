@@ -213,11 +213,13 @@ function renderIconPicker() {
     button.type = "button";
     button.className = "icon-option";
     button.dataset.icon = id;
-    button.setAttribute("aria-label", `${label} icon`);
+    button.dataset.label = label;
+    button.setAttribute("aria-label", label);
     const image = document.createElement("img");
     image.src = path;
-    image.alt = "";
+    image.alt = label;
     button.append(image);
+    window.attachCategoryIconTooltip(button);
     options.append(button);
   });
 }

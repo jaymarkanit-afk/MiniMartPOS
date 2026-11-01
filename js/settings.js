@@ -1489,14 +1489,16 @@ function renderCategoryManagement() {
       option.className = "category-icon-option";
       option.dataset.categoryIcon = id;
       option.dataset.category = category;
+      option.dataset.label = label;
       option.title = label;
-      option.setAttribute("aria-label", `${label} icon`);
+      option.setAttribute("aria-label", label);
       option.setAttribute("aria-pressed", String(id === currentIcon));
       if (id === currentIcon) option.classList.add("is-selected");
       const image = document.createElement("img");
       image.src = path;
-      image.alt = "";
+      image.alt = label;
       option.append(image);
+      window.attachCategoryIconTooltip(option);
       iconPicker.append(option);
     });
     const iconEditor = document.createElement("details");

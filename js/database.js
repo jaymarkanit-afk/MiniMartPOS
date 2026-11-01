@@ -5,20 +5,20 @@ const CATEGORY_ICONS_KEY = "miniMartCategoryIcons";
 const DELETED_PRODUCTS_KEY = "miniMartDeletedProducts";
 const CATEGORY_UNITS_KEY = "miniMartCategoryUnits";
 const CATEGORY_ICON_ALLOWLIST = Object.freeze({
-  amenities: "Icons/amenities.png",
-  beverages: "Icons/beverages.png",
-  bread: "Icons/bread.png",
-  cannedFood: "Icons/canned-food.png",
-  cigarette: "Icons/cigarette.png",
-  dairy: "Icons/dairy.png",
-  detergent: "Icons/detergent.png",
-  frozenGoods: "Icons/frozengoods.png",
-  instantFood: "Icons/instant-food.png",
-  riceGrains: "Icons/rice&grains.png",
-  sauces: "Icons/sauces.png",
-  schoolSupplies: "Icons/school_supplies.png",
-  snacks: "Icons/snacks.png",
-  sweets: "Icons/sweets.png",
+  amenities: { path: "Icons/amenities.png", label: "Amenities" },
+  beverages: { path: "Icons/beverages.png", label: "Beverages" },
+  bread: { path: "Icons/bread.png", label: "Bread" },
+  cannedFood: { path: "Icons/canned-food.png", label: "Canned Food" },
+  cigarette: { path: "Icons/cigarette.png", label: "Cigarettes" },
+  dairy: { path: "Icons/dairy.png", label: "Dairy" },
+  detergent: { path: "Icons/detergent.png", label: "Household & Cleaning" },
+  frozenGoods: { path: "Icons/frozengoods.png", label: "Frozen Goods" },
+  instantFood: { path: "Icons/instant-food.png", label: "Instant Food" },
+  riceGrains: { path: "Icons/rice&grains.png", label: "Rice & Grains" },
+  sauces: { path: "Icons/sauces.png", label: "Sauces & Oils" },
+  schoolSupplies: { path: "Icons/school_supplies.png", label: "School Supplies" },
+  snacks: { path: "Icons/snacks.png", label: "Snacks" },
+  sweets: { path: "Icons/sweets.png", label: "Sweets" },
 });
 const CATEGORY_ICON_LEGACY_ALIASES = Object.freeze({
   "cooking-oil": "sauces",
@@ -39,31 +39,10 @@ const CATEGORY_ICON_LEGACY_ALIASES = Object.freeze({
   vegetables: "cannedFood",
   "Icons/vegetables.svg": "cannedFood",
 });
-const CATEGORY_ICON_LABELS = Object.freeze({
-  amenities: "Amenities",
-  beverages: "Beverages",
-  bread: "Bread",
-  cannedFood: "Canned food",
-  cigarette: "Cigarettes",
-  cookingOil: "Cooking oil",
-  dairy: "Dairy",
-  detergent: "Cleaning",
-  frozenGoods: "Frozen goods",
-  grainsRice: "Grains and rice",
-  instantFood: "Instant food",
-  meatFish: "Meat and fish",
-  riceGrains: "Rice and grains",
-  sauces: "Sauces",
-  schoolSupplies: "School supplies",
-  snacks: "Snacks",
-  sweets: "Sweets",
-  toiletries: "Toiletries",
-  vegetables: "Vegetables",
-});
 const DEFAULT_CATEGORY_ICON_ID = "bread";
 const CATEGORY_ICON_PATH_TO_ID = Object.freeze(
   Object.fromEntries(
-    Object.entries(CATEGORY_ICON_ALLOWLIST).map(([id, path]) => [path, id]),
+    Object.entries(CATEGORY_ICON_ALLOWLIST).map(([id, icon]) => [icon.path, id]),
   ),
 );
 const STORAGE_BACKUP_LIMIT = 3;
@@ -511,7 +490,10 @@ window.miniMartDB = {
     )
       ? saved[category]
       : defaults[category] || DEFAULT_CATEGORY_ICON_ID;
-    return CATEGORY_ICON_ALLOWLIST[iconId] || CATEGORY_ICON_ALLOWLIST[DEFAULT_CATEGORY_ICON_ID];
+    return (
+      CATEGORY_ICON_ALLOWLIST[iconId]?.path ||
+      CATEGORY_ICON_ALLOWLIST[DEFAULT_CATEGORY_ICON_ID].path
+    );
   },
   saveCategoryIcon(category, iconId) {
     const icons = migrateCategoryIcons();
@@ -531,10 +513,10 @@ window.miniMartDB = {
       : DEFAULT_CATEGORY_ICON_ID;
   },
   categoryIconOptions() {
-    return Object.entries(CATEGORY_ICON_ALLOWLIST).map(([id, path]) => ({
+    return Object.entries(CATEGORY_ICON_ALLOWLIST).map(([id, icon]) => ({
       id,
-      path,
-      label: CATEGORY_ICON_LABELS[id] || id,
+      path: icon.path,
+      label: icon.label,
     }));
   },
   normalizeCategoryIcons,
