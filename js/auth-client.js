@@ -209,10 +209,17 @@ function createLocalDemoClient(persistSession) {
 
         try {
 
-          storage.setItem(
-            LOCAL_SESSION_KEY,
-            JSON.stringify(session)
-          );
+          const result = persistSession
+            ? safeWrite(LOCAL_SESSION_KEY, session)
+            : (() => {
+                try {
+                  storage.setItem(LOCAL_SESSION_KEY, JSON.stringify(session));
+                  return { ok: true };
+                } catch (storageError) {
+                  return { ok: false, error: storageError };
+                }
+              })();
+          if (!result.ok) throw result.error;
 
         } catch (error) {
 

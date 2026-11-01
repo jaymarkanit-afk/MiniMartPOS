@@ -242,10 +242,14 @@ async function submitAuth(event) {
     }
     const persistSession = document.getElementById("rememberMe").checked;
     window.supabaseClient = window.createMiniMartSupabaseClient(persistSession);
-    localStorage.setItem(
+    const sessionModeResult = safeWrite(
       "miniMartSessionMode",
       persistSession ? "persistent" : "session",
     );
+    if (!sessionModeResult.ok) {
+      showStorageError(storageErrorMessage(sessionModeResult));
+      return;
+    }
     const { data, error } = await window.supabaseClient.auth.signInWithPassword(
       { email: email.value.trim(), password: password.value },
     );

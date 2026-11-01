@@ -136,20 +136,20 @@ const categoryActionIcons = {
 };
 const categoryIconOptions = [
   ["beverages", "Icons/beverages.png", "Beverages"],
-  ["instant-food", "Icons/instant-food.png", "Instant food"],
+  ["instantFood", "Icons/instant-food.png", "Instant food"],
   ["snacks", "Icons/snacks.png", "Snacks"],
   ["dairy", "Icons/dairy.png", "Dairy"],
   ["bread", "Icons/bread.png", "Bread"],
-  ["canned-food", "Icons/canned-food.png", "Canned food"],
-  ["frozen", "Icons/frozengoods.png", "Frozen goods"],
+  ["cannedFood", "Icons/canned-food.png", "Canned food"],
+  ["frozenGoods", "Icons/frozengoods.png", "Frozen goods"],
   ["vegetables", "Icons/vegetables.svg", "Vegetables"],
-  ["meat-fish", "Icons/meat-fish.svg", "Meat and fish"],
-  ["rice-grains", "Icons/rice&grains.png", "Rice and grains"],
+  ["meatFish", "Icons/meat-fish.svg", "Meat and fish"],
+  ["riceGrains", "Icons/rice&grains.png", "Rice and grains"],
   ["sauces", "Icons/sauces.png", "Sauces"],
-  ["cooking-oil", "Icons/cooking-oil.svg", "Cooking oil"],
+  ["cookingOil", "Icons/cooking-oil.svg", "Cooking oil"],
   ["detergent", "Icons/detergent.png", "Cleaning"],
   ["toiletries", "Icons/toiletries.svg", "Toiletries"],
-  ["school-supplies", "Icons/school_supplies.png", "School supplies"],
+  ["schoolSupplies", "Icons/school_supplies.png", "School supplies"],
   ["cigarette", "Icons/cigarette.png", "Cigarettes"],
   ["amenities", "Icons/amenities.png", "Amenities"],
   ["category", "Icons/category.png", "General"],
@@ -1007,7 +1007,12 @@ function downloadBackupFile() {
     todayFilename("mini-mart-pos-backup", "json"),
     "application/json",
   );
-  localStorage.setItem("miniMartLastBackup", exportedAt);
+  const backupResult = safeWrite("miniMartLastBackup", exportedAt);
+  if (!backupResult.ok) {
+    showStorageError(storageErrorMessage(backupResult));
+    setBackupStatus("Backup downloaded, but its timestamp could not be saved.", true);
+    return;
+  }
   updateBackupSummary();
   setBackupStatus("Backup downloaded.");
 }
@@ -1159,9 +1164,13 @@ function importProducts() {
     const deletedNames = oldDeletedProducts ? JSON.parse(oldDeletedProducts) : [];
     const importedNames = new Set(nextProducts.map((product) => product.name));
     const nextDeletedNames = deletedNames.filter((name) => !importedNames.has(name));
-    localStorage.setItem("miniMartProducts", JSON.stringify(nextProducts));
-    localStorage.setItem("miniMartCategories", JSON.stringify(nextCategories));
-    localStorage.setItem("miniMartDeletedProducts", JSON.stringify(nextDeletedNames));
+    const results = [
+      safeWrite("miniMartProducts", nextProducts),
+      safeWrite("miniMartCategories", nextCategories),
+      safeWrite("miniMartDeletedProducts", nextDeletedNames),
+    ];
+    const failed = results.find((result) => !result.ok);
+    if (failed) throw failed.error;
     productImportRows = productImportRows.map((row) => ({ ...row, imported: productImportIsIncluded(row) }));
     closeProductImportModal();
     setProductImportStatus(`Imported ${imported}, updated ${updated}, skipped ${skipped}, errors ${counts.errors}.`);
@@ -1169,10 +1178,10 @@ function importProducts() {
     window.dispatchEvent(new CustomEvent("miniMartDatabaseChanged", { detail: { key: "miniMartProducts" } }));
   } catch (error) {
     console.error("Could not import products:", error);
-    localStorage.setItem("miniMartProducts", JSON.stringify(oldProducts));
-    localStorage.setItem("miniMartCategories", JSON.stringify(oldCategories));
-    if (oldCategoryIcons === null) localStorage.removeItem("miniMartCategoryIcons"); else localStorage.setItem("miniMartCategoryIcons", oldCategoryIcons);
-    if (oldDeletedProducts === null) localStorage.removeItem("miniMartDeletedProducts"); else localStorage.setItem("miniMartDeletedProducts", oldDeletedProducts);
+    safeWrite("miniMartProducts", oldProducts);
+    safeWrite("miniMartCategories", oldCategories);
+    if (oldCategoryIcons !== null) safeWrite("miniMartCategoryIcons", oldCategoryIcons, { raw: true });
+    if (oldDeletedProducts !== null) safeWrite("miniMartDeletedProducts", oldDeletedProducts, { raw: true });
     setProductImportModalStatus("Could not save products. Nothing was changed.", true);
   }
 }
@@ -1201,15 +1210,19 @@ function closeResetDataModal() {
 function resetAllData() {
   const oldValues = Object.fromEntries(["miniMartProducts", "miniMartSales", "miniMartCategories", "miniMartCategoryIcons", "miniMartDeletedProducts", "miniMartSukis", "miniMartInventoryAdjustments"].map((key) => [key, localStorage.getItem(key)]));
   try {
-    ["miniMartProducts", "miniMartSales", "miniMartCategories", "miniMartSukis", "miniMartInventoryAdjustments"].forEach((key) => localStorage.setItem(key, JSON.stringify([])));
-    localStorage.setItem("miniMartCategoryIcons", JSON.stringify({}));
-    localStorage.setItem("miniMartDeletedProducts", JSON.stringify([]));
+    const results = [
+      ...["miniMartProducts", "miniMartSales", "miniMartCategories", "miniMartSukis", "miniMartInventoryAdjustments"].map((key) => safeWrite(key, [])),
+      safeWrite("miniMartCategoryIcons", {}),
+      safeWrite("miniMartDeletedProducts", []),
+    ];
+    const failed = results.find((result) => !result.ok);
+    if (failed) throw failed.error;
     closeResetDataModal();
     setBackupStatus("All data was reset. Restore can bring it back from your backup file.");
     window.dispatchEvent(new CustomEvent("miniMartDatabaseChanged", { detail: { key: "miniMartProducts" } }));
   } catch (error) {
     console.error("Could not reset data:", error);
-    Object.entries(oldValues).forEach(([key, value]) => { if (value === null) localStorage.removeItem(key); else localStorage.setItem(key, value); });
+    Object.entries(oldValues).forEach(([key, value]) => { if (value === null) localStorage.removeItem(key); else safeWrite(key, value, { raw: true }); });
     resetDataStatus.textContent = "Could not reset data. Nothing was changed.";
     resetDataStatus.className = "settings-status settings-status-error";
   }
@@ -1250,10 +1263,12 @@ function restoreBackupData(data) {
     settings: data.settings,
   };
   Object.entries(payload).forEach(([name, value]) => {
-    localStorage.setItem(backupKeys[name], JSON.stringify(value));
+    const result = safeWrite(backupKeys[name], value);
+    if (!result.ok) throw result.error;
   });
   if (data.exportedAt) {
-    localStorage.setItem("miniMartLastBackup", data.exportedAt);
+    const result = safeWrite("miniMartLastBackup", data.exportedAt);
+    if (!result.ok) throw result.error;
   }
   window.location.reload();
 }
@@ -1451,7 +1466,12 @@ function renderCategoryManagement() {
       unit.append(option);
     });
     unit.addEventListener("change", () => {
-      window.miniMartDB.saveCategoryDefaultUnit(category, unit.value);
+      const result = window.miniMartDB.saveCategoryDefaultUnit(category, unit.value);
+      if (!result?.ok) {
+        unit.value = currentUnit;
+        showStorageError(storageErrorMessage(result));
+        return;
+      }
       unitTag.textContent = unit.value === "piece"
         ? ""
         : window.miniMartDB.units()[unit.value].shortLabel;
@@ -1470,17 +1490,17 @@ function renderCategoryManagement() {
     iconPickerLabel.className = "category-management-icon-label";
     iconPickerLabel.textContent = "Choose category icon";
     iconPicker.append(iconPickerLabel);
-    const currentIcon = window.miniMartDB.categoryIcon(category);
+    const currentIcon = window.miniMartDB.categoryIconId(category);
     categoryIconOptions.forEach(([key, path, label]) => {
       const option = document.createElement("button");
       option.type = "button";
       option.className = "category-icon-option";
-      option.dataset.categoryIcon = path;
+      option.dataset.categoryIcon = key;
       option.dataset.category = category;
       option.title = label;
       option.setAttribute("aria-label", `${label} icon`);
-      option.setAttribute("aria-pressed", String(path === currentIcon));
-      if (path === currentIcon) option.classList.add("is-selected");
+      option.setAttribute("aria-pressed", String(key === currentIcon));
+      if (key === currentIcon) option.classList.add("is-selected");
       const image = document.createElement("img");
       image.src = path;
       image.alt = "";
@@ -1989,7 +2009,11 @@ categoryManagementList.addEventListener("click", (event) => {
   const iconButton = event.target.closest("[data-category-icon]");
   if (iconButton) {
     const category = iconButton.dataset.category;
-    window.miniMartDB.saveCategoryIcon(category, iconButton.dataset.categoryIcon);
+    const result = window.miniMartDB.saveCategoryIcon(category, iconButton.dataset.categoryIcon);
+    if (!result?.ok) {
+      showStorageError(storageErrorMessage(result));
+      return;
+    }
     iconButton.closest(".category-management-icon-picker")
       .querySelectorAll("[data-category-icon]")
       .forEach((option) => {
@@ -1998,7 +2022,7 @@ categoryManagementList.addEventListener("click", (event) => {
         option.setAttribute("aria-pressed", String(selected));
       });
     const rowIcon = iconButton.closest(".category-management-row").querySelector(".category-management-icon");
-    rowIcon.src = iconButton.dataset.categoryIcon;
+    rowIcon.src = window.miniMartDB.categoryIcon(category);
     renderCategorySummary();
     setCategoryStatus("Icon saved");
     return;
@@ -2071,7 +2095,11 @@ categoryManagementList.addEventListener("drop", (event) => {
   const from = categories.indexOf(source);
   const to = categories.indexOf(row.dataset.category);
   categories.splice(to, 0, categories.splice(from, 1)[0]);
-  window.miniMartDB.saveCategories(categories);
+  const result = window.miniMartDB.saveCategories(categories);
+  if (!result?.ok) {
+    showStorageError(storageErrorMessage(result));
+    return;
+  }
   renderCategoryManagement();
   setCategoryStatus("Saved");
 });

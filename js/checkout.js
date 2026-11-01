@@ -262,10 +262,7 @@ function addMeasuredLine() {
 
 const SUKI_STORAGE_KEY = "miniMartSukis";
 
-const STAMP_SPEND_AMOUNT = 50;
-const MAX_STAMPS = 40;
-const REWARD_PER_10_STAMPS = 50;
-const MAX_REWARD_BALANCE = 200;
+const sukiRules = window.miniMartSukiRules;
 
 let selectedSukiId = "";
 
@@ -312,11 +309,11 @@ function getSukis() {
       nfcId: window.normalizeNfcId ? window.normalizeNfcId(suki.nfcId || "") : String(suki.nfcId || "").trim().toUpperCase(),
 
       stamps: Number.isFinite(Number(suki.stamps))
-        ? Math.max(0, Math.min(MAX_STAMPS, Number(suki.stamps)))
+        ? Math.max(0, Math.min(sukiRules.maxPoints(), Number(suki.stamps)))
         : 0,
 
       rewardBalance: Number.isFinite(Number(suki.rewardBalance))
-        ? Math.max(0, Math.min(MAX_REWARD_BALANCE, Number(suki.rewardBalance)))
+        ? Math.max(0, Math.min(sukiRules.maxRewardBalance(), Number(suki.rewardBalance)))
         : 0,
 
       active: suki.active !== false,
@@ -329,7 +326,9 @@ function getSukis() {
 }
 
 function saveSukis(sukis) {
-  localStorage.setItem(SUKI_STORAGE_KEY, JSON.stringify(sukis));
+  const result = safeWrite(SUKI_STORAGE_KEY, sukis);
+  if (!result.ok) showStorageError(storageErrorMessage(result));
+  return result;
 }
 
 /* =========================================================
@@ -400,7 +399,7 @@ function createSukiCheckoutUI() {
       />
 
       <small>
-        Maximum available reward will be shown above.
+        Minimum ${sukiRules.settings().minPointsToRedeem} points. Maximum redeemable value is shown above.
       </small>
     </div>
   `;
@@ -570,7 +569,11 @@ function ensureCurrentShift() {
       sales: 0,
       cashSales: 0,
     };
-    localStorage.setItem(SHIFT_STORAGE_KEY, JSON.stringify(shift));
+    const result = safeWrite(SHIFT_STORAGE_KEY, shift);
+    if (!result.ok) {
+      showStorageError(storageErrorMessage(result));
+      return null;
+    }
     updateShiftButton();
     showCheckoutToast("A new shift was opened with ₱0.00 opening cash.", "success");
   }
@@ -589,13 +592,17 @@ function manageShift() {
       showCheckoutToast("Enter a valid opening cash amount.");
       return;
     }
-    localStorage.setItem(SHIFT_STORAGE_KEY, JSON.stringify({
+    const result = safeWrite(SHIFT_STORAGE_KEY, {
       id: `SHIFT-${Date.now()}`,
       openedAt: new Date().toISOString(),
       openingCash,
       sales: 0,
       cashSales: 0,
-    }));
+    });
+    if (!result.ok) {
+      showStorageError(storageErrorMessage(result));
+      return;
+    }
     updateShiftButton();
     showCheckoutToast("Shift opened.", "success");
     return;
@@ -621,19 +628,24 @@ function manageShift() {
     expectedCash,
     variance: window.miniMartDB.roundMoney(closingCash - expectedCash),
   });
-  localStorage.setItem("miniMartShiftHistory", JSON.stringify(history.slice(0, 50)));
+  const historyResult = safeWrite("miniMartShiftHistory", history.slice(0, 50));
+  if (!historyResult.ok) {
+    showStorageError(storageErrorMessage(historyResult));
+    return;
+  }
   localStorage.removeItem(SHIFT_STORAGE_KEY);
   updateShiftButton();
   showCheckoutToast(`Shift closed. Variance: ${peso(closingCash - expectedCash)}.`, "success");
 }
 
 function saveActiveCart() {
-  localStorage.setItem(CART_STORAGE_KEY, JSON.stringify({
+  const result = safeWrite(CART_STORAGE_KEY, {
     items: [...cart.values()],
     amountGiven: amountGiven.value,
     paymentMethod: paymentMethod.value,
     cardGiven: cardGiven.value,
-  }));
+  });
+  if (!result.ok) showStorageError(storageErrorMessage(result));
 }
 
 function restoreActiveCart() {
@@ -690,15 +702,20 @@ function updateSukiCheckoutInfo() {
     </strong>
     <br>
     Stamps:
-    ${suki.stamps}/${MAX_STAMPS}
+    ${suki.stamps}/${sukiRules.maxPoints()} points
     <br>
     Reward balance:
-    ${window.miniMartSettings.formatCurrency(suki.rewardBalance)}
+    ${window.miniMartSettings.formatCurrency(
+      sukiRules.pesoValueOfPoints(sukiRules.usablePoints(suki)),
+    )}
   `;
 
-  controls.hidden = suki.rewardBalance <= 0 || suki.stamps < MAX_STAMPS;
+  const usablePoints = sukiRules.usablePoints(suki);
+  const redeemable = sukiRules.canRedeem(usablePoints) &&
+    sukiRules.maxRedeemAmount(usablePoints, getSaleAmounts().total) > 0;
+  controls.hidden = !redeemable;
 
-  if (suki.rewardBalance <= 0 || suki.stamps < MAX_STAMPS) {
+  if (!redeemable) {
     if (rewardInput) {
       rewardInput.value = "0";
     }
@@ -744,12 +761,7 @@ function renderProducts() {
 
         const first = categoryProducts[0];
 
-        const categoryIcon = `
-          <img
-            src="${categoryIconPath(category)}"
-            alt=""
-          />
-        `;
+        const categoryIcon = `<img data-category-icon="${escapeHtml(category)}" alt="" />`;
 
         const header = `
           <div
@@ -796,7 +808,7 @@ function renderProducts() {
                   <div class="product-head">
                     <span class="product-icon">
                       <img
-                        src="${categoryIconPath(product.category)}"
+                        data-category-icon="${escapeHtml(product.category)}"
                         alt=""
                       />
                     </span>
@@ -839,6 +851,9 @@ function renderProducts() {
       </div>
     `;
 
+  productsSection.querySelectorAll("[data-category-icon]").forEach((image) => {
+    image.src = categoryIconPath(image.dataset.categoryIcon);
+  });
   productCards = [...productsSection.querySelectorAll(".product")];
 
   const recentNames = JSON.parse(
@@ -877,7 +892,11 @@ function renderProducts() {
       } else {
         current.add(button.dataset.favorite);
       }
-      localStorage.setItem("miniMartFavoriteProducts", JSON.stringify([...current]));
+      const result = safeWrite("miniMartFavoriteProducts", [...current]);
+      if (!result.ok) {
+        showStorageError(storageErrorMessage(result));
+        return;
+      }
       button.classList.toggle("is-favorite", current.has(button.dataset.favorite));
     });
   });
@@ -953,7 +972,8 @@ function addProductToCart(product) {
   const recent = JSON.parse(localStorage.getItem("miniMartRecentProducts") || "[]")
     .filter((entry) => entry !== name);
   recent.unshift(name);
-  localStorage.setItem("miniMartRecentProducts", JSON.stringify(recent.slice(0, 8)));
+  const recentResult = safeWrite("miniMartRecentProducts", recent.slice(0, 8));
+  if (!recentResult.ok) showStorageError(storageErrorMessage(recentResult));
 
   renderCart();
   return "added";
@@ -1094,6 +1114,10 @@ window.addEventListener("storage", (event) => {
   if (event.key !== SUKI_STORAGE_KEY) return;
 
   refreshSukiSelector();
+  updatePayment();
+});
+window.addEventListener("miniMartSettingsChanged", () => {
+  updateSukiCheckoutInfo();
   updatePayment();
 });
 
@@ -1306,6 +1330,7 @@ function completeSale() {
    * when the customer has reached
    * the 40-stamp limit.
    */
+  const usablePoints = sukiRules.usablePoints(suki);
   if (suki) {
     if (!suki.active) {
       updatePayment();
@@ -1315,7 +1340,7 @@ function completeSale() {
       return;
     }
 
-    if (suki.stamps < MAX_STAMPS) {
+    if (!sukiRules.canRedeem(usablePoints)) {
       rewardUsed = 0;
 
       if (rewardInput) {
@@ -1323,7 +1348,11 @@ function completeSale() {
       }
     }
 
-    rewardUsed = Math.max(0, Math.min(rewardUsed, suki.rewardBalance, total));
+    rewardUsed = Math.min(
+      rewardUsed,
+      suki.rewardBalance,
+      sukiRules.maxRedeemAmount(usablePoints, total),
+    );
   } else {
     rewardUsed = 0;
   }
@@ -1366,12 +1395,10 @@ function completeSale() {
 
   let stampsEarned = 0;
 
-  if (suki && suki.active && suki.stamps < MAX_STAMPS) {
-    stampsEarned = Math.floor(cashRequired / STAMP_SPEND_AMOUNT);
-
-    stampsEarned = Math.max(
-      0,
-      Math.min(stampsEarned, MAX_STAMPS - suki.stamps),
+  if (suki && suki.active && usablePoints < sukiRules.maxPoints()) {
+    stampsEarned = Math.min(
+      sukiRules.pointsEarned(cashRequired),
+      sukiRules.maxPoints() - usablePoints,
     );
   }
 
@@ -1395,24 +1422,11 @@ function completeSale() {
        * Add new stamps.
        */
       if (stampsEarned > 0) {
-        newStamps = Math.min(MAX_STAMPS, newStamps + stampsEarned);
-
-        /*
-         * Every 10 stamps creates
-         * ₱50 reward balance.
-         */
-        const oldRewardTiers = Math.floor(current.stamps / 10);
-
-        const newRewardTiers = Math.floor(newStamps / 10);
-
-        const newTiers = Math.max(0, newRewardTiers - oldRewardTiers);
-
-        if (newTiers > 0) {
-          newRewardBalance = Math.min(
-            MAX_REWARD_BALANCE,
-            newRewardBalance + newTiers * REWARD_PER_10_STAMPS,
-          );
-        }
+        newStamps = Math.min(sukiRules.maxPoints(), newStamps + stampsEarned);
+        newRewardBalance = Math.min(
+          sukiRules.maxRewardBalance(),
+          newRewardBalance + sukiRules.pesoValueOfPoints(stampsEarned),
+        );
       }
 
       /*
@@ -1420,9 +1434,8 @@ function completeSale() {
        * the 40-stamp limit resets
        * the stamp cycle.
        */
-      if (rewardUsed > 0 && current.stamps >= MAX_STAMPS) {
-        newStamps = 0;
-
+      if (rewardUsed > 0 && sukiRules.canRedeem(sukiRules.usablePoints(current))) {
+        newStamps = Math.max(0, sukiRules.usablePoints(current) - Math.ceil(rewardUsed / sukiRules.settings().pesoValue));
         newRewardBalance = Math.max(0, newRewardBalance - rewardUsed);
       }
 
@@ -1467,7 +1480,8 @@ function completeSale() {
         history: [...(current.history || []), historyEntry],
       };
 
-      saveSukis(sukis);
+      const sukiResult = saveSukis(sukis);
+      if (!sukiResult.ok) throw sukiResult.error;
     }
   }
 
@@ -1524,9 +1538,10 @@ function completeSale() {
   });
 
   try {
-    window.miniMartDB.saveProducts(inventory);
+    const productsResult = window.miniMartDB.saveProducts(inventory);
+    if (!productsResult?.ok) throw productsResult.error;
     const shift = ensureCurrentShift();
-    window.miniMartDB.recordSale(saleItems, total, {
+    const saleResult = window.miniMartDB.recordSale(saleItems, total, {
       transactionNumber: transactionNumber(),
       paymentMethod: paymentMethod.value,
       payments: {
@@ -1540,24 +1555,26 @@ function completeSale() {
       change,
       rewardUsed,
     });
+    if (!saleResult?.ok) throw saleResult.error;
     shift.sales += 1;
     shift.cashSales += paid;
-    localStorage.setItem(SHIFT_STORAGE_KEY, JSON.stringify(shift));
+    const shiftResult = safeWrite(SHIFT_STORAGE_KEY, shift);
+    if (!shiftResult.ok) throw shiftResult.error;
   } catch (error) {
     if (productsSnapshot === null) {
       localStorage.removeItem("miniMartProducts");
     } else {
-      localStorage.setItem("miniMartProducts", productsSnapshot);
+      safeWrite("miniMartProducts", productsSnapshot, { raw: true });
     }
     if (salesSnapshot === null) {
       localStorage.removeItem("miniMartSales");
     } else {
-      localStorage.setItem("miniMartSales", salesSnapshot);
+      safeWrite("miniMartSales", salesSnapshot, { raw: true });
     }
     if (sukisSnapshot === null) {
       localStorage.removeItem(SUKI_STORAGE_KEY);
     } else {
-      localStorage.setItem(SUKI_STORAGE_KEY, sukisSnapshot);
+      safeWrite(SUKI_STORAGE_KEY, sukisSnapshot, { raw: true });
     }
     saleInProgress = false;
     updatePayment();
@@ -1637,17 +1654,25 @@ function updatePayment() {
    * Reward redemption only works
    * at 40 stamps.
    */
-  if (!suki || suki.stamps < MAX_STAMPS) {
+  const usablePoints = sukiRules.usablePoints(suki);
+  if (!suki || !sukiRules.canRedeem(usablePoints)) {
     rewardUsed = 0;
 
     if (rewardInput) {
       rewardInput.value = "0";
     }
   } else {
-    rewardUsed = Math.max(0, Math.min(rewardUsed, suki.rewardBalance, total));
+    rewardUsed = Math.min(
+      rewardUsed,
+      suki.rewardBalance,
+      sukiRules.maxRedeemAmount(usablePoints, total),
+    );
 
     if (rewardInput) {
-      rewardInput.max = Math.min(suki.rewardBalance, total);
+      rewardInput.max = Math.min(
+        suki.rewardBalance,
+        sukiRules.maxRedeemAmount(usablePoints, total),
+      );
     }
   }
 
@@ -1845,7 +1870,11 @@ function holdCurrentCart() {
     createdAt: new Date().toISOString(),
     items: [...cart.values()],
   });
-  localStorage.setItem(HELD_CARTS_KEY, JSON.stringify(held.slice(0, 10)));
+  const result = safeWrite(HELD_CARTS_KEY, held.slice(0, 10));
+  if (!result.ok) {
+    showStorageError(storageErrorMessage(result));
+    return;
+  }
   cart.clear();
   amountGiven.value = "";
   cardGiven.value = "0";
@@ -1863,7 +1892,11 @@ function resumeHeldCart() {
     return;
   }
   const [next, ...remaining] = held;
-  localStorage.setItem(HELD_CARTS_KEY, JSON.stringify(remaining));
+  const result = safeWrite(HELD_CARTS_KEY, remaining);
+  if (!result.ok) {
+    showStorageError(storageErrorMessage(result));
+    return;
+  }
   cart.clear();
   next.items.forEach((item) => cart.set(item.name, item));
   renderCart();

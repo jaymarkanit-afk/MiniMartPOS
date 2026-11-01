@@ -228,7 +228,7 @@
               <h3>Suki Rewards</h3>
               <div class="settings-feature-note">
                 <strong>Active checkout rules</strong>
-                <span>₱50 spent earns 1 stamp. 40 stamps unlock a ₱50 reward.</span>
+                <span>Configure how purchases earn points, how much each point is worth, redemption minimums, and expiry.</span>
               </div>
               <div class="settings-checkbox suki-enabled-row">
                 <input id="sukiEnabled" name="sukiEnabled" type="checkbox" />
@@ -266,7 +266,7 @@
                   <span class="field-error" id="sukiPointsExpiryDaysError"></span>
                 </label>
               </div>
-              <p class="settings-help">The active program uses stamps. The legacy points values are retained for old data compatibility and do not change Checkout.</p>
+              <p class="settings-help">Checkout uses these rules immediately after saving. Existing customer data is preserved.</p>
               <div class="settings-actions">
                 <button class="settings-button-primary" type="submit">SAVE SUKI SETTINGS</button>
                 <button class="settings-button-ghost" id="resetSukiSettings" type="button">RESET SECTION</button>
@@ -567,6 +567,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/storage.js"></script>
     <script src="js/auth-client.js"></script>
     <script src="js/settings-store.js"></script>
     <script src="js/database.js"></script>

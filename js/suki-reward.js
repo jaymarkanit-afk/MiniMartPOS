@@ -6,10 +6,7 @@
 
 const SUKI_STORAGE_KEY = "miniMartSukis";
 
-const STAMP_SPEND_AMOUNT = 50;
-const MAX_STAMPS = 40;
-const REWARD_PER_10_STAMPS = 50;
-const MAX_REWARD_BALANCE = 200;
+const sukiRules = window.miniMartSukiRules;
 
 let selectedSukiId = "";
 let pendingNfcId = "";
@@ -106,6 +103,13 @@ if (window.miniMartSettings?.get().sukiEnabled === false) {
   sukiDisabledNotice.hidden = false;
   sukiContent.hidden = true;
 }
+window.addEventListener("miniMartSettingsChanged", () => {
+  const enabled = window.miniMartSettings.get().sukiEnabled !== false;
+  sukiDisabledNotice.hidden = enabled;
+  sukiContent.hidden = !enabled;
+  renderSukiOverview();
+  renderSukiList();
+});
 
 /* =========================================================
    UTILITY
@@ -241,12 +245,12 @@ function getSukis() {
 
       nfcId: normalizeNfcId(suki.nfcId || ""),
 
-      stamps: clamp(Number(suki.stamps) || 0, 0, MAX_STAMPS),
+      stamps: clamp(Number(suki.stamps) || 0, 0, sukiRules.maxPoints()),
 
       rewardBalance: clamp(
         Number(suki.rewardBalance) || 0,
         0,
-        MAX_REWARD_BALANCE,
+        sukiRules.maxRewardBalance(),
       ),
 
       active: suki.active !== false,
@@ -261,16 +265,16 @@ function getSukis() {
 }
 
 function saveSukis(sukis) {
-  localStorage.setItem(
+  const result = safeWrite(
     SUKI_STORAGE_KEY,
-    JSON.stringify(
-      sukis.map((suki) => ({
+    sukis.map((suki) => ({
         ...suki,
         id: suki.id || createId(),
         nfcId: normalizeNfcId(suki.nfcId || ""),
       })),
-    ),
   );
+  if (!result.ok) showStorageError(storageErrorMessage(result));
+  return result;
 }
 
 function renderSukiOverview() {
@@ -287,7 +291,7 @@ function renderSukiOverview() {
   totalCustomers.textContent = sukis.length;
   activeCards.textContent = sukis.filter((suki) => suki.active && suki.nfcId).length;
   readyRewards.textContent = sukis.filter(
-    (suki) => suki.active && suki.stamps >= MAX_STAMPS && suki.rewardBalance > 0,
+    (suki) => suki.active && sukiRules.canRedeem(sukiRules.usablePoints(suki)) && suki.rewardBalance > 0,
   ).length;
   totalRewards.textContent = formatPeso(
     sukis.reduce((sum, suki) => sum + suki.rewardBalance, 0),
@@ -513,7 +517,8 @@ function saveSuki(event) {
 
   sukis.push(newSuki);
 
-  saveSukis(sukis);
+  const result = saveSukis(sukis);
+  if (!result.ok) return;
 
   pendingNfcId = "";
 
@@ -594,7 +599,7 @@ async function scanExistingSuki() {
     }
 
     if (scanStatus) {
-      scanStatus.textContent = `${suki.stamps}/${MAX_STAMPS} stamps • ${formatPeso(
+      scanStatus.textContent = `${suki.stamps}/${sukiRules.maxPoints()} points • ${formatPeso(
         suki.rewardBalance,
       )} reward`;
     }
@@ -683,7 +688,7 @@ function renderSukiList() {
     }
 
     if (selectedSukiFilter === "ready") {
-      return Boolean(suki.active && suki.stamps >= MAX_STAMPS && suki.rewardBalance > 0);
+      return Boolean(suki.active && sukiRules.canRedeem(sukiRules.usablePoints(suki)) && suki.rewardBalance > 0);
     }
 
     if (selectedSukiFilter === "inactive") {
@@ -752,9 +757,9 @@ function renderSukiList() {
       (suki) => {
         const stampProgress = Math.min(
           100,
-          Math.round((suki.stamps / MAX_STAMPS) * 100),
+          Math.round((suki.stamps / sukiRules.maxPoints()) * 100),
         );
-        const isReady = suki.active && suki.stamps >= MAX_STAMPS && suki.rewardBalance > 0;
+        const isReady = suki.active && sukiRules.canRedeem(sukiRules.usablePoints(suki)) && suki.rewardBalance > 0;
         const statusLabel = !suki.active
           ? "Inactive"
           : isReady
@@ -784,7 +789,7 @@ function renderSukiList() {
                 ${statusLabel}
               </span>
 
-              <div class="suki-card-progress" aria-label="${suki.stamps} of ${MAX_STAMPS} stamps">
+              <div class="suki-card-progress" aria-label="${suki.stamps} of ${sukiRules.maxPoints()} points">
                 <span style="width:${stampProgress}%"></span>
               </div>
 
@@ -794,7 +799,7 @@ function renderSukiList() {
 
               <div>
                 <strong>
-                  ${suki.stamps}/${MAX_STAMPS}
+                  ${suki.stamps}/${sukiRules.maxPoints()} points
                 </strong>
 
                 <small>
@@ -851,11 +856,9 @@ function showSukiDetails(id) {
 
   const history = Array.isArray(suki.history) ? suki.history : [];
 
-  const stampProgress = Math.min(100, (suki.stamps / MAX_STAMPS) * 100);
-
-  const remainingStamps = Math.max(0, MAX_STAMPS - suki.stamps);
-
-  const rewardBalance = Number(suki.rewardBalance) || 0;
+  const stampProgress = Math.min(100, (suki.stamps / sukiRules.maxPoints()) * 100);
+  const remainingStamps = Math.max(0, sukiRules.maxPoints() - suki.stamps);
+  const rewardBalance = sukiRules.pesoValueOfPoints(sukiRules.usablePoints(suki));
 
   detailContent.innerHTML = `
 
@@ -998,7 +1001,7 @@ function showSukiDetails(id) {
             <strong>
               ${suki.stamps}
               <small>
-                / ${MAX_STAMPS}
+                / ${sukiRules.maxPoints()}
               </small>
             </strong>
 
@@ -1061,7 +1064,7 @@ function showSukiDetails(id) {
             </span>
 
             <span>
-              ${suki.stamps}/${MAX_STAMPS}
+              ${suki.stamps}/${sukiRules.maxPoints()} points
             </span>
 
           </div>
@@ -1383,7 +1386,8 @@ function deleteSuki() {
 
   const sukis = getSukis().filter((suki) => suki.id !== deleteSukiId);
 
-  saveSukis(sukis);
+  const result = saveSukis(sukis);
+  if (!result.ok) return;
 
   deleteSukiId = "";
 
@@ -1457,7 +1461,8 @@ async function linkNfcToSelectedSuki() {
 
     sukis[index].nfcId = nfcId;
 
-    saveSukis(sukis);
+    const result = saveSukis(sukis);
+    if (!result.ok) return;
 
     showSukiDetails(sukiId);
   });
@@ -1500,7 +1505,8 @@ function confirmUnlinkSelectedNfc() {
 
   sukis[index].nfcId = "";
 
-  saveSukis(sukis);
+  const result = saveSukis(sukis);
+  if (!result.ok) return;
 
   unlinkSukiId = "";
 

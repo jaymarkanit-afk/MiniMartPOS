@@ -7,6 +7,27 @@ const settings = settingsApi ? settingsApi.get() : {};
 
 settingsApi?.applyTheme(settings);
 
+function showStorageWarning() {
+  const database = window.miniMartDB;
+  if (!database?.getStorageIssues?.().length || document.getElementById("storageWarning")) {
+    return;
+  }
+  const banner = document.createElement("aside");
+  banner.id = "storageWarning";
+  banner.className = "storage-warning";
+  banner.setAttribute("role", "alert");
+  banner.innerHTML = `
+    <strong>Some saved data could not be read.</strong>
+    <span>A backup copy was saved. Check your browser storage before making changes.</span>
+    <button type="button" aria-label="Dismiss storage warning">Dismiss</button>
+  `;
+  banner.querySelector("button").addEventListener("click", () => banner.remove());
+  document.body.prepend(banner);
+}
+
+showStorageWarning();
+window.addEventListener("storage-corrupt", showStorageWarning);
+
 function applyStoreLogo(nextSettings) {
   const logoIsValid =
     nextSettings?.logoDataUrl &&

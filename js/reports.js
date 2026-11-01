@@ -795,8 +795,12 @@ function voidSale(saleId) {
   sale.status = "voided";
   sale.voidedAt = new Date().toISOString();
   sale.voidReason = "Manager-approved void";
-  window.miniMartDB.saveProducts(inventory);
-  window.miniMartDB.saveSales(currentSales);
+  const productsResult = window.miniMartDB.saveProducts(inventory);
+  const salesResult = window.miniMartDB.saveSales(currentSales);
+  if (!productsResult?.ok || !salesResult?.ok) {
+    showStorageError(storageErrorMessage(!productsResult?.ok ? productsResult : salesResult));
+    return;
+  }
   window.location.reload();
 }
 

@@ -180,7 +180,8 @@
       }
       saving = true;
       saveButton.disabled = true;
-      db.saveProducts(products.map((p) => changes.get(p.name) || p));
+      const result = db.saveProducts(products.map((p) => changes.get(p.name) || p));
+      if (!result?.ok) throw result.error;
       closeEditor();
       selected.clear();
       document.dispatchEvent(new CustomEvent("miniMartInventoryRefresh"));

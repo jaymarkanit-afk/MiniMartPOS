@@ -72,7 +72,7 @@ let adjustmentProductNames = [];
 let pendingDeleteName = null;
 let editingName = null;
 let modalMode = "create-category";
-let selectedCategoryIcon = "Icons/bread.png";
+let selectedCategoryIcon = "bread";
 let rows = [];
 let lastAdjustment = null;
 const inventoryParams = new URLSearchParams(window.location.search);
@@ -176,10 +176,7 @@ function safeAccent(value) {
 }
 
 function categoryIconPath(category) {
-  const path = window.miniMartDB.categoryIcon(category);
-  return /^Icons\/[A-Za-z0-9._-]+\.(?:png|svg)$/.test(path)
-    ? path
-    : "Icons/bread.png";
+  return window.miniMartDB.categoryIcon(category);
 }
 
 function canonicalCategory(value, categories = window.miniMartDB.categories()) {
@@ -221,7 +218,7 @@ function renderRows() {
         .sort(sortProducts);
       const safeCategory = escapeHtml(category);
       const categoryUnit = window.miniMartDB.categoryDefaultUnit(category);
-      const header = `<tr class="category-group" style="--accent:${safeAccent(categoryAccent(category))}" data-category="${safeCategory}" data-open="false" tabindex="0" aria-expanded="false"><td colspan="7"><span><img src="${categoryIconPath(category)}" alt="" /></span><strong>${safeCategory}</strong><small>${categoryProducts.length} products</small>${categoryUnit !== "piece" ? `<em class="unit-tag">${unitLabel(categoryUnit)}</em>` : ""}<button type="button" class="category-add-product" data-add-category="${safeCategory}" aria-label="Add product to ${safeCategory}">＋ Add product</button><b>＋</b></td></tr>`;
+      const header = `<tr class="category-group" style="--accent:${safeAccent(categoryAccent(category))}" data-category="${safeCategory}" data-open="false" tabindex="0" aria-expanded="false"><td colspan="7"><span><img data-category-icon="${safeCategory}" alt="" /></span><strong>${safeCategory}</strong><small>${categoryProducts.length} products</small>${categoryUnit !== "piece" ? `<em class="unit-tag">${unitLabel(categoryUnit)}</em>` : ""}<button type="button" class="category-add-product" data-add-category="${safeCategory}" aria-label="Add product to ${safeCategory}">＋ Add product</button><b>＋</b></td></tr>`;
       const productRows = categoryProducts
         .map(
           (product) => {
@@ -233,13 +230,16 @@ function renderRows() {
                 : window.miniMartDB.formatQuantity(product.stock, unit);
             const threshold = Number(window.miniMartSettings.get().lowStockThreshold) || 0;
             const stockClass = Number(product.stock) <= 0 ? "is-out" : Number(product.stock) <= threshold ? "is-low" : "";
-            return `<tr data-product="${escapeHtml(product.name)}" data-category="${escapeHtml(product.category)}" data-barcode="${escapeHtml(product.barcode || "")}" tabindex="0"><td><label class="select-products-label"><input class="product-select" type="checkbox" data-select-product="${escapeHtml(product.name)}" aria-label="Select ${escapeHtml(product.name)}" ${selectedProductNames.has(product.name) ? "checked" : ""} /></label><span>${escapeHtml(product.name)}</span></td><td><span class="category-label" style="--accent:${safeAccent(categoryAccent(product.category))}"><img src="${categoryIconPath(product.category)}" alt="" />${escapeHtml(product.category)}</span></td><td class="inventory-price">${window.miniMartDB.isKnownCost(product.costPrice) ? window.miniMartSettings.formatCurrency(product.costPrice) : "—"}</td><td class="inventory-price">${price}${unit === "piece" ? "" : ` / ${unitLabel(unit)}`}</td><td class="inventory-stock ${stockClass}">${stock}${stockClass === "is-low" ? " <small>LOW</small>" : stockClass === "is-out" ? " <small>OUT</small>" : ""}</td><td class="inventory-expiry">${product.expiryDate ? escapeHtml(product.expiryDate) : "—"}</td><td class="row-actions"><button class="adjust-action" type="button">＋ Stock</button><button class="history-action" type="button">▤ History</button><button class="edit-action" type="button">♢ Edit</button><button class="delete-action" type="button">♧ Delete</button></td></tr>`;
+            return `<tr data-product="${escapeHtml(product.name)}" data-category="${escapeHtml(product.category)}" data-barcode="${escapeHtml(product.barcode || "")}" tabindex="0"><td><label class="select-products-label"><input class="product-select" type="checkbox" data-select-product="${escapeHtml(product.name)}" aria-label="Select ${escapeHtml(product.name)}" ${selectedProductNames.has(product.name) ? "checked" : ""} /></label><span>${escapeHtml(product.name)}</span></td><td><span class="category-label" style="--accent:${safeAccent(categoryAccent(product.category))}"><img data-category-icon="${escapeHtml(product.category)}" alt="" />${escapeHtml(product.category)}</span></td><td class="inventory-price">${window.miniMartDB.isKnownCost(product.costPrice) ? window.miniMartSettings.formatCurrency(product.costPrice) : "—"}</td><td class="inventory-price">${price}${unit === "piece" ? "" : ` / ${unitLabel(unit)}`}</td><td class="inventory-stock ${stockClass}">${stock}${stockClass === "is-low" ? " <small>LOW</small>" : stockClass === "is-out" ? " <small>OUT</small>" : ""}</td><td class="inventory-expiry">${product.expiryDate ? escapeHtml(product.expiryDate) : "—"}</td><td class="row-actions"><button class="adjust-action" type="button">＋ Stock</button><button class="history-action" type="button">▤ History</button><button class="edit-action" type="button">♢ Edit</button><button class="delete-action" type="button">♧ Delete</button></td></tr>`;
           },
         )
         .join("");
       return header + productRows;
     })
     .join("");
+  tbody.querySelectorAll("[data-category-icon]").forEach((image) => {
+    image.src = categoryIconPath(image.dataset.categoryIcon);
+  });
   rows = [...tbody.querySelectorAll("tr[data-product]")];
   updateVisibleRows();
 }
@@ -455,8 +455,8 @@ function openModal(product) {
   updateProductUnitUi();
   lossConfirm.checked = false;
   selectedCategoryIcon = product
-    ? categoryIconPath(product.category)
-    : "Icons/bread.png";
+    ? window.miniMartDB.categoryIconId(product.category)
+    : "bread";
   updateIconPicker();
   resetProductLookup();
   modal.hidden = false;
@@ -726,8 +726,12 @@ document.getElementById("saveStockAdjustment").addEventListener("click", () => {
       date: timestamp,
     });
   }
-  window.miniMartDB.saveProducts(products);
-  localStorage.setItem("miniMartInventoryAdjustments", JSON.stringify(history.slice(-1000)));
+  const productsResult = window.miniMartDB.saveProducts(products);
+  const historyResult = safeWrite("miniMartInventoryAdjustments", history.slice(-1000));
+  if (!productsResult?.ok || !historyResult.ok) {
+    showStorageError(storageErrorMessage(!productsResult?.ok ? productsResult : historyResult));
+    return;
+  }
   lastAdjustment = {
     previousStocks,
     historyBefore,
@@ -772,11 +776,15 @@ undoStockAdjustment.addEventListener("click", () => {
     stockAdjustmentError.textContent = "Stock history is corrupted. Undo could not be completed.";
     return;
   }
-  localStorage.setItem(
+  const historyResult = safeWrite(
     "miniMartInventoryAdjustments",
-    JSON.stringify(lastAdjustment.historyBefore),
+    lastAdjustment.historyBefore,
   );
-  window.miniMartDB.saveProducts(products);
+  const productsResult = window.miniMartDB.saveProducts(products);
+  if (!historyResult.ok || !productsResult?.ok) {
+    showStorageError(storageErrorMessage(!historyResult.ok ? historyResult : productsResult));
+    return;
+  }
   lastAdjustment = null;
   undoStockAdjustment.disabled = true;
   renderRows();
@@ -791,9 +799,13 @@ document
   .addEventListener("click", () => {
     if (!pendingDeleteName) return;
     const products = window.miniMartDB.products();
-    window.miniMartDB.saveProducts(
+    const result = window.miniMartDB.saveProducts(
       products.filter((entry) => entry.name !== pendingDeleteName),
     );
+    if (!result?.ok) {
+      showStorageError(storageErrorMessage(result));
+      return;
+    }
     closeDeleteProductModal();
     renderRows();
   });
@@ -910,12 +922,17 @@ form.addEventListener("submit", (event) => {
       icon: "◇",
       accent: "var(--blue)",
     });
-    window.miniMartDB.saveCategories([
+    const categoryResult = window.miniMartDB.saveCategories([
       ...window.miniMartDB.categories(),
       category,
     ]);
-    window.miniMartDB.saveCategoryIcon(category, selectedCategoryIcon);
-    window.miniMartDB.saveCategoryDefaultUnit(category, categoryDefaultUnit.value);
+    const iconResult = window.miniMartDB.saveCategoryIcon(category, selectedCategoryIcon);
+    const unitResult = window.miniMartDB.saveCategoryDefaultUnit(category, categoryDefaultUnit.value);
+    if (![categoryResult, iconResult, unitResult].every((result) => result?.ok)) {
+      const failed = [categoryResult, iconResult, unitResult].find((result) => !result?.ok);
+      showStorageError(storageErrorMessage(failed));
+      return;
+    }
   } else if (modalMode === "edit-product") {
     const index = products.findIndex((entry) => entry.name === editingName);
     if (index !== -1) {
@@ -982,7 +999,11 @@ form.addEventListener("submit", (event) => {
       accent: "var(--blue)",
     });
   }
-  window.miniMartDB.saveProducts(products);
+  const result = window.miniMartDB.saveProducts(products);
+  if (!result?.ok) {
+    showStorageError(storageErrorMessage(result));
+    return;
+  }
   closeModal();
   renderRows();
 });

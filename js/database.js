@@ -4,6 +4,38 @@ const CATEGORIES_KEY = "miniMartCategories";
 const CATEGORY_ICONS_KEY = "miniMartCategoryIcons";
 const DELETED_PRODUCTS_KEY = "miniMartDeletedProducts";
 const CATEGORY_UNITS_KEY = "miniMartCategoryUnits";
+const CATEGORY_ICON_ALLOWLIST = Object.freeze({
+  amenities: "Icons/amenities.png",
+  beverages: "Icons/beverages.png",
+  bread: "Icons/bread.png",
+  cannedFood: "Icons/canned-food.png",
+  category: "Icons/category.png",
+  cigarette: "Icons/cigarette.png",
+  cookingOil: "Icons/cooking-oil.svg",
+  dairy: "Icons/dairy.png",
+  detergent: "Icons/detergent.png",
+  frozenGoods: "Icons/frozengoods.png",
+  grainsRice: "Icons/grains-rice.svg",
+  groceryStore: "Icons/grocery-store.png",
+  household: "Icons/household.svg",
+  instantFood: "Icons/instant-food.png",
+  meatFish: "Icons/meat-fish.svg",
+  riceGrains: "Icons/rice&grains.png",
+  sauces: "Icons/sauces.png",
+  schoolSupplies: "Icons/school_supplies.png",
+  snacks: "Icons/snacks.png",
+  sweets: "Icons/sweets.png",
+  toiletries: "Icons/toiletries.svg",
+  vegetables: "Icons/vegetables.svg",
+});
+const DEFAULT_CATEGORY_ICON_ID = "bread";
+const CATEGORY_ICON_PATH_TO_ID = Object.freeze(
+  Object.fromEntries(
+    Object.entries(CATEGORY_ICON_ALLOWLIST).map(([id, path]) => [path, id]),
+  ),
+);
+const STORAGE_BACKUP_LIMIT = 3;
+const storageIssues = [];
 
 const UNIT_RULES = {
   piece: { label: "piece", shortLabel: "pc", decimals: 0 },
@@ -208,16 +240,107 @@ function formatQuantity(value, unit = "piece") {
   return `${formatted} ${UNIT_RULES[normalizedUnit].shortLabel}`;
 }
 
+function isValidStoredValue(key, value, fallback) {
+  if (Array.isArray(fallback)) {
+    if (!Array.isArray(value)) return false;
+    if (key === PRODUCTS_KEY || key === SALES_KEY) {
+      return value.every((entry) => entry && typeof entry === "object" && !Array.isArray(entry));
+    }
+    return true;
+  }
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function backupCorruptValue(key, raw) {
+  if (typeof raw !== "string") return;
+  const backupKey = `${key}__corrupt_${Date.now()}`;
+  try {
+    const result = safeWrite(backupKey, raw, { raw: true });
+    if (!result.ok) {
+      showStorageError(storageErrorMessage(result));
+      throw result.error;
+    }
+    const backups = [];
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const candidate = localStorage.key(index);
+      if (candidate?.startsWith(`${key}__corrupt_`)) backups.push(candidate);
+    }
+    backups
+      .sort((first, second) => Number(second.slice(`${key}__corrupt_`.length)) - Number(first.slice(`${key}__corrupt_`.length)))
+      .slice(STORAGE_BACKUP_LIMIT)
+      .forEach((oldKey) => localStorage.removeItem(oldKey));
+  } catch (error) {
+    console.error(`Could not back up unreadable storage key "${key}".`, error);
+  }
+}
+
+function reportStorageIssue(key, status, error = null) {
+  const issue = { key, status, timestamp: new Date().toISOString() };
+  if (!storageIssues.some((entry) => entry.key === key && entry.status === status)) {
+    storageIssues.push(issue);
+  }
+  console.error(
+    `Mini Mart storage ${status} for "${key}". Using a fallback without overwriting the original.`,
+    error || "",
+  );
+  window.dispatchEvent(new CustomEvent("storage-corrupt", { detail: issue }));
+}
+
 function read(key, fallback) {
-  const saved = localStorage.getItem(key);
-  return saved ? JSON.parse(saved) : clone(fallback);
+  let saved;
+  try {
+    saved = localStorage.getItem(key);
+  } catch (error) {
+    reportStorageIssue(key, "corrupt", error);
+    return { status: "corrupt", value: clone(fallback), error };
+  }
+  if (saved === null) return { status: "missing", value: clone(fallback), error: null };
+  try {
+    const value = JSON.parse(saved);
+    if (!isValidStoredValue(key, value, fallback)) {
+      backupCorruptValue(key, saved);
+      const error = new Error("Stored value has the wrong shape.");
+      reportStorageIssue(key, "invalid", error);
+      return { status: "invalid", value: clone(fallback), error };
+    }
+    return { status: "ok", value, error: null };
+  } catch (error) {
+    backupCorruptValue(key, saved);
+    reportStorageIssue(key, "corrupt", error);
+    return { status: "corrupt", value: clone(fallback), error };
+  }
+}
+
+function migrateCategoryIcons() {
+  const result = read(CATEGORY_ICONS_KEY, {});
+  if (result.status === "missing") return {};
+  const migrated = {};
+  let changed = false;
+  Object.entries(result.value).forEach(([category, storedIcon]) => {
+    const iconId = Object.prototype.hasOwnProperty.call(
+      CATEGORY_ICON_ALLOWLIST,
+      storedIcon,
+    )
+      ? storedIcon
+      : CATEGORY_ICON_PATH_TO_ID[storedIcon] || DEFAULT_CATEGORY_ICON_ID;
+    migrated[category] = iconId;
+    changed ||= iconId !== storedIcon;
+  });
+  if (changed) write(CATEGORY_ICONS_KEY, migrated);
+  return migrated;
 }
 
 function write(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
+  const result = safeWrite(key, value);
+  if (!result.ok) {
+    showStorageError(storageErrorMessage(result));
+    return result;
+  }
+
   window.dispatchEvent(
     new CustomEvent("miniMartDatabaseChanged", { detail: { key } }),
   );
+  return result;
 }
 
 function normalizeProducts(products) {
@@ -254,25 +377,26 @@ window.miniMartDB = {
   roundMoney,
   formatQuantity,
   categories() {
-    const saved = localStorage.getItem(CATEGORIES_KEY);
-    const categories = saved
-      ? JSON.parse(saved)
-      : [...new Set(seedProducts.map((product) => product.category))];
-    if (!saved)
-      localStorage.setItem(CATEGORIES_KEY, JSON.stringify(categories));
-    return categories;
+    const result = read(
+      CATEGORIES_KEY,
+      [...new Set(seedProducts.map((product) => product.category))],
+    );
+    if (result.status === "missing") {
+      write(CATEGORIES_KEY, result.value);
+    }
+    return result.value;
   },
   saveCategories(categories) {
-    write(CATEGORIES_KEY, [...new Set(categories)]);
+    return write(CATEGORIES_KEY, [...new Set(categories)]);
   },
   categoryDefaultUnit(category) {
-    const units = read(CATEGORY_UNITS_KEY, {});
+    const units = read(CATEGORY_UNITS_KEY, {}).value;
     return normalizeUnit(units[category]);
   },
   saveCategoryDefaultUnit(category, unit) {
-    const units = read(CATEGORY_UNITS_KEY, {});
+    const units = read(CATEGORY_UNITS_KEY, {}).value;
     units[category] = normalizeUnit(unit);
-    write(CATEGORY_UNITS_KEY, units);
+    return write(CATEGORY_UNITS_KEY, units);
   },
   renameCategory(oldName, newName) {
     const categories = this.categories();
@@ -282,8 +406,8 @@ window.miniMartDB = {
     const renamed = categories.map((category) =>
       category === oldName ? newName : category,
     );
-    const icons = read(CATEGORY_ICONS_KEY, {});
-    const units = read(CATEGORY_UNITS_KEY, {});
+    const icons = migrateCategoryIcons();
+    const units = read(CATEGORY_UNITS_KEY, {}).value;
     if (icons[oldName] && !icons[newName]) icons[newName] = icons[oldName];
     delete icons[oldName];
     if (units[oldName] !== undefined && units[newName] === undefined)
@@ -323,8 +447,8 @@ window.miniMartDB = {
         ),
       );
     }
-    const icons = read(CATEGORY_ICONS_KEY, {});
-    const units = read(CATEGORY_UNITS_KEY, {});
+    const icons = read(CATEGORY_ICONS_KEY, {}).value;
+    const units = read(CATEGORY_UNITS_KEY, {}).value;
     delete icons[category];
     delete units[category];
     write(CATEGORIES_KEY, this.categories().filter((entry) => entry !== category));
@@ -334,45 +458,71 @@ window.miniMartDB = {
   },
   categoryIcon(category) {
     const defaults = {
-      Beverages: "Icons/beverages.png",
-      "Instant Food": "Icons/instant-food.png",
-      Snacks: "Icons/snacks.png",
-      Dairy: "Icons/dairy.png",
-      Bakery: "Icons/bread.png",
+      Beverages: "beverages",
+      "Instant Food": "instantFood",
+      Snacks: "snacks",
+      Dairy: "dairy",
+      Bakery: DEFAULT_CATEGORY_ICON_ID,
     };
-    const saved = read(CATEGORY_ICONS_KEY, {});
-    return saved[category] || defaults[category] || "Icons/bread.png";
+    const saved = migrateCategoryIcons();
+    const iconId = Object.prototype.hasOwnProperty.call(
+      CATEGORY_ICON_ALLOWLIST,
+      saved[category],
+    )
+      ? saved[category]
+      : defaults[category] || DEFAULT_CATEGORY_ICON_ID;
+    return CATEGORY_ICON_ALLOWLIST[iconId] || CATEGORY_ICON_ALLOWLIST[DEFAULT_CATEGORY_ICON_ID];
   },
-  saveCategoryIcon(category, iconPath) {
-    const icons = read(CATEGORY_ICONS_KEY, {});
-    icons[category] = iconPath;
-    write(CATEGORY_ICONS_KEY, icons);
+  saveCategoryIcon(category, iconId) {
+    const icons = migrateCategoryIcons();
+    icons[category] = Object.prototype.hasOwnProperty.call(
+      CATEGORY_ICON_ALLOWLIST,
+      iconId,
+    )
+      ? iconId
+      : DEFAULT_CATEGORY_ICON_ID;
+    return write(CATEGORY_ICONS_KEY, icons);
+  },
+  categoryIconId(category) {
+    const icons = migrateCategoryIcons();
+    const iconId = icons[category];
+    return Object.prototype.hasOwnProperty.call(CATEGORY_ICON_ALLOWLIST, iconId)
+      ? iconId
+      : DEFAULT_CATEGORY_ICON_ID;
+  },
+  categoryIconOptions() {
+    return Object.entries(CATEGORY_ICON_ALLOWLIST).map(([id, path]) => ({ id, path }));
   },
   products() {
-    const saved = localStorage.getItem(PRODUCTS_KEY);
-    if (!saved) write(PRODUCTS_KEY, seedProducts);
-    const deletedNames = new Set(read(DELETED_PRODUCTS_KEY, []));
-    const products = normalizeProducts(read(PRODUCTS_KEY, seedProducts)).filter(
+    const productsResult = read(PRODUCTS_KEY, seedProducts);
+    if (productsResult.status === "missing") write(PRODUCTS_KEY, seedProducts);
+    const deletedNamesResult = read(DELETED_PRODUCTS_KEY, []);
+    const deletedNames = new Set(deletedNamesResult.value);
+    const products = normalizeProducts(productsResult.value).filter(
       (product) => !deletedNames.has(product.name),
     );
-    localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
+    if (productsResult.status === "ok" || productsResult.status === "missing") {
+      const result = safeWrite(PRODUCTS_KEY, products);
+      if (!result.ok) showStorageError(storageErrorMessage(result));
+    }
     return products;
   },
   saveProducts(products) {
     const names = new Set(products.map((product) => product.name));
-    const deletedNames = new Set(read(DELETED_PRODUCTS_KEY, []));
+    const deletedNames = new Set(read(DELETED_PRODUCTS_KEY, []).value);
     seedProducts.forEach((product) => {
       if (names.has(product.name)) deletedNames.delete(product.name);
       else deletedNames.add(product.name);
     });
-    write(DELETED_PRODUCTS_KEY, [...deletedNames]);
-    write(PRODUCTS_KEY, products);
+    const deletedResult = write(DELETED_PRODUCTS_KEY, [...deletedNames]);
+    if (!deletedResult.ok) return deletedResult;
+    return write(PRODUCTS_KEY, products);
   },
   sales() {
-    return read(SALES_KEY, []);
+    return read(SALES_KEY, []).value;
   },
   saveSales(sales) {
-    write(SALES_KEY, clone(sales));
+    return write(SALES_KEY, clone(sales));
   },
   recordSale(items, total, payment = {}) {
     const sales = this.sales();
@@ -399,6 +549,9 @@ window.miniMartDB = {
         ? Number(payment.rewardUsed)
         : null,
     });
-    write(SALES_KEY, sales);
+    return write(SALES_KEY, sales);
+  },
+  getStorageIssues() {
+    return storageIssues.map((issue) => ({ ...issue }));
   },
 };

@@ -158,6 +158,43 @@ body {
   color: var(--ink);
   font-family: Outfit, sans-serif;
 }
+.storage-warning {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px;
+  background: #fff1d6;
+  border-bottom: 1px solid #d89c31;
+  color: #5b3b08;
+  font-size: 0.9rem;
+}
+.storage-error {
+  position: fixed;
+  z-index: 10000;
+  right: 18px;
+  bottom: 18px;
+  max-width: min(420px, calc(100vw - 36px));
+  padding: 14px 16px;
+  border: 1px solid var(--red);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+.storage-warning span {
+  flex: 1;
+}
+.storage-warning button {
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  padding: 4px 9px;
+  background: transparent;
+  color: inherit;
+}
+html[data-theme="dark"] .storage-warning {
+  background: #493716;
+  color: #ffe4a8;
+}
 button,
 input,
 select,

@@ -47,7 +47,8 @@ function getSettings() {
         ...cloneSettings(defaultSettings),
         theme: defaultSettings.theme,
       };
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(initialSettings));
+      const result = safeWrite(SETTINGS_KEY, initialSettings);
+      if (!result.ok) showStorageError(storageErrorMessage(result));
       return initialSettings;
     }
 
@@ -93,7 +94,8 @@ function getSettings() {
     const theme = normalizeTheme(settings.theme, true);
     if (settings.theme !== theme) {
       settings.theme = theme;
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+      const result = safeWrite(SETTINGS_KEY, settings);
+      if (!result.ok) showStorageError(storageErrorMessage(result));
     }
     return settings;
   } catch (error) {
@@ -110,13 +112,17 @@ function saveSettings(changes) {
   };
 
   try {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(nextSettings));
+    const result = safeWrite(SETTINGS_KEY, nextSettings);
+    if (!result.ok) {
+      showStorageError(storageErrorMessage(result));
+      return { settings: getSettings(), error: result.error, result };
+    }
     window.dispatchEvent(
       new CustomEvent("miniMartSettingsChanged", {
         detail: cloneSettings(nextSettings),
       }),
     );
-    return { settings: nextSettings, error: null };
+    return { settings: nextSettings, error: null, result };
   } catch (error) {
     console.error("Failed to save settings:", error);
     return { settings: getSettings(), error };
