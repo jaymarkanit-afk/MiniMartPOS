@@ -134,26 +134,7 @@ const categoryActionIcons = {
   rename: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5V20h3.5L18 9.5 14.5 6 4 16.5Z" /><path d="m13 7.5 3.5 3.5" /></svg>',
   delete: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 11v6M14 11v6M9 7l1-2h4l1 2m-9 0 1 13h8l1-13" /></svg>',
 };
-const categoryIconOptions = [
-  ["beverages", "Icons/beverages.png", "Beverages"],
-  ["instantFood", "Icons/instant-food.png", "Instant food"],
-  ["snacks", "Icons/snacks.png", "Snacks"],
-  ["dairy", "Icons/dairy.png", "Dairy"],
-  ["bread", "Icons/bread.png", "Bread"],
-  ["cannedFood", "Icons/canned-food.png", "Canned food"],
-  ["frozenGoods", "Icons/frozengoods.png", "Frozen goods"],
-  ["vegetables", "Icons/vegetables.svg", "Vegetables"],
-  ["meatFish", "Icons/meat-fish.svg", "Meat and fish"],
-  ["riceGrains", "Icons/rice&grains.png", "Rice and grains"],
-  ["sauces", "Icons/sauces.png", "Sauces"],
-  ["cookingOil", "Icons/cooking-oil.svg", "Cooking oil"],
-  ["detergent", "Icons/detergent.png", "Cleaning"],
-  ["toiletries", "Icons/toiletries.svg", "Toiletries"],
-  ["schoolSupplies", "Icons/school_supplies.png", "School supplies"],
-  ["cigarette", "Icons/cigarette.png", "Cigarettes"],
-  ["amenities", "Icons/amenities.png", "Amenities"],
-  ["category", "Icons/category.png", "General"],
-];
+const categoryIconOptions = window.miniMartDB.categoryIconOptions();
 
 function showFieldError(fieldName, message) {
   const error = document.getElementById(`${fieldName}Error`);
@@ -1180,7 +1161,18 @@ function importProducts() {
     console.error("Could not import products:", error);
     safeWrite("miniMartProducts", oldProducts);
     safeWrite("miniMartCategories", oldCategories);
-    if (oldCategoryIcons !== null) safeWrite("miniMartCategoryIcons", oldCategoryIcons, { raw: true });
+    if (oldCategoryIcons !== null) {
+      try {
+        safeWrite(
+          "miniMartCategoryIcons",
+          window.miniMartDB.normalizeCategoryIcons(
+            JSON.parse(oldCategoryIcons),
+          ),
+        );
+      } catch {
+        safeWrite("miniMartCategoryIcons", oldCategoryIcons, { raw: true });
+      }
+    }
     if (oldDeletedProducts !== null) safeWrite("miniMartDeletedProducts", oldDeletedProducts, { raw: true });
     setProductImportModalStatus("Could not save products. Nothing was changed.", true);
   }
@@ -1256,7 +1248,7 @@ function restoreBackupData(data) {
     products: data.products,
     sales: data.sales,
     categories: data.categories,
-    categoryIcons: data.categoryIcons || {},
+    categoryIcons: window.miniMartDB.normalizeCategoryIcons(data.categoryIcons || {}),
     deletedProducts: data.deletedProducts || [],
     customers: data.customers,
     inventoryAdjustments: data.inventoryAdjustments || [],
@@ -1491,16 +1483,16 @@ function renderCategoryManagement() {
     iconPickerLabel.textContent = "Choose category icon";
     iconPicker.append(iconPickerLabel);
     const currentIcon = window.miniMartDB.categoryIconId(category);
-    categoryIconOptions.forEach(([key, path, label]) => {
+    categoryIconOptions.forEach(({ id, path, label }) => {
       const option = document.createElement("button");
       option.type = "button";
       option.className = "category-icon-option";
-      option.dataset.categoryIcon = key;
+      option.dataset.categoryIcon = id;
       option.dataset.category = category;
       option.title = label;
       option.setAttribute("aria-label", `${label} icon`);
-      option.setAttribute("aria-pressed", String(key === currentIcon));
-      if (key === currentIcon) option.classList.add("is-selected");
+      option.setAttribute("aria-pressed", String(id === currentIcon));
+      if (id === currentIcon) option.classList.add("is-selected");
       const image = document.createElement("img");
       image.src = path;
       image.alt = "";

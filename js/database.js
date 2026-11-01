@@ -9,24 +9,56 @@ const CATEGORY_ICON_ALLOWLIST = Object.freeze({
   beverages: "Icons/beverages.png",
   bread: "Icons/bread.png",
   cannedFood: "Icons/canned-food.png",
-  category: "Icons/category.png",
   cigarette: "Icons/cigarette.png",
-  cookingOil: "Icons/cooking-oil.svg",
   dairy: "Icons/dairy.png",
   detergent: "Icons/detergent.png",
   frozenGoods: "Icons/frozengoods.png",
-  grainsRice: "Icons/grains-rice.svg",
-  groceryStore: "Icons/grocery-store.png",
-  household: "Icons/household.svg",
   instantFood: "Icons/instant-food.png",
-  meatFish: "Icons/meat-fish.svg",
   riceGrains: "Icons/rice&grains.png",
   sauces: "Icons/sauces.png",
   schoolSupplies: "Icons/school_supplies.png",
   snacks: "Icons/snacks.png",
   sweets: "Icons/sweets.png",
-  toiletries: "Icons/toiletries.svg",
-  vegetables: "Icons/vegetables.svg",
+});
+const CATEGORY_ICON_LEGACY_ALIASES = Object.freeze({
+  "cooking-oil": "sauces",
+  cookingOil: "sauces",
+  "Icons/cooking-oil.svg": "sauces",
+  "grains-rice": "riceGrains",
+  grainsRice: "riceGrains",
+  "Icons/grains-rice.svg": "riceGrains",
+  household: "detergent",
+  "Icons/household.svg": "detergent",
+  "meat-fish": "frozenGoods",
+  meatFish: "frozenGoods",
+  "Icons/meat-fish.svg": "frozenGoods",
+  "toiletries": "amenities",
+  "Icons/toiletries.svg": "amenities",
+  groceryStore: "cannedFood",
+  "Icons/grocery-store.png": "cannedFood",
+  vegetables: "cannedFood",
+  "Icons/vegetables.svg": "cannedFood",
+});
+const CATEGORY_ICON_LABELS = Object.freeze({
+  amenities: "Amenities",
+  beverages: "Beverages",
+  bread: "Bread",
+  cannedFood: "Canned food",
+  cigarette: "Cigarettes",
+  cookingOil: "Cooking oil",
+  dairy: "Dairy",
+  detergent: "Cleaning",
+  frozenGoods: "Frozen goods",
+  grainsRice: "Grains and rice",
+  instantFood: "Instant food",
+  meatFish: "Meat and fish",
+  riceGrains: "Rice and grains",
+  sauces: "Sauces",
+  schoolSupplies: "School supplies",
+  snacks: "Snacks",
+  sweets: "Sweets",
+  toiletries: "Toiletries",
+  vegetables: "Vegetables",
 });
 const DEFAULT_CATEGORY_ICON_ID = "bread";
 const CATEGORY_ICON_PATH_TO_ID = Object.freeze(
@@ -311,21 +343,29 @@ function read(key, fallback) {
   }
 }
 
+function normalizeCategoryIcons(icons) {
+  const normalized = {};
+  Object.entries(icons && typeof icons === "object" ? icons : {}).forEach(
+    ([category, storedIcon]) => {
+      const iconId = Object.prototype.hasOwnProperty.call(
+        CATEGORY_ICON_ALLOWLIST,
+        storedIcon,
+      )
+        ? storedIcon
+        : CATEGORY_ICON_LEGACY_ALIASES[storedIcon] ||
+          CATEGORY_ICON_PATH_TO_ID[storedIcon] ||
+          DEFAULT_CATEGORY_ICON_ID;
+      normalized[category] = iconId;
+    },
+  );
+  return normalized;
+}
+
 function migrateCategoryIcons() {
   const result = read(CATEGORY_ICONS_KEY, {});
   if (result.status === "missing") return {};
-  const migrated = {};
-  let changed = false;
-  Object.entries(result.value).forEach(([category, storedIcon]) => {
-    const iconId = Object.prototype.hasOwnProperty.call(
-      CATEGORY_ICON_ALLOWLIST,
-      storedIcon,
-    )
-      ? storedIcon
-      : CATEGORY_ICON_PATH_TO_ID[storedIcon] || DEFAULT_CATEGORY_ICON_ID;
-    migrated[category] = iconId;
-    changed ||= iconId !== storedIcon;
-  });
+  const migrated = normalizeCategoryIcons(result.value);
+  const changed = JSON.stringify(migrated) !== JSON.stringify(result.value);
   if (changed) write(CATEGORY_ICONS_KEY, migrated);
   return migrated;
 }
@@ -491,8 +531,13 @@ window.miniMartDB = {
       : DEFAULT_CATEGORY_ICON_ID;
   },
   categoryIconOptions() {
-    return Object.entries(CATEGORY_ICON_ALLOWLIST).map(([id, path]) => ({ id, path }));
+    return Object.entries(CATEGORY_ICON_ALLOWLIST).map(([id, path]) => ({
+      id,
+      path,
+      label: CATEGORY_ICON_LABELS[id] || id,
+    }));
   },
+  normalizeCategoryIcons,
   products() {
     const productsResult = read(PRODUCTS_KEY, seedProducts);
     if (productsResult.status === "missing") write(PRODUCTS_KEY, seedProducts);

@@ -205,6 +205,23 @@ function updateIconPicker() {
     });
 }
 
+function renderIconPicker() {
+  const options = categoryIconPicker.querySelector(".icon-options");
+  options.replaceChildren();
+  window.miniMartDB.categoryIconOptions().forEach(({ id, path, label }) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "icon-option";
+    button.dataset.icon = id;
+    button.setAttribute("aria-label", `${label} icon`);
+    const image = document.createElement("img");
+    image.src = path;
+    image.alt = "";
+    button.append(image);
+    options.append(button);
+  });
+}
+
 function renderRows() {
   const products = window.miniMartDB.products();
   const categories = [
@@ -518,6 +535,7 @@ function closeModal() {
   lossConfirmField.hidden = true;
 }
 
+renderIconPicker();
 renderRows();
 document.addEventListener("miniMartInventoryRefresh", renderRows);
 window.addEventListener("storage", (event) => {
