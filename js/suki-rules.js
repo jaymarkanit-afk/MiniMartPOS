@@ -1,7 +1,8 @@
 "use strict";
 
-const LEGACY_MAX_POINTS = 40;
-const LEGACY_MAX_REWARD_BALANCE = 200;
+// Most points a customer can earn or spend. Earning stops at this limit.
+const MAX_POINTS = 40;
+const MAX_REWARD_BALANCE = 200;
 
 function normalizedSukiSettings() {
   const settings = window.miniMartSettings?.get?.() || {};
@@ -81,12 +82,12 @@ function usablePoints(suki, now = new Date()) {
   if (!Number.isFinite(points) || points <= 0 || isExpired(pointsEntryDate(suki), now)) {
     return 0;
   }
-  return Math.max(0, Math.min(LEGACY_MAX_POINTS, points));
+  return Math.max(0, Math.min(MAX_POINTS, points));
 }
 
 window.miniMartSukiRules = {
-  maxPoints: () => LEGACY_MAX_POINTS,
-  maxRewardBalance: () => LEGACY_MAX_REWARD_BALANCE,
+  maxPoints: () => MAX_POINTS,
+  maxRewardBalance: () => MAX_REWARD_BALANCE,
   settings: normalizedSukiSettings,
   pointsEarned,
   pesoValueOfPoints,

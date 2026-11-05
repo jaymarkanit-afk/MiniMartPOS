@@ -1413,9 +1413,9 @@ function completeSale() {
   }
 
   /*
-   * Reward can only be redeemed
-   * when the customer has reached
-   * the 40-stamp limit.
+   * Rewards can be redeemed once the
+   * customer reaches the minimum set
+   * in Settings.
    */
   const usablePoints = sukiRules.usablePoints(suki);
   if (suki) {
@@ -1510,9 +1510,7 @@ function completeSale() {
       }
 
       /*
-       * Redeeming any reward at
-       * the 40-stamp limit resets
-       * the stamp cycle.
+       * Redeeming removes the points spent.
        */
       if (rewardUsed > 0 && sukiRules.canRedeem(sukiRules.usablePoints(current))) {
         newStamps = Math.max(0, sukiRules.usablePoints(current) - Math.ceil(rewardUsed / sukiRules.settings().pesoValue));
@@ -1732,8 +1730,9 @@ function updatePayment() {
   }
 
   /*
-   * Reward redemption only works
-   * at 40 stamps.
+   * Rewards can be redeemed once the
+   * customer reaches the minimum set
+   * in Settings.
    */
   const usablePoints = sukiRules.usablePoints(suki);
   if (!suki || !sukiRules.canRedeem(usablePoints)) {
