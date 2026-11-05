@@ -755,6 +755,18 @@ function manageShift() {
   showCheckoutToast(`Shift closed. Variance: ${peso(closingCash - expectedCash)}.`, "success");
 }
 
+// The reward a sale will really use. The payment panel, the confirmation
+// screen and the sale all read it from here, so they cannot disagree.
+function appliedReward(total, suki = getSelectedSuki()) {
+  const requested = Number(document.getElementById("rewardAmount")?.value || 0);
+  if (!suki || !Number.isFinite(requested) || requested < 0) return 0;
+  const points = sukiRules.usablePoints(suki);
+  if (!sukiRules.canRedeem(points)) return 0;
+  return window.miniMartDB.roundMoney(
+    Math.min(requested, suki.rewardBalance, sukiRules.maxRedeemAmount(points, total)),
+  );
+}
+
 function getSelectedSuki() {
   if (!selectedSukiId) {
     return null;
@@ -1300,10 +1312,7 @@ function openCheckoutConfirmation() {
   const paid = Number(amountGiven.value);
   const card = Number(cardGiven.value);
   const received = paymentMethod.value === "split" ? paid + card : paid;
-  const rewardUsed = Math.max(
-    0,
-    Math.min(Number(document.getElementById("rewardAmount")?.value || 0), total),
-  );
+  const rewardUsed = appliedReward(total);
   const due = Math.max(total - rewardUsed, 0);
   checkoutConfirmItems.innerHTML = [...cart.values()]
     .map(
@@ -1426,16 +1435,9 @@ function completeSale() {
       }
     }
 
-    rewardUsed = Math.min(
-      rewardUsed,
-      suki.rewardBalance,
-      sukiRules.maxRedeemAmount(usablePoints, total),
-    );
-  } else {
-    rewardUsed = 0;
   }
 
-  rewardUsed = window.miniMartDB.roundMoney(rewardUsed);
+  rewardUsed = appliedReward(total, suki);
   const cashRequired = Math.max(total - rewardUsed, 0);
   const change = Math.max(received - cashRequired, 0);
 
@@ -1741,11 +1743,7 @@ function updatePayment() {
       rewardInput.value = "0";
     }
   } else {
-    rewardUsed = Math.min(
-      rewardUsed,
-      suki.rewardBalance,
-      sukiRules.maxRedeemAmount(usablePoints, total),
-    );
+    rewardUsed = appliedReward(total, suki);
 
     if (rewardInput) {
       rewardInput.max = Math.min(
