@@ -82,6 +82,13 @@ function measuredUnit(unit) {
   );
 }
 
+// Only measured items can differ from price times quantity, such as P20 of rice.
+function lineAmount(item) {
+  return measuredUnit(item.unit) && item.lineTotal !== undefined
+    ? Number(item.lineTotal)
+    : Number(item.price) * Number(item.quantity);
+}
+
 function unitText(unit) {
   return window.miniMartDB.units()[unit]?.shortLabel || unit;
 }
@@ -1301,7 +1308,7 @@ function openCheckoutConfirmation() {
   checkoutConfirmItems.innerHTML = [...cart.values()]
     .map(
       (item) =>
-        `<div class="checkout-confirm-item"><span>${escapeHtml(item.name)} <small>×${item.quantity}</small></span><strong>${peso(item.lineTotal ?? item.price * item.quantity)}</strong></div>`,
+        `<div class="checkout-confirm-item"><span>${escapeHtml(item.name)} <small>×${item.quantity}</small></span><strong>${peso(lineAmount(item))}</strong></div>`,
     )
     .join("");
   document.getElementById("confirmSubtotal").textContent = peso(subtotal);
@@ -1604,7 +1611,7 @@ function completeSale() {
       unit: window.miniMartDB.normalizeUnit(item.unit || product?.unit),
 
       lineTotal: window.miniMartDB.roundMoney(
-        item.lineTotal ?? item.price * item.quantity,
+        lineAmount(item),
       ),
 
       costPrice: window.miniMartDB.isKnownCost(product?.costPrice)
@@ -1793,7 +1800,7 @@ function updatePaymentMethodUI() {
 function getCartTotal() {
   return window.miniMartDB.roundMoney(
     [...cart.values()].reduce(
-      (sum, item) => sum + Number(item.lineTotal ?? item.price * item.quantity),
+      (sum, item) => sum + lineAmount(item),
       0,
     ),
   );
@@ -1841,7 +1848,7 @@ function renderCart() {
 
             <span>
               <strong>
-                ${peso(item.lineTotal ?? item.quantity * item.price)}
+                ${peso(lineAmount(item))}
               </strong>
 
               ${
