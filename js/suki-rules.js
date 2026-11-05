@@ -49,6 +49,8 @@ function canRedeem(points) {
 function expiryDate(pointsEntryDate, now = new Date()) {
   const rules = normalizedSukiSettings();
   if (rules.expiryMode !== "days") return null;
+  // No earn history and no joined date means no expiry: missing data never removes points.
+  if (pointsEntryDate === null || pointsEntryDate === undefined) return null;
   const entryDate = new Date(pointsEntryDate);
   if (Number.isNaN(entryDate.getTime())) return null;
   const date = new Date(entryDate);
