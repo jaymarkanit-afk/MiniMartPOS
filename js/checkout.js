@@ -262,8 +262,9 @@ function addMeasuredLine() {
     item.lineTotal = window.miniMartDB.roundMoney(item.lineTotal + lineTotal);
   }
   item.unit = unit;
-  item.amountMode = measuredMode === "amount";
-  item.inputValue = measureValue.value;
+  // A line built from several additions keeps its running total, not the last entry.
+  item.amountMode = measuredMode === "amount" || (!measuredEditName && Boolean(item.amountMode));
+  item.inputValue = String(item.amountMode ? item.lineTotal : item.quantity);
   if (measuredEditName) cart.delete(measuredEditName);
   cart.set(item.name, item);
   closeMeasureModal();
@@ -310,6 +311,7 @@ function draftSnapshot() {
       name: item.name,
       priceAtSave: Number(item.price),
       quantity: item.quantity,
+      lineTotal: item.lineTotal,
       unit: item.unit || "piece",
       amountMode: Boolean(item.amountMode),
       inputValue: item.inputValue ?? "",
@@ -406,10 +408,13 @@ function restoreCheckoutDraft() {
     let quantity;
     let inputValue = saved.inputValue;
     if (saved.amountMode) {
-      const amount = parseMeasureValue(saved.inputValue);
-      quantity = amount === null || Number(product.price) <= 0
-        ? 0
-        : floorQuantity(amount / Number(product.price), unit);
+      // Older drafts have no lineTotal, and their quantity may not match inputValue.
+      const exact = saved.lineTotal !== undefined;
+      const amount = exact ? Number(saved.lineTotal) : parseMeasureValue(saved.inputValue);
+      const samePrice = Number(product.price) === Number(saved.priceAtSave);
+      if (amount === null || Number(product.price) <= 0) quantity = 0;
+      else if (exact && samePrice) quantity = window.miniMartDB.roundQuantity(Number(saved.quantity), unit);
+      else quantity = floorQuantity(amount / Number(product.price), unit);
       inputValue = amount === null ? "" : String(amount);
     } else {
       quantity = window.miniMartDB.roundQuantity(Number(saved.quantity), unit);
@@ -432,8 +437,8 @@ function restoreCheckoutDraft() {
       amountMode: Boolean(saved.amountMode),
       inputValue,
       lineTotal: window.miniMartDB.roundMoney(
-        saved.amountMode
-          ? Math.min(Number(inputValue || 0), clamped * Number(product.price))
+        saved.amountMode && clamped === quantity
+          ? Number(inputValue || 0)
           : clamped * Number(product.price),
       ),
     });
