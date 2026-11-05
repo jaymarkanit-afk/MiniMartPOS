@@ -23,12 +23,6 @@ function normalizedSukiSettings() {
   };
 }
 
-function roundMoney(value) {
-  return window.miniMartDB?.roundMoney
-    ? window.miniMartDB.roundMoney(value)
-    : Math.round((Number(value) + Number.EPSILON) * 100) / 100;
-}
-
 function pointsEarned(totalAmount) {
   const rules = normalizedSukiSettings();
   const amount = Number(totalAmount);

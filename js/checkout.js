@@ -17,8 +17,6 @@ void (async () => {
 
 const cart = new Map();
 
-const peso = (value) => window.miniMartSettings.formatCurrency(value);
-
 const receiptDate = document.getElementById("receiptDate");
 
 const search = document.getElementById("search");
@@ -269,7 +267,9 @@ function addMeasuredLine() {
    SUKI REWARD RULES
 ========================================================= */
 
-const SUKI_STORAGE_KEY = "miniMartSukis";
+const sukiStore = window.miniMartSukiStore;
+
+const SUKI_STORAGE_KEY = sukiStore.STORAGE_KEY;
 
 const sukiRules = window.miniMartSukiRules;
 
@@ -449,50 +449,6 @@ function restoreCheckoutDraft() {
 window.showNfcToast = showCheckoutToast;
 
 /* =========================================================
-   SUKI STORAGE
-========================================================= */
-
-function legacySukiId(suki, index) {
-  const source = `${suki.name || ""}|${suki.phone || ""}|${suki.joined || ""}|${suki.nfcId || ""}|${index}`;
-  const hash = [...source].reduce(
-    (value, character) => (value * 31 + character.charCodeAt(0)) | 0,
-    0,
-  );
-  return `suki-legacy-${Math.abs(hash)}`;
-}
-
-function getSukis() {
-  const saved = window.miniMartDB.readStorage(
-    SUKI_STORAGE_KEY,
-    [],
-    (value) => Array.isArray(value),
-  ).value;
-  return saved.map((suki, index) => ({
-      ...suki,
-      id: suki.id || legacySukiId(suki, index),
-      nfcId: window.normalizeNfcId ? window.normalizeNfcId(suki.nfcId || "") : String(suki.nfcId || "").trim().toUpperCase(),
-
-      stamps: Number.isFinite(Number(suki.stamps))
-        ? Math.max(0, Math.min(sukiRules.maxPoints(), Number(suki.stamps)))
-        : 0,
-
-      rewardBalance: Number.isFinite(Number(suki.rewardBalance))
-        ? Math.max(0, Math.min(sukiRules.maxRewardBalance(), Number(suki.rewardBalance)))
-        : 0,
-
-      active: suki.active !== false,
-
-      history: Array.isArray(suki.history) ? suki.history : [],
-    }));
-}
-
-function saveSukis(sukis) {
-  const result = safeWrite(SUKI_STORAGE_KEY, sukis);
-  if (!result.ok) showStorageError(storageErrorMessage(result));
-  return result;
-}
-
-/* =========================================================
    SUKI CHECKOUT UI
 ========================================================= */
 
@@ -579,7 +535,7 @@ function createSukiCheckoutUI() {
 }
 
 function refreshSukiSelector() {
-  const sukis = getSukis();
+  const sukis = sukiStore.read();
 
   const current = selectedSukiId;
 
@@ -611,7 +567,7 @@ async function scanSukiCard() {
 
   await scanNfcCard(
     (nfcId) => {
-      const suki = getSukis().find((entry) => entry.nfcId === nfcId);
+      const suki = sukiStore.read().find((entry) => entry.nfcId === nfcId);
 
       if (!suki) {
         selectedSukiId = "";
@@ -692,20 +648,6 @@ async function scanSukiCard() {
         scanStatus.classList.add("is-error");
       }
     },
-  );
-}
-
-function escapeHtml(value) {
-  return String(value).replace(
-    /[&<>'"]/g,
-    (character) =>
-      ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        "'": "&#39;",
-        '"': "&quot;",
-      })[character],
   );
 }
 
@@ -811,7 +753,7 @@ function getSelectedSuki() {
     return null;
   }
 
-  return getSukis().find((suki) => suki.id === selectedSukiId) || null;
+  return sukiStore.read().find((suki) => suki.id === selectedSukiId) || null;
 }
 
 function updateSukiCheckoutInfo() {
@@ -868,16 +810,6 @@ function updateSukiCheckoutInfo() {
 /* =========================================================
    PRODUCTS
 ========================================================= */
-
-function categoryIconPath(category) {
-  return window.miniMartDB.categoryIcon(category);
-}
-
-function safeAccent(value) {
-  return /^var\(--[a-z0-9-]+\)$/.test(String(value || ""))
-    ? value
-    : "var(--gold)";
-}
 
 function renderProducts() {
   const products = window.miniMartDB.products();
@@ -1062,30 +994,6 @@ function renderProducts() {
   );
 
   filterProducts();
-}
-
-function refreshProductCards() {
-  const stockByName = new Map(
-    window.miniMartDB
-      .products()
-      .map((product) => [product.name, product.stock]),
-  );
-
-  productCards.forEach((product) => {
-    const current = window.miniMartDB.products().find(
-      (entry) => entry.name === product.dataset.name,
-    );
-    const stock = stockByName.get(product.dataset.name) ?? 0;
-
-    product.dataset.stock = stock;
-
-    product.querySelector(".stock").textContent =
-      current && measuredUnit(current.unit)
-        ? `${window.miniMartDB.formatQuantity(stock, current.unit)} left`
-        : `${stock} left`;
-
-    product.style.opacity = stock ? "1" : ".55";
-  });
 }
 
 function addToCart() {
@@ -1435,9 +1343,14 @@ function completeSale() {
   saleInProgress = true;
   sellButton.disabled = true;
 
-  const productsSnapshot = window.miniMartDB.readStorage("miniMartProducts", null).raw;
-  const salesSnapshot = window.miniMartDB.readStorage("miniMartSales", null).raw;
-  const sukisSnapshot = window.miniMartDB.readStorage(SUKI_STORAGE_KEY, null).raw;
+  const rollbackSnapshot = [
+    "miniMartProducts",
+    "miniMartSales",
+    SUKI_STORAGE_KEY,
+    SHIFT_STORAGE_KEY,
+    "miniMartDeletedProducts",
+    "miniMartInventoryAdjustments",
+  ].map((key) => [key, window.miniMartDB.rawValue(key)]);
 
   const entries = [...cart.values()];
 
@@ -1565,7 +1478,7 @@ function completeSale() {
     ========================================= */
 
   if (suki) {
-    const sukis = getSukis();
+    const sukis = sukiStore.read();
 
     const index = sukis.findIndex((entry) => entry.id === suki.id);
 
@@ -1638,8 +1551,13 @@ function completeSale() {
         history: [...(current.history || []), historyEntry],
       };
 
-      const sukiResult = saveSukis(sukis);
-      if (!sukiResult.ok) throw sukiResult.error;
+      const sukiResult = sukiStore.save(sukis);
+      if (!sukiResult.ok) {
+        saleInProgress = false;
+        updatePayment();
+        showCheckoutToast("The sale could not be saved. Nothing was changed.");
+        return;
+      }
     }
   }
 
@@ -1696,11 +1614,16 @@ function completeSale() {
   });
 
   try {
-    const productsResult = window.miniMartDB.saveProducts(inventory);
+    const saleId = transactionNumber();
+    const productsResult = window.miniMartDB.saveProducts(inventory, {
+      reason: "sale",
+      reference: saleId,
+    });
     if (!productsResult?.ok) throw productsResult.error;
     const shift = ensureCurrentShift();
+    if (!shift) throw new Error("The shift could not be saved.");
     const saleResult = window.miniMartDB.recordSale(saleItems, total, {
-      transactionNumber: transactionNumber(),
+      transactionNumber: saleId,
       paymentMethod: paymentMethod.value,
       payments: {
         cash: paid,
@@ -1719,24 +1642,15 @@ function completeSale() {
     const shiftResult = safeWrite(SHIFT_STORAGE_KEY, shift);
     if (!shiftResult.ok) throw shiftResult.error;
   } catch (error) {
-    if (productsSnapshot === null) {
-      safeWrite("miniMartProducts", null, { remove: true });
-    } else {
-      safeWrite("miniMartProducts", productsSnapshot, { raw: true });
-    }
-    if (salesSnapshot === null) {
-      safeWrite("miniMartSales", null, { remove: true });
-    } else {
-      safeWrite("miniMartSales", salesSnapshot, { raw: true });
-    }
-    if (sukisSnapshot === null) {
-      safeWrite(SUKI_STORAGE_KEY, null, { remove: true });
-    } else {
-      safeWrite(SUKI_STORAGE_KEY, sukisSnapshot, { raw: true });
-    }
+    console.error("Sale could not be saved:", error);
+    rollbackSnapshot.forEach(([key, raw]) => {
+      safeWrite(key, raw, raw === null ? { remove: true } : { raw: true });
+    });
     saleInProgress = false;
+    renderProducts();
+    updateShiftButton();
     updatePayment();
-    showCheckoutToast(error.message || "The sale could not be saved.");
+    showCheckoutToast("The sale could not be saved. Nothing was changed.");
     return;
   }
 

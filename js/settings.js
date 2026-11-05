@@ -40,7 +40,10 @@ const dataHealthResults = document.getElementById("dataHealthResults");
 const settingsSearch = document.getElementById("settingsSearch");
 const settingsSearchEmpty = document.getElementById("settingsSearchEmpty");
 const exportInventoryHistory = document.getElementById("exportInventoryHistory");
+const stockHistoryNotice = document.getElementById("stockHistoryNotice");
 const restoreBackup = document.getElementById("restoreBackup");
+const confirmRestoreBackup = document.getElementById("confirmRestoreBackup");
+const cancelRestoreBackup = document.getElementById("cancelRestoreBackup");
 const reportExportData = document.getElementById("reportExportData");
 const salesRange = document.getElementById("salesRange");
 const salesRangeField = document.getElementById("salesRangeField");
@@ -105,16 +108,41 @@ let productImportFileData = null;
 let productImportReturnFocus = null;
 let resetDataReturnFocus = null;
 let pendingRestoreData = null;
+const BACKUP_FORMAT = "MiniMartPOS backup";
+const BACKUP_VERSION = 2;
+// Gives a safety backup's download time to start before the page reloads.
+const RESTORE_RELOAD_DELAY_MS = 1000;
 const backupKeys = {
   products: "miniMartProducts",
   sales: "miniMartSales",
   categories: "miniMartCategories",
   categoryIcons: "miniMartCategoryIcons",
+  categoryUnits: "miniMartCategoryUnits",
   deletedProducts: "miniMartDeletedProducts",
+  favoriteProducts: "miniMartFavoriteProducts",
   customers: "miniMartSukis",
   settings: "miniMartSettings",
   inventoryAdjustments: "miniMartInventoryAdjustments",
+  shiftHistory: "miniMartShiftHistory",
+  currentShift: "miniMartCurrentShift",
+  heldCarts: "miniMartHeldCarts",
 };
+const backupShapes = {
+  products: "records",
+  sales: "records",
+  categories: "strings",
+  categoryIcons: "object",
+  categoryUnits: "object",
+  deletedProducts: "strings",
+  favoriteProducts: "strings",
+  customers: "records",
+  settings: "object",
+  inventoryAdjustments: "records",
+  shiftHistory: "records",
+  currentShift: "objectOrNull",
+  heldCarts: "records",
+};
+const requiredBackupSections = ["products", "sales", "categories", "customers", "settings"];
 
 const fields = {
   storeName: document.getElementById("storeName"),
@@ -243,51 +271,65 @@ function setBackupStatus(message, isError = false) {
   backupStatus.className = `settings-status${isError ? " settings-status-error" : ""}`;
 }
 
-function readBackupData() {
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function matchesBackupShape(value, shape) {
+  if (shape === "records") return Array.isArray(value) && value.every(isPlainObject);
+  if (shape === "strings") return Array.isArray(value) && value.every((entry) => typeof entry === "string");
+  if (shape === "object") return isPlainObject(value);
+  return value === null || isPlainObject(value);
+}
+
+function backupSectionFallback(name) {
+  if (name === "settings") return window.miniMartSettings.get();
+  if (name === "currentShift") return null;
+  return backupShapes[name] === "object" ? {} : [];
+}
+
+function readBackupData(unreadable = []) {
   const data = {};
   Object.entries(backupKeys).forEach(([name, key]) => {
-    const raw = localStorage.getItem(key);
-    if (!raw) {
-      data[name] = name === "settings" ? window.miniMartSettings.get() : [];
-      return;
-    }
+    data[name] = backupSectionFallback(name);
     try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return;
       const parsed = JSON.parse(raw);
-      if (name === "settings") {
-        data[name] =
-          parsed && typeof parsed === "object" && !Array.isArray(parsed)
-            ? parsed
-            : window.miniMartSettings.get();
-      } else if (name === "categoryIcons") {
-        data[name] =
-          parsed && typeof parsed === "object" && !Array.isArray(parsed)
-            ? parsed
-            : {};
-      } else {
-        data[name] = Array.isArray(parsed) ? parsed : [];
-      }
+      if (matchesBackupShape(parsed, backupShapes[name])) data[name] = parsed;
+      else unreadable.push(name);
     } catch (error) {
       console.error(`Could not read ${name} backup data:`, error);
-      data[name] = name === "settings" ? window.miniMartSettings.get() : [];
+      unreadable.push(name);
     }
   });
   return data;
 }
 
 function storeDateParts(date = new Date()) {
-  const settings = window.miniMartSettings.get();
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: settings.timezone,
+  const format = (timeZone) => new Intl.DateTimeFormat("en-CA", {
+    timeZone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
   }).formatToParts(date);
+  let parts;
+  try {
+    parts = format(window.miniMartSettings.get().timezone);
+  } catch (error) {
+    console.error("Invalid store timezone:", error);
+    parts = format(window.miniMartSettings.defaults.timezone);
+  }
   return Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
 }
 
 function storeDateString(date = new Date()) {
   const parts = storeDateParts(date);
   return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+function todayFilename(prefix, extension) {
+  return `${prefix}-${storeDateString()}.${extension}`;
 }
 
 function reportFilename(dataType, extension) {
@@ -308,22 +350,15 @@ function downloadFile(content, filename, type) {
   const link = document.createElement("a");
   link.href = url;
   link.download = filename;
+  document.body.append(link);
   link.click();
-  URL.revokeObjectURL(url);
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
 function safeSpreadsheetText(value) {
   const text = value === null || value === undefined ? "" : String(value);
   return /^[=+\-@]/.test(text) ? `'${text}` : text;
-}
-
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
 }
 
 function productTemplateFilename() {
@@ -980,22 +1015,42 @@ function exportPdfReport() {
   }
 }
 
-function downloadBackupFile() {
-  const data = readBackupData();
+// Throws if the file cannot be made. Unreadable sections are left out rather
+// than saved as empty, so restoring the file cannot erase them.
+function createBackupFile(prefix, { requireComplete = false } = {}) {
+  const omitted = [];
+  const data = readBackupData(omitted);
+  if (requireComplete && omitted.length) {
+    throw new Error(`Could not read: ${omitted.join(", ")}.`);
+  }
+  omitted.forEach((name) => delete data[name]);
   const exportedAt = new Date().toISOString();
   downloadFile(
-    JSON.stringify({ format: "MiniMartPOS backup", version: 1, exportedAt, data }, null, 2),
-    todayFilename("mini-mart-pos-backup", "json"),
+    JSON.stringify({ format: BACKUP_FORMAT, version: BACKUP_VERSION, exportedAt, omitted, data }, null, 2),
+    todayFilename(prefix, "json"),
     "application/json",
   );
-  const backupResult = safeWrite("miniMartLastBackup", exportedAt);
-  if (!backupResult.ok) {
-    showStorageError(storageErrorMessage(backupResult));
-    setBackupStatus("Backup downloaded, but its timestamp could not be saved.", true);
-    return;
-  }
+  const lastBackupResult = safeWrite("miniMartLastBackup", exportedAt, { raw: true });
+  if (!lastBackupResult.ok) showStorageError(storageErrorMessage(lastBackupResult));
+  if (!omitted.includes("inventoryAdjustments")) markStockHistoryExported();
   updateBackupSummary();
-  setBackupStatus("Backup downloaded.");
+  return { omitted, lastBackupSaved: lastBackupResult.ok };
+}
+
+function downloadBackupFile() {
+  try {
+    const { omitted, lastBackupSaved } = createBackupFile("mini-mart-pos-backup");
+    if (omitted.length) {
+      setBackupStatus(`Backup downloaded without these unreadable sections: ${omitted.join(", ")}.`, true);
+    } else if (!lastBackupSaved) {
+      setBackupStatus("Backup downloaded, but its timestamp could not be saved.", true);
+    } else {
+      setBackupStatus("Backup downloaded.");
+    }
+  } catch (error) {
+    console.error("Could not create backup:", error);
+    setBackupStatus("Could not create the backup file. Please try again.", true);
+  }
 }
 
 function updateBackupSummary() {
@@ -1018,18 +1073,26 @@ function updateBackupSummary() {
 }
 
 function showRestorePreview(data, filename) {
+  const count = (name) => (data[name] || []).length;
+  const kept = Object.keys(backupKeys).filter(
+    (name) => !Object.prototype.hasOwnProperty.call(data, name),
+  );
   pendingRestoreData = data;
   backupRestorePreviewText.textContent =
-    `${filename}: ${data.products.length} products, ${data.sales.length} sales, ` +
-    `${data.categories.length} categories, ${data.customers.length} customers, ` +
-    `${(data.inventoryAdjustments || []).length} stock adjustments, and settings.`;
+    `${filename}: ${count("products")} products, ${count("sales")} sales, ` +
+    `${count("categories")} categories, ${count("customers")} customers, ` +
+    `${count("inventoryAdjustments")} stock adjustments, ${count("shiftHistory")} closed shifts, ` +
+    `${count("heldCarts")} held carts, and settings. A safety backup of your current data downloads first.` +
+    (kept.length ? ` Not in this file, so left unchanged: ${kept.join(", ")}.` : "");
   backupRestorePreview.hidden = false;
+  confirmRestoreBackup.focus();
 }
 
 function clearRestorePreview() {
   pendingRestoreData = null;
   backupRestorePreview.hidden = true;
   backupRestorePreviewText.textContent = "";
+  restoreBackup.value = "";
 }
 
 function runHealthCheck() {
@@ -1065,12 +1128,21 @@ function runHealthCheck() {
     : `Healthy: ${products.length} products, ${sales.length} sales, ${customers.length} customers, and ${categories.length} categories checked.`;
 }
 
+function updateStockHistoryNotice() {
+  const warning = window.miniMartDB.stockHistoryWarning();
+  stockHistoryNotice.textContent = warning;
+  stockHistoryNotice.hidden = !warning;
+}
+
+function markStockHistoryExported() {
+  const result = window.miniMartDB.markStockHistoryExported();
+  if (!result.ok) showStorageError(storageErrorMessage(result));
+  updateStockHistoryNotice();
+}
+
 function exportInventoryHistoryFile() {
-  let history = [];
-  try {
-    history = JSON.parse(localStorage.getItem("miniMartInventoryAdjustments") || "[]");
-  } catch (error) {
-    console.error("Could not read inventory history:", error);
+  const history = window.miniMartDB.stockHistory();
+  if (!history) {
     setBackupStatus("Could not read inventory history.", true);
     return;
   }
@@ -1079,7 +1151,7 @@ function exportInventoryHistoryFile() {
     return;
   }
   const rows = [
-    ["Date", "Product", "Previous stock", "Adjustment", "Stock after", "Reason"],
+    ["Date", "Product", "Previous stock", "Adjustment", "Stock after", "Reason", "Source", "Reference"],
     ...history.map((entry) => [
       safeSpreadsheetText(entry.date || ""),
       safeSpreadsheetText(entry.product || ""),
@@ -1087,13 +1159,16 @@ function exportInventoryHistoryFile() {
       entry.adjustment ?? "",
       entry.stockAfter ?? "",
       safeSpreadsheetText(entry.reason || ""),
+      safeSpreadsheetText(entry.source || ""),
+      safeSpreadsheetText(entry.reference || ""),
     ]),
   ];
   const sheet = XLSX.utils.aoa_to_sheet(rows);
-  sheet["!cols"] = [22, 30, 16, 14, 14, 36].map((wch) => ({ wch }));
+  sheet["!cols"] = [22, 30, 16, 14, 14, 18, 24, 26].map((wch) => ({ wch }));
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, sheet, "Inventory History");
   XLSX.writeFile(workbook, reportFilename("inventoryHistory", "xlsx"));
+  markStockHistoryExported();
   setBackupStatus(`Exported ${history.length} inventory history records.`);
 }
 
@@ -1109,6 +1184,7 @@ function importProducts() {
   const oldCategories = window.miniMartDB.categories();
   const oldCategoryIcons = localStorage.getItem("miniMartCategoryIcons");
   const oldDeletedProducts = localStorage.getItem("miniMartDeletedProducts");
+  const oldStockHistory = localStorage.getItem("miniMartInventoryAdjustments");
   const byName = new Map(oldProducts.map((product) => [product.name.toLowerCase(), product]));
   const nextProducts = [...oldProducts];
   const nextCategories = [...oldCategories];
@@ -1146,6 +1222,12 @@ function importProducts() {
     const importedNames = new Set(nextProducts.map((product) => product.name));
     const nextDeletedNames = deletedNames.filter((name) => !importedNames.has(name));
     const results = [
+      window.miniMartDB.recordStockChange(
+        window.miniMartDB.stockChanges(oldProducts, nextProducts, {
+          reason: "import",
+          source: productImportFileData?.file.name || "",
+        }),
+      ),
       safeWrite("miniMartProducts", nextProducts),
       safeWrite("miniMartCategories", nextCategories),
       safeWrite("miniMartDeletedProducts", nextDeletedNames),
@@ -1159,6 +1241,7 @@ function importProducts() {
     window.dispatchEvent(new CustomEvent("miniMartDatabaseChanged", { detail: { key: "miniMartProducts" } }));
   } catch (error) {
     console.error("Could not import products:", error);
+    restoreRawValue("miniMartInventoryAdjustments", oldStockHistory);
     safeWrite("miniMartProducts", oldProducts);
     safeWrite("miniMartCategories", oldCategories);
     if (oldCategoryIcons !== null) {
@@ -1200,68 +1283,124 @@ function closeResetDataModal() {
 }
 
 function resetAllData() {
-  const oldValues = Object.fromEntries(["miniMartProducts", "miniMartSales", "miniMartCategories", "miniMartCategoryIcons", "miniMartDeletedProducts", "miniMartSukis", "miniMartInventoryAdjustments"].map((key) => [key, localStorage.getItem(key)]));
+  try {
+    createBackupFile("mini-mart-pos-pre-reset-backup", { requireComplete: true });
+  } catch (error) {
+    console.error("Could not create backup before reset:", error);
+    resetDataStatus.textContent = `Automatic backup failed, so nothing was erased. ${error.message}`;
+    resetDataStatus.className = "settings-status settings-status-error";
+    return;
+  }
+  const oldValues =Object.fromEntries(["miniMartProducts", "miniMartSales", "miniMartCategories", "miniMartCategoryIcons", "miniMartDeletedProducts", "miniMartSukis", "miniMartInventoryAdjustments"].map((key) => [key, localStorage.getItem(key)]));
   try {
     const results = [
       ...["miniMartProducts", "miniMartSales", "miniMartCategories", "miniMartSukis", "miniMartInventoryAdjustments"].map((key) => safeWrite(key, [])),
       safeWrite("miniMartCategoryIcons", {}),
       safeWrite("miniMartDeletedProducts", []),
+      safeWrite("miniMartStockHistoryExport", null, { remove: true }),
     ];
     const failed = results.find((result) => !result.ok);
     if (failed) throw failed.error;
+    updateStockHistoryNotice();
     closeResetDataModal();
     setBackupStatus("All data was reset. Restore can bring it back from your backup file.");
     window.dispatchEvent(new CustomEvent("miniMartDatabaseChanged", { detail: { key: "miniMartProducts" } }));
   } catch (error) {
     console.error("Could not reset data:", error);
-    Object.entries(oldValues).forEach(([key, value]) => { if (value === null) localStorage.removeItem(key); else safeWrite(key, value, { raw: true }); });
+    Object.entries(oldValues).forEach(([key, value]) => { restoreRawValue(key, value); });
     resetDataStatus.textContent = "Could not reset data. Nothing was changed.";
     resetDataStatus.className = "settings-status settings-status-error";
   }
 }
 
-function isValidBackup(documentData) {
-  const data = documentData?.data;
-  return (
-    documentData?.format === "MiniMartPOS backup" &&
-    documentData?.version === 1 &&
-    data &&
-    typeof data === "object" &&
-    Array.isArray(data.products) &&
-    Array.isArray(data.sales) &&
-    Array.isArray(data.categories) &&
-    (!Object.prototype.hasOwnProperty.call(data, "categoryIcons") ||
-      (data.categoryIcons && typeof data.categoryIcons === "object" && !Array.isArray(data.categoryIcons))) &&
-    (!Object.prototype.hasOwnProperty.call(data, "deletedProducts") ||
-      Array.isArray(data.deletedProducts)) &&
-    Array.isArray(data.customers) &&
-    (!Object.prototype.hasOwnProperty.call(data, "inventoryAdjustments") ||
-      Array.isArray(data.inventoryAdjustments)) &&
-    data.settings &&
-    typeof data.settings === "object" &&
-    !Array.isArray(data.settings)
-  );
+function backupValidationError(documentData) {
+  if (documentData?.format !== BACKUP_FORMAT) return "this is not a Mini Mart backup.";
+  const { version, data } = documentData;
+  if (!Number.isInteger(version) || version < 1) return "its version number is not valid.";
+  if (version > BACKUP_VERSION) return "it was made by a newer version of this app.";
+  if (!isPlainObject(data)) return "it has no data section.";
+  const hasSection = (name) => Object.prototype.hasOwnProperty.call(data, name);
+  const omitted = Array.isArray(documentData.omitted) ? documentData.omitted : [];
+  const missing = requiredBackupSections.find((name) => !hasSection(name) && !omitted.includes(name));
+  if (missing) return `the "${missing}" section is missing.`;
+  const broken = Object.keys(backupKeys).find((name) => {
+    if (!hasSection(name)) return false;
+    // Version 1 files saved categoryIcons as [] when no icons had been set.
+    if (name === "categoryIcons" && version === 1 && Array.isArray(data[name]) && !data[name].length) return false;
+    return !matchesBackupShape(data[name], backupShapes[name]);
+  });
+  return broken ? `the "${broken}" section has the wrong format.` : "";
 }
 
-function restoreBackupData(data) {
-  const payload = {
-    products: data.products,
-    sales: data.sales,
-    categories: data.categories,
-    categoryIcons: window.miniMartDB.normalizeCategoryIcons(data.categoryIcons || {}),
-    deletedProducts: data.deletedProducts || [],
-    customers: data.customers,
-    inventoryAdjustments: data.inventoryAdjustments || [],
-    settings: data.settings,
-  };
-  Object.entries(payload).forEach(([name, value]) => {
-    const result = safeWrite(backupKeys[name], value);
-    if (!result.ok) throw result.error;
-  });
-  if (data.exportedAt) {
-    const result = safeWrite("miniMartLastBackup", data.exportedAt);
-    if (!result.ok) throw result.error;
+function restoreRawValue(key, raw) {
+  return raw === null
+    ? safeWrite(key, null, { remove: true })
+    : safeWrite(key, raw, { raw: true });
+}
+
+// Writes only the sections in the file. If a write fails, every key already
+// changed is put back and the error is rethrown.
+function restoreBackupData(backup) {
+  const data = { ...backup };
+  const hasSection = (name) => Object.prototype.hasOwnProperty.call(data, name);
+  if (hasSection("products")) {
+    data.inventoryAdjustments = window.miniMartDB.withStockChanges(
+      hasSection("inventoryAdjustments")
+        ? data.inventoryAdjustments
+        : window.miniMartDB.stockHistory() || [],
+      window.miniMartDB.stockChanges(window.miniMartDB.products(), data.products, { reason: "restore" }),
+    ).slice(-window.miniMartDB.stockHistoryLimit());
   }
+  const writes = Object.keys(backupKeys)
+    .filter(hasSection)
+    .map((name) => ({
+      key: backupKeys[name],
+      value: name === "categoryIcons"
+        ? window.miniMartDB.normalizeCategoryIcons(data[name])
+        : data[name],
+    }));
+  const previous = writes.map(({ key }) => ({ key, raw: localStorage.getItem(key) }));
+  for (const [index, { key, value }] of writes.entries()) {
+    const result = value === null
+      ? safeWrite(key, null, { remove: true })
+      : safeWrite(key, value);
+    if (!result.ok) {
+      const unrestored = previous
+        .slice(0, index)
+        .reverse()
+        .filter((entry) => !restoreRawValue(entry.key, entry.raw).ok)
+        .map((entry) => entry.key);
+      throw Object.assign(new Error(storageErrorMessage(result)), { unrestored });
+    }
+  }
+}
+
+async function confirmPendingRestore() {
+  const data = pendingRestoreData;
+  if (!data) return;
+  try {
+    createBackupFile("mini-mart-pos-pre-restore-backup", { requireComplete: true });
+  } catch (error) {
+    console.error("Could not create backup before restore:", error);
+    clearRestorePreview();
+    setBackupStatus(`Automatic backup failed, so the restore was stopped. Nothing was changed. ${error.message}`, true);
+    return;
+  }
+  try {
+    restoreBackupData(data);
+  } catch (error) {
+    console.error("Could not restore backup:", error);
+    clearRestorePreview();
+    setBackupStatus(
+      error.unrestored?.length
+        ? `Restore failed and these could not be put back: ${error.unrestored.join(", ")}. Restore the safety backup that just downloaded.`
+        : `Restore failed, and your data was put back as it was. ${error.message}`,
+      true,
+    );
+    return;
+  }
+  setBackupStatus("Backup restored. Reloading...");
+  await new Promise((resolve) => window.setTimeout(resolve, RESTORE_RELOAD_DELAY_MS));
   window.location.reload();
 }
 
@@ -1952,7 +2091,11 @@ resetDataModal.addEventListener("click", (event) => {
 resetConfirmText.addEventListener("input", () => {
   confirmResetData.disabled = resetConfirmText.value !== "RESET";
 });
-backupBeforeReset.addEventListener("click", downloadBackupFile);
+backupBeforeReset.addEventListener("click", () => {
+  downloadBackupFile();
+  resetDataStatus.textContent = backupStatus.textContent;
+  resetDataStatus.className = backupStatus.className;
+});
 confirmResetData.addEventListener("click", resetAllData);
 
 document.addEventListener("keydown", (event) => {
@@ -1973,33 +2116,18 @@ restoreBackup.addEventListener("change", () => {
     try {
       parsed = JSON.parse(reader.result);
     } catch {
-      setBackupStatus("That file is not valid JSON.", true);
+      setBackupStatus("That file is not valid JSON. Nothing was changed.", true);
       restoreBackup.value = "";
       return;
     }
-    const data = parsed?.data;
-    if (!isValidBackup(parsed)) {
-      setBackupStatus("Invalid backup file. Nothing was changed.", true);
+    const validationError = backupValidationError(parsed);
+    if (validationError) {
+      setBackupStatus(`Invalid backup file: ${validationError} Nothing was changed.`, true);
       restoreBackup.value = "";
       return;
     }
-    const summary =
-      `This will replace ${data.products.length} products, ${data.sales.length} sales, ` +
-      `${data.categories.length} categories, ${data.customers.length} customers, ` +
-      `${(data.inventoryAdjustments || []).length} stock adjustments, and your settings.`;
-    showRestorePreview(data, file.name);
-    setBackupStatus(summary);
-    if (window.confirm(`${summary}\n\nContinue restoring this backup?`)) {
-      window.withLoading?.(
-        "Restoring backup",
-        () => restoreBackupData(pendingRestoreData),
-        restoreBackup,
-      );
-      return;
-    }
-    setBackupStatus("Restore cancelled.");
-    clearRestorePreview();
-    restoreBackup.value = "";
+    setBackupStatus("Review the preview, then restore or cancel.");
+    showRestorePreview(parsed.data, file.name);
   });
 
   reader.addEventListener("error", () => {
@@ -2007,6 +2135,16 @@ restoreBackup.addEventListener("change", () => {
     restoreBackup.value = "";
   });
   reader.readAsText(file);
+});
+
+// Keep the restore inside this click: browsers can silently hold a second
+// download that has no user action behind it, with no error to detect.
+confirmRestoreBackup.addEventListener("click", (event) =>
+  window.withLoading?.("Restoring backup", confirmPendingRestore, event.currentTarget),
+);
+cancelRestoreBackup.addEventListener("click", () => {
+  clearRestorePreview();
+  setBackupStatus("Restore cancelled.");
 });
 
 runDataHealthCheck.addEventListener("click", runHealthCheck);
@@ -2300,6 +2438,7 @@ function hasUnsavedSettings() {
 
 markSettingsClean();
 updateBackupSummary();
+updateStockHistoryNotice();
 window.miniMartInitialDataReady = true;
 
 window.addEventListener("beforeunload", (event) => {

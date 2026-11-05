@@ -71,6 +71,19 @@ const inventoryFilter = document.getElementById("inventoryFilter");
 const inventorySort = document.getElementById("inventorySort");
 const inventorySummary = document.getElementById("inventorySummary");
 const undoStockAdjustment = document.getElementById("undoStockAdjustment");
+const stockHistoryNotice = document.getElementById("stockHistoryNotice");
+const STOCK_REASON_LABELS = Object.freeze({
+  "manual-adjust": "Manual adjustment",
+  "edit-form": "Product edit",
+  "bulk-edit": "Bulk edit",
+  import: "Import",
+  sale: "Sale",
+  void: "Void",
+  restore: "Backup restore",
+  initial: "Initial stock",
+  delete: "Product deleted",
+  other: "Other",
+});
 let adjustmentProductNames = [];
 let pendingDeleteName = null;
 let editingName = null;
@@ -81,15 +94,6 @@ let lastAdjustment = null;
 const inventoryParams = new URLSearchParams(window.location.search);
 if (["all", "low", "out", "expiring"].includes(inventoryParams.get("filter"))) {
   inventoryFilter.value = inventoryParams.get("filter");
-}
-
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
 }
 
 function unitLabel(unit) {
@@ -172,16 +176,6 @@ function categoryAccent(category) {
   );
 }
 
-function safeAccent(value) {
-  return /^var\(--[a-z0-9-]+\)$/.test(String(value || ""))
-    ? value
-    : "var(--blue)";
-}
-
-function categoryIconPath(category) {
-  return window.miniMartDB.categoryIcon(category);
-}
-
 function canonicalCategory(value, categories = window.miniMartDB.categories()) {
   const normalized = String(value || "").trim().toLowerCase();
   return (
@@ -240,7 +234,7 @@ function renderRows() {
         .sort(sortProducts);
       const safeCategory = escapeHtml(category);
       const categoryUnit = window.miniMartDB.categoryDefaultUnit(category);
-      const header = `<tr class="category-group" style="--accent:${safeAccent(categoryAccent(category))}" data-category="${safeCategory}" data-open="false" tabindex="0" aria-expanded="false"><td colspan="7"><span><img data-category-icon="${safeCategory}" alt="" /></span><strong>${safeCategory}</strong><small>${categoryProducts.length} products</small>${categoryUnit !== "piece" ? `<em class="unit-tag">${unitLabel(categoryUnit)}</em>` : ""}<button type="button" class="category-add-product" data-add-category="${safeCategory}" aria-label="Add product to ${safeCategory}">＋ Add product</button><b>＋</b></td></tr>`;
+      const header = `<tr class="category-group" style="--accent:${safeAccent(categoryAccent(category), "var(--blue)")}" data-category="${safeCategory}" data-open="false" tabindex="0" aria-expanded="false"><td colspan="7"><span><img data-category-icon="${safeCategory}" alt="" /></span><strong>${safeCategory}</strong><small>${categoryProducts.length} products</small>${categoryUnit !== "piece" ? `<em class="unit-tag">${unitLabel(categoryUnit)}</em>` : ""}<button type="button" class="category-add-product" data-add-category="${safeCategory}" aria-label="Add product to ${safeCategory}">＋ Add product</button><b>＋</b></td></tr>`;
       const productRows = categoryProducts
         .map(
           (product) => {
@@ -252,7 +246,7 @@ function renderRows() {
                 : window.miniMartDB.formatQuantity(product.stock, unit);
             const threshold = Number(window.miniMartSettings.get().lowStockThreshold) || 0;
             const stockClass = Number(product.stock) <= 0 ? "is-out" : Number(product.stock) <= threshold ? "is-low" : "";
-            return `<tr data-product="${escapeHtml(product.name)}" data-category="${escapeHtml(product.category)}" data-barcode="${escapeHtml(product.barcode || "")}" tabindex="0"><td><label class="select-products-label"><input class="product-select" type="checkbox" data-select-product="${escapeHtml(product.name)}" aria-label="Select ${escapeHtml(product.name)}" ${selectedProductNames.has(product.name) ? "checked" : ""} /></label><span>${escapeHtml(product.name)}</span></td><td><span class="category-label" style="--accent:${safeAccent(categoryAccent(product.category))}"><img data-category-icon="${escapeHtml(product.category)}" alt="" />${escapeHtml(product.category)}</span></td><td class="inventory-price">${window.miniMartDB.isKnownCost(product.costPrice) ? window.miniMartSettings.formatCurrency(product.costPrice) : "—"}</td><td class="inventory-price">${price}${unit === "piece" ? "" : ` / ${unitLabel(unit)}`}</td><td class="inventory-stock ${stockClass}">${stock}${stockClass === "is-low" ? " <small>LOW</small>" : stockClass === "is-out" ? " <small>OUT</small>" : ""}</td><td class="inventory-expiry">${product.expiryDate ? escapeHtml(product.expiryDate) : "—"}</td><td class="row-actions"><button class="adjust-action" type="button">＋ Stock</button><button class="history-action" type="button">▤ History</button><button class="edit-action" type="button">♢ Edit</button><button class="delete-action" type="button">♧ Delete</button></td></tr>`;
+            return `<tr data-product="${escapeHtml(product.name)}" data-category="${escapeHtml(product.category)}" data-barcode="${escapeHtml(product.barcode || "")}" tabindex="0"><td><label class="select-products-label"><input class="product-select" type="checkbox" data-select-product="${escapeHtml(product.name)}" aria-label="Select ${escapeHtml(product.name)}" ${selectedProductNames.has(product.name) ? "checked" : ""} /></label><span>${escapeHtml(product.name)}</span></td><td><span class="category-label" style="--accent:${safeAccent(categoryAccent(product.category), "var(--blue)")}"><img data-category-icon="${escapeHtml(product.category)}" alt="" />${escapeHtml(product.category)}</span></td><td class="inventory-price">${window.miniMartDB.isKnownCost(product.costPrice) ? window.miniMartSettings.formatCurrency(product.costPrice) : "—"}</td><td class="inventory-price">${price}${unit === "piece" ? "" : ` / ${unitLabel(unit)}`}</td><td class="inventory-stock ${stockClass}">${stock}${stockClass === "is-low" ? " <small>LOW</small>" : stockClass === "is-out" ? " <small>OUT</small>" : ""}</td><td class="inventory-expiry">${product.expiryDate ? escapeHtml(product.expiryDate) : "—"}</td><td class="row-actions"><button class="adjust-action" type="button">＋ Stock</button><button class="history-action" type="button">▤ History</button><button class="edit-action" type="button">♢ Edit</button><button class="delete-action" type="button">♧ Delete</button></td></tr>`;
           },
         )
         .join("");
@@ -542,6 +536,7 @@ function closeModal() {
 
 renderIconPicker();
 renderRows();
+updateStockHistoryNotice();
 document.addEventListener("miniMartInventoryRefresh", renderRows);
 window.addEventListener("storage", (event) => {
   if (event.key === null || ["miniMartProducts", "miniMartCategories"].includes(event.key)) renderRows();
@@ -663,21 +658,35 @@ function closeStockAdjustment() {
   adjustmentProductNames = [];
 }
 
+// Older entries hold free text in reason, which is shown as it was saved.
+function stockReasonText(entry) {
+  const label = STOCK_REASON_LABELS[entry.reason] || entry.reason;
+  return entry.source ? `${label} · ${entry.source}` : label;
+}
+
 function openStockHistory(name) {
-  let history = [];
-  try {
-    history = JSON.parse(localStorage.getItem("miniMartInventoryAdjustments") || "[]");
-  } catch (error) {
+  const history = window.miniMartDB.stockHistory();
+  if (!history) {
     stockHistoryList.textContent = "Stock history could not be read.";
     stockHistoryModal.hidden = false;
     return;
   }
-  const entries = history.filter((entry) => entry.product === name).slice(-20).reverse();
+  const productId = window.miniMartDB.products().find((product) => product.name === name)?.id;
+  const entries = history
+    .filter((entry) => entry.product === name || (productId && entry.productId === productId))
+    .slice(-20)
+    .reverse();
   document.getElementById("stockHistoryTitle").textContent = `${name} history`;
   stockHistoryList.innerHTML = entries.length
-    ? entries.map((entry) => `<div class="stock-history-row"><span><strong>${entry.adjustment > 0 ? "+" : ""}${entry.adjustment}</strong> ${escapeHtml(entry.reason)}</span><small>${entry.previousStock} → ${entry.stockAfter} · ${new Date(entry.date).toLocaleString()}</small></div>`).join("")
-    : '<p class="modal-help">No stock adjustments recorded yet.</p>';
+    ? entries.map((entry) => `<div class="stock-history-row"><span><strong>${entry.adjustment > 0 ? "+" : ""}${escapeHtml(entry.adjustment)}</strong> ${escapeHtml(stockReasonText(entry))}</span><small>${escapeHtml(entry.previousStock)} → ${escapeHtml(entry.stockAfter)} · ${escapeHtml(new Date(entry.date).toLocaleString())}${entry.reference ? ` · ${escapeHtml(entry.reference)}` : ""}</small></div>`).join("")
+    : '<p class="modal-help">No stock changes recorded yet.</p>';
   stockHistoryModal.hidden = false;
+}
+
+function updateStockHistoryNotice() {
+  const warning = window.miniMartDB.stockHistoryWarning();
+  stockHistoryNotice.hidden = !warning;
+  stockHistoryNotice.querySelector("span").textContent = warning;
 }
 
 function closeStockHistory() {
@@ -695,16 +704,6 @@ document.getElementById("saveStockAdjustment").addEventListener("click", () => {
     const product = products.find((entry) => entry.name === name);
     return { name, stock: Number(product?.stock) || 0 };
   });
-  const timestamp = new Date().toISOString();
-  let history = [];
-  try {
-    history = JSON.parse(localStorage.getItem("miniMartInventoryAdjustments") || "[]");
-    if (!Array.isArray(history)) history = [];
-  } catch (error) {
-    stockAdjustmentError.textContent = "Stock history is corrupted. Export or clear it before adjusting stock.";
-    return;
-  }
-  const historyBefore = history.slice(-1000);
   const unitDecimals = Math.min(
     ...adjustmentProductNames.map((name) => {
       const product = products.find((entry) => entry.name === name);
@@ -742,25 +741,16 @@ document.getElementById("saveStockAdjustment").addEventListener("click", () => {
       return;
     }
     product.stock = window.miniMartDB.roundQuantity(nextStock, unit);
-    history.push({
-      product: product.name,
-      previousStock: oldStock,
-      adjustment: stockAdjustmentAction.value === "add" ? quantity : -quantity,
-      stockAfter: product.stock,
-      reason: stockAdjustmentReason.value,
-      date: timestamp,
-    });
   }
-  const productsResult = window.miniMartDB.saveProducts(products);
-  const historyResult = safeWrite("miniMartInventoryAdjustments", history.slice(-1000));
-  if (!productsResult?.ok || !historyResult.ok) {
-    showStorageError(storageErrorMessage(!productsResult?.ok ? productsResult : historyResult));
+  const productsResult = window.miniMartDB.saveProducts(products, {
+    reason: "manual-adjust",
+    source: stockAdjustmentReason.value,
+  });
+  if (!productsResult?.ok) {
+    showStorageError(storageErrorMessage(productsResult));
     return;
   }
-  lastAdjustment = {
-    previousStocks,
-    historyBefore,
-  };
+  lastAdjustment = { previousStocks };
   undoStockAdjustment.disabled = false;
   closeStockAdjustment();
   renderRows();
@@ -794,20 +784,12 @@ undoStockAdjustment.addEventListener("click", () => {
     const product = products.find((entry) => entry.name === name);
     if (product) product.stock = stock;
   });
-  let history = [];
-  try {
-    history = JSON.parse(localStorage.getItem("miniMartInventoryAdjustments") || "[]");
-  } catch (error) {
-    stockAdjustmentError.textContent = "Stock history is corrupted. Undo could not be completed.";
-    return;
-  }
-  const historyResult = safeWrite(
-    "miniMartInventoryAdjustments",
-    lastAdjustment.historyBefore,
-  );
-  const productsResult = window.miniMartDB.saveProducts(products);
-  if (!historyResult.ok || !productsResult?.ok) {
-    showStorageError(storageErrorMessage(!historyResult.ok ? historyResult : productsResult));
+  const productsResult = window.miniMartDB.saveProducts(products, {
+    reason: "manual-adjust",
+    source: "Undo",
+  });
+  if (!productsResult?.ok) {
+    showStorageError(storageErrorMessage(productsResult));
     return;
   }
   lastAdjustment = null;
@@ -826,6 +808,7 @@ document
     const products = window.miniMartDB.products();
     const result = window.miniMartDB.saveProducts(
       products.filter((entry) => entry.name !== pendingDeleteName),
+      { reason: "delete" },
     );
     if (!result?.ok) {
       showStorageError(storageErrorMessage(result));
@@ -1024,7 +1007,9 @@ form.addEventListener("submit", (event) => {
       accent: "var(--blue)",
     });
   }
-  const result = window.miniMartDB.saveProducts(products);
+  const result = window.miniMartDB.saveProducts(products, {
+    reason: modalMode === "edit-product" ? "edit-form" : "initial",
+  });
   if (!result?.ok) {
     showStorageError(storageErrorMessage(result));
     return;

@@ -23,10 +23,6 @@ const defaultSettings = {
   sukiPointsExpiryDays: 90,
 };
 
-function cloneSettings(value) {
-  return JSON.parse(JSON.stringify(value));
-}
-
 function deviceTheme() {
   return window.matchMedia("(prefers-color-scheme: dark)").matches
     ? "dark"
@@ -44,7 +40,7 @@ function getSettings() {
     const stored = localStorage.getItem(SETTINGS_KEY);
     if (!stored) {
       const initialSettings = {
-        ...cloneSettings(defaultSettings),
+        ...clone(defaultSettings),
         theme: defaultSettings.theme,
       };
       const result = safeWrite(SETTINGS_KEY, initialSettings);
@@ -54,11 +50,11 @@ function getSettings() {
 
     const parsed = JSON.parse(stored);
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      return cloneSettings(defaultSettings);
+      return clone(defaultSettings);
     }
 
     const settings = {
-      ...cloneSettings(defaultSettings),
+      ...clone(defaultSettings),
       ...parsed,
       version: SETTINGS_VERSION,
     };
@@ -100,7 +96,7 @@ function getSettings() {
     return settings;
   } catch (error) {
     console.error("Failed to read settings:", error);
-    return cloneSettings(defaultSettings);
+    return clone(defaultSettings);
   }
 }
 
@@ -119,7 +115,7 @@ function saveSettings(changes) {
     }
     window.dispatchEvent(
       new CustomEvent("miniMartSettingsChanged", {
-        detail: cloneSettings(nextSettings),
+        detail: clone(nextSettings),
       }),
     );
     return { settings: nextSettings, error: null, result };
@@ -173,7 +169,7 @@ function applyTheme(settings = getSettings()) {
 
 window.miniMartSettings = {
   SETTINGS_KEY,
-  defaults: cloneSettings(defaultSettings),
+  defaults: clone(defaultSettings),
   get: getSettings,
   save: saveSettings,
   formatDate: formatStoreDate,

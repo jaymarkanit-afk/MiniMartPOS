@@ -144,8 +144,14 @@ window.addEventListener("pageshow", (event) => {
 });
 
 function showStorageWarning() {
-  const database = window.miniMartDB;
-  if (!database?.getStorageIssues?.().length || document.getElementById("storageWarning")) {
+  const issues = window.miniMartDB?.getStorageIssues?.() || [];
+  if (!issues.length) return;
+  const details = issues.every((issue) => issue.backup === "saved")
+    ? "A backup copy was saved. Check your browser storage before making changes."
+    : "A backup copy could not be saved. Avoid making changes until your browser storage is checked.";
+  const existing = document.getElementById("storageWarning");
+  if (existing) {
+    existing.querySelector("span").textContent = details;
     return;
   }
   const banner = document.createElement("aside");
@@ -154,9 +160,10 @@ function showStorageWarning() {
   banner.setAttribute("role", "alert");
   banner.innerHTML = `
     <strong>Some saved data could not be read.</strong>
-    <span>A backup copy was saved. Check your browser storage before making changes.</span>
+    <span></span>
     <button type="button" aria-label="Dismiss storage warning">Dismiss</button>
   `;
+  banner.querySelector("span").textContent = details;
   banner.querySelector("button").addEventListener("click", () => banner.remove());
   document.body.prepend(banner);
 }

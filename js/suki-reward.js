@@ -4,9 +4,9 @@
    MINI MART - SUKI REWARDS + NFC
 ========================================================= */
 
-const SUKI_STORAGE_KEY = "miniMartSukis";
-
 const sukiRules = window.miniMartSukiRules;
+
+const sukiStore = window.miniMartSukiStore;
 
 let selectedSukiId = "";
 let pendingNfcId = "";
@@ -14,8 +14,6 @@ let unlinkSukiId = "";
 let selectedSukiFilter = "all";
 
 const isNfcSupported = window.isNfcSupported;
-
-const normalizeNfcId = window.normalizeNfcId;
 
 const scanNfcCard = window.scanNfcCard;
 
@@ -115,28 +113,6 @@ window.addEventListener("miniMartSettingsChanged", () => {
    UTILITY
 ========================================================= */
 
-function clamp(value, min, max) {
-  return Math.min(max, Math.max(min, value));
-}
-
-function escapeHtml(value) {
-  return String(value).replace(
-    /[&<>'"]/g,
-    (character) =>
-      ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        "'": "&#39;",
-        '"': "&quot;",
-      })[character],
-  );
-}
-
-function formatPeso(value) {
-  return window.miniMartSettings.formatCurrency(value);
-}
-
 function formatDate(value) {
   if (!value) {
     return "—";
@@ -171,23 +147,6 @@ function showSukiToast(message, type = "error") {
 
 window.showNfcToast = showSukiToast;
 
-function createId() {
-  if (window.crypto && typeof window.crypto.randomUUID === "function") {
-    return window.crypto.randomUUID();
-  }
-
-  function stableLegacyId(suki, index) {
-    const source = `${suki.name || ""}|${suki.phone || ""}|${suki.joined || ""}|${suki.nfcId || ""}|${index}`;
-    let hash = 0;
-    for (let position = 0; position < source.length; position += 1) {
-      hash = (hash * 31 + source.charCodeAt(position)) | 0;
-    }
-    return `suki-legacy-${Math.abs(hash)}`;
-  }
-
-  return "suki-" + Date.now() + "-" + Math.random().toString(36).slice(2);
-}
-
 /* =========================================================
    MODALS
 ========================================================= */
@@ -220,65 +179,8 @@ function closeModal(modal) {
   }
 }
 
-/* =========================================================
-   STORAGE
-========================================================= */
-
-function getSukis() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(SUKI_STORAGE_KEY) || "[]");
-
-    if (!Array.isArray(saved)) {
-      return [];
-    }
-
-    return saved.map((suki, index) => ({
-      ...suki,
-
-      id: suki.id || stableLegacyId(suki, index),
-
-      name: suki.name || "",
-
-      phone: suki.phone || "",
-
-      joined: suki.joined || "",
-
-      nfcId: normalizeNfcId(suki.nfcId || ""),
-
-      stamps: clamp(Number(suki.stamps) || 0, 0, sukiRules.maxPoints()),
-
-      rewardBalance: clamp(
-        Number(suki.rewardBalance) || 0,
-        0,
-        sukiRules.maxRewardBalance(),
-      ),
-
-      active: suki.active !== false,
-
-      history: Array.isArray(suki.history) ? suki.history : [],
-    }));
-  } catch (error) {
-    console.error("Suki storage error:", error);
-
-    return [];
-  }
-}
-
-function saveSukis(sukis) {
-  const result = safeWrite(
-    SUKI_STORAGE_KEY,
-    sukis.map((suki) => ({
-        ...suki,
-        id: suki.id || createId(),
-        nfcId: normalizeNfcId(suki.nfcId || ""),
-      })),
-  );
-  if (!result.ok) showStorageError(storageErrorMessage(result));
-  return result;
-}
-
 function renderSukiOverview() {
-  const sukis = getSukis();
+  const sukis = sukiStore.read();
   const totalCustomers = document.getElementById("sukiTotalCustomers");
   const activeCards = document.getElementById("sukiActiveCards");
   const readyRewards = document.getElementById("sukiReadyRewards");
@@ -293,7 +195,7 @@ function renderSukiOverview() {
   readyRewards.textContent = sukis.filter(
     (suki) => suki.active && sukiRules.canRedeem(sukiRules.usablePoints(suki)) && suki.rewardBalance > 0,
   ).length;
-  totalRewards.textContent = formatPeso(
+  totalRewards.textContent = peso(
     sukis.reduce((sum, suki) => sum + suki.rewardBalance, 0),
   );
 }
@@ -410,7 +312,7 @@ async function linkNfcCard() {
   }
 
   await scanNfcCard((nfcId) => {
-    const sukis = getSukis();
+    const sukis = sukiStore.read();
 
     const existing = sukis.find((suki) => suki.nfcId === nfcId);
 
@@ -483,7 +385,7 @@ function saveSuki(event) {
     return;
   }
 
-  const sukis = getSukis();
+  const sukis = sukiStore.read();
 
   if (pendingNfcId) {
     const duplicate = sukis.find((suki) => suki.nfcId === pendingNfcId);
@@ -496,7 +398,7 @@ function saveSuki(event) {
   }
 
   const newSuki = {
-    id: createId(),
+    id: sukiStore.createId(),
 
     name,
 
@@ -517,7 +419,7 @@ function saveSuki(event) {
 
   sukis.push(newSuki);
 
-  const result = saveSukis(sukis);
+  const result = sukiStore.save(sukis);
   if (!result.ok) return;
 
   pendingNfcId = "";
@@ -559,7 +461,7 @@ async function scanExistingSuki() {
   }
 
   await scanNfcCard((nfcId) => {
-    const suki = getSukis().find((entry) => entry.nfcId === nfcId);
+    const suki = sukiStore.read().find((entry) => entry.nfcId === nfcId);
 
     if (!suki) {
       if (scanTitle) {
@@ -599,7 +501,7 @@ async function scanExistingSuki() {
     }
 
     if (scanStatus) {
-      scanStatus.textContent = `${suki.stamps}/${sukiRules.maxPoints()} points • ${formatPeso(
+      scanStatus.textContent = `${suki.stamps}/${sukiRules.maxPoints()} points • ${peso(
         suki.rewardBalance,
       )} reward`;
     }
@@ -718,7 +620,7 @@ function renderSukiList() {
     return 2;
   };
 
-  const sukis = getSukis()
+  const sukis = sukiStore.read()
     .filter(matchesFilter)
     .filter((suki) => {
       const name = String(suki.name || "").toLowerCase();
@@ -809,7 +711,7 @@ function renderSukiList() {
 
               <div>
                 <strong>
-                  ${formatPeso(suki.rewardBalance)}
+                  ${peso(suki.rewardBalance)}
                 </strong>
 
                 <small>
@@ -838,7 +740,7 @@ function renderSukiList() {
 ========================================================= */
 
 function showSukiDetails(id) {
-  const suki = getSukis().find((entry) => entry.id === id);
+  const suki = sukiStore.read().find((entry) => entry.id === id);
 
   if (!suki) {
     return;
@@ -1015,7 +917,7 @@ function showSukiDetails(id) {
             </span>
 
             <strong>
-              ${formatPeso(rewardBalance)}
+              ${peso(rewardBalance)}
             </strong>
 
           </div>
@@ -1227,7 +1129,7 @@ function showSukiDetails(id) {
                             <span>
                               Purchase:
                               <strong>
-                                ${formatPeso(entry.purchaseTotal)}
+                                ${peso(entry.purchaseTotal)}
                               </strong>
                             </span>
 
@@ -1244,7 +1146,7 @@ function showSukiDetails(id) {
                                   <span>
                                     Reward used:
                                     <strong>
-                                      ${formatPeso(entry.rewardUsed)}
+                                      ${peso(entry.rewardUsed)}
                                     </strong>
                                   </span>
                                 `
@@ -1364,7 +1266,7 @@ function showSukiDetails(id) {
 let deleteSukiId = "";
 
 function openDeleteSuki(id) {
-  const suki = getSukis().find((entry) => entry.id === id);
+  const suki = sukiStore.read().find((entry) => entry.id === id);
 
   if (!suki) {
     return;
@@ -1384,9 +1286,7 @@ function deleteSuki() {
     return;
   }
 
-  const sukis = getSukis().filter((suki) => suki.id !== deleteSukiId);
-
-  const result = saveSukis(sukis);
+  const result = sukiStore.remove(deleteSukiId);
   if (!result.ok) return;
 
   deleteSukiId = "";
@@ -1434,7 +1334,7 @@ async function linkNfcToSelectedSuki() {
   }
 
   await scanNfcCard((nfcId) => {
-    const sukis = getSukis();
+    const sukis = sukiStore.read();
 
     const existing = sukis.find((suki) => suki.nfcId === nfcId);
 
@@ -1461,7 +1361,7 @@ async function linkNfcToSelectedSuki() {
 
     sukis[index].nfcId = nfcId;
 
-    const result = saveSukis(sukis);
+    const result = sukiStore.save(sukis);
     if (!result.ok) return;
 
     showSukiDetails(sukiId);
@@ -1473,7 +1373,7 @@ function unlinkSelectedNfc() {
     return;
   }
 
-  const sukis = getSukis();
+  const sukis = sukiStore.read();
 
   const index = sukis.findIndex((suki) => suki.id === selectedSukiId);
 
@@ -1495,7 +1395,7 @@ function confirmUnlinkSelectedNfc() {
     return;
   }
 
-  const sukis = getSukis();
+  const sukis = sukiStore.read();
 
   const index = sukis.findIndex((suki) => suki.id === unlinkSukiId);
 
@@ -1505,7 +1405,7 @@ function confirmUnlinkSelectedNfc() {
 
   sukis[index].nfcId = "";
 
-  const result = saveSukis(sukis);
+  const result = sukiStore.save(sukis);
   if (!result.ok) return;
 
   unlinkSukiId = "";
@@ -1621,11 +1521,6 @@ document.addEventListener("keydown", (event) => {
 
 if (sukiJoined) {
   sukiJoined.value = new Date().toISOString().split("T")[0];
-}
-
-const normalizedSukis = getSukis();
-if (normalizedSukis.length) {
-  saveSukis(normalizedSukis);
 }
 
 renderSukiList();

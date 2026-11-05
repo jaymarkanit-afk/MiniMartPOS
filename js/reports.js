@@ -12,7 +12,6 @@ void (async () => {
   window.dispatchEvent(new Event("miniMartAuthReady"));
 })();
 
-const peso = (value) => window.miniMartSettings.formatCurrency(value);
 const products = window.miniMartDB.products();
 const allSales = window.miniMartDB.sales().filter((sale) => sale.status !== "voided");
 const itemCounts = new Map();
@@ -53,16 +52,6 @@ const CATEGORY_COLORS = {
   Dairy: "var(--green)",
   Other: "#8a7663",
 };
-
-function escapeHtml(value) {
-  return String(value).replace(/[&<>'"]/g, (character) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    "'": "&#39;",
-    '"': "&quot;",
-  })[character]);
-}
 
 const reportParams = new URLSearchParams(window.location.search);
 const reportPeriod = document.getElementById("reportPeriod");
@@ -798,10 +787,21 @@ function voidSale(saleId) {
   sale.status = "voided";
   sale.voidedAt = new Date().toISOString();
   sale.voidReason = "Manager-approved void";
-  const productsResult = window.miniMartDB.saveProducts(inventory);
-  const salesResult = window.miniMartDB.saveSales(currentSales);
-  if (!productsResult?.ok || !salesResult?.ok) {
-    showStorageError(storageErrorMessage(!productsResult?.ok ? productsResult : salesResult));
+  // Hold the automatic refresh so a failure message stays on screen.
+  reportRefreshPending = true;
+  const snapshot = ["miniMartProducts", "miniMartDeletedProducts", "miniMartInventoryAdjustments"]
+    .map((key) => [key, window.miniMartDB.rawValue(key)]);
+  const productsResult = window.miniMartDB.saveProducts(inventory, {
+    reason: "void",
+    reference: sale.id,
+  });
+  const salesResult = productsResult?.ok ? window.miniMartDB.saveSales(currentSales) : productsResult;
+  if (!salesResult?.ok) {
+    snapshot.forEach(([key, raw]) => {
+      safeWrite(key, raw, raw === null ? { remove: true } : { raw: true });
+    });
+    reportRefreshPending = false;
+    showStorageError(storageErrorMessage(salesResult));
     return;
   }
   window.location.reload();

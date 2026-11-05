@@ -45,8 +45,36 @@ const CATEGORY_ICON_PATH_TO_ID = Object.freeze(
     Object.entries(CATEGORY_ICON_ALLOWLIST).map(([id, icon]) => [icon.path, id]),
   ),
 );
+const STOCK_HISTORY_KEY = "miniMartInventoryAdjustments";
+const STOCK_HISTORY_EXPORT_KEY = "miniMartStockHistoryExport";
+const STOCK_HISTORY_LIMIT = 1000;
+const STOCK_HISTORY_WARNING_AT = 900;
+const DATA_VERSION_KEY = "miniMartDataVersion";
+const DATA_VERSION = 1;
 const STORAGE_BACKUP_LIMIT = 3;
+const LARGE_BACKUP_CHARS = 500 * 1024;
+// Free space a corruption backup must leave, so it cannot crowd out later sales.
+const BACKUP_HEADROOM_CHARS = 1000 * 1000;
+const BACKUP_HEADROOM_PROBE_KEY = "miniMartBackupHeadroomProbe";
+const CORRUPT_KEY_MARKER = "__corrupt_";
+// Shapes come from the key, never from a caller's fallback value.
+const STORED_SHAPES = Object.freeze({
+  [PRODUCTS_KEY]: "records",
+  [SALES_KEY]: "records",
+  [CATEGORIES_KEY]: "array",
+  [CATEGORY_ICONS_KEY]: "object",
+  [CATEGORY_UNITS_KEY]: "object",
+  [DELETED_PRODUCTS_KEY]: "array",
+  miniMartSukis: "array",
+  miniMartCurrentShift: "object",
+  miniMartShiftHistory: "array",
+  miniMartHeldCarts: "array",
+  miniMartFavoriteProducts: "array",
+  miniMartRecentProducts: "array",
+  [STOCK_HISTORY_KEY]: "records",
+});
 const storageIssues = [];
+const backupOutcomes = new Map();
 
 const UNIT_RULES = {
   piece: { label: "piece", shortLabel: "pc", decimals: 0 },
@@ -213,10 +241,6 @@ const seedProducts = [
   },
 ];
 
-function clone(value) {
-  return JSON.parse(JSON.stringify(value));
-}
-
 function isKnownCost(value) {
   if (value === null || value === undefined || value === "") return false;
   const amount = Number(value);
@@ -237,10 +261,6 @@ function roundQuantity(value, unit = "piece") {
   return Math.round((Number(value) + Number.EPSILON) * factor) / factor;
 }
 
-function roundMoney(value) {
-  return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
-}
-
 function formatQuantity(value, unit = "piece") {
   const normalizedUnit = normalizeUnit(unit);
   const amount = roundQuantity(value, normalizedUnit);
@@ -251,45 +271,110 @@ function formatQuantity(value, unit = "piece") {
   return `${formatted} ${UNIT_RULES[normalizedUnit].shortLabel}`;
 }
 
-function isValidStoredValue(key, value, fallback) {
-  if (Array.isArray(fallback)) {
-    if (!Array.isArray(value)) return false;
-    if (key === PRODUCTS_KEY || key === SALES_KEY) {
-      return value.every((entry) => entry && typeof entry === "object" && !Array.isArray(entry));
-    }
-    return true;
+function matchesStoredShape(value, shape) {
+  if (shape === "records") {
+    return Array.isArray(value) &&
+      value.every((entry) => entry && typeof entry === "object" && !Array.isArray(entry));
   }
+  if (shape === "array") return Array.isArray(value);
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function backupCorruptValue(key, raw) {
-  if (typeof raw !== "string") return;
-  const backupKey = `${key}__corrupt_${Date.now()}`;
+function isValidStoredValue(key, value, fallback) {
+  const shape = STORED_SHAPES[key] || (Array.isArray(fallback) ? "array" : "object");
+  return matchesStoredShape(value, shape);
+}
+
+function corruptBackupKeys(key) {
+  const prefix = `${key}${CORRUPT_KEY_MARKER}`;
+  const backups = [];
+  for (let index = 0; index < localStorage.length; index += 1) {
+    const candidate = localStorage.key(index);
+    if (candidate?.startsWith(prefix)) backups.push(candidate);
+  }
+  return backups.sort(
+    (first, second) => Number(second.slice(prefix.length)) - Number(first.slice(prefix.length)),
+  );
+}
+
+function hasBackupHeadroom() {
+  const probe = safeWrite(BACKUP_HEADROOM_PROBE_KEY, "x".repeat(BACKUP_HEADROOM_CHARS), { raw: true });
+  safeWrite(BACKUP_HEADROOM_PROBE_KEY, null, { remove: true });
+  return probe.ok;
+}
+
+// Best effort: this never throws, so a failed copy cannot interrupt the caller.
+function writeCorruptBackup(key, raw) {
   try {
-    const result = safeWrite(backupKey, raw, { raw: true });
-    if (!result.ok) {
-      showStorageError(storageErrorMessage(result));
-      throw result.error;
+    const existing = corruptBackupKeys(key);
+    if (existing.length && localStorage.getItem(existing[0]) === raw) return "saved";
+    const backupKey = `${key}${CORRUPT_KEY_MARKER}${Date.now()}`;
+    if (!safeWrite(backupKey, raw, { raw: true }).ok) return "failed";
+    if (!hasBackupHeadroom()) {
+      safeWrite(backupKey, null, { remove: true });
+      return "failed";
     }
-    const backups = [];
-    for (let index = 0; index < localStorage.length; index += 1) {
-      const candidate = localStorage.key(index);
-      if (candidate?.startsWith(`${key}__corrupt_`)) backups.push(candidate);
-    }
-    backups
-      .sort((first, second) => Number(second.slice(`${key}__corrupt_`.length)) - Number(first.slice(`${key}__corrupt_`.length)))
-      .slice(STORAGE_BACKUP_LIMIT)
-      .forEach((oldKey) => localStorage.removeItem(oldKey));
+    corruptBackupKeys(key)
+      .slice(raw.length > LARGE_BACKUP_CHARS ? 1 : STORAGE_BACKUP_LIMIT)
+      .forEach((oldKey) => safeWrite(oldKey, null, { remove: true }));
+    return "saved";
   } catch (error) {
     console.error(`Could not back up unreadable storage key "${key}".`, error);
+    return "failed";
   }
 }
 
-function reportStorageIssue(key, status, error = null) {
-  const issue = { key, status, timestamp: new Date().toISOString() };
-  if (!storageIssues.some((entry) => entry.key === key && entry.status === status)) {
-    storageIssues.push(issue);
+function backupCorruptValue(key, raw) {
+  if (typeof raw !== "string") return "failed";
+  const previous = backupOutcomes.get(key);
+  if (previous?.raw === raw) return previous.outcome;
+  const outcome = writeCorruptBackup(key, raw);
+  if (outcome === "failed") {
+    console.error(`No backup was saved for unreadable storage key "${key}".`);
   }
+  backupOutcomes.set(key, { raw, outcome });
+  return outcome;
+}
+
+function isHealthyStoredRaw(key, raw) {
+  if (typeof raw !== "string") return false;
+  try {
+    return matchesStoredShape(JSON.parse(raw), STORED_SHAPES[key]);
+  } catch {
+    return false;
+  }
+}
+
+// Earlier versions copied valid data here by mistake. A backup is kept while
+// its live key is damaged, because it may be the only good copy.
+function removeFalseCorruptBackups() {
+  let removed = 0;
+  try {
+    Object.keys(STORED_SHAPES).forEach((key) => {
+      const backups = corruptBackupKeys(key);
+      if (!backups.length || !isHealthyStoredRaw(key, localStorage.getItem(key))) return;
+      backups.forEach((backupKey) => {
+        if (
+          isHealthyStoredRaw(key, localStorage.getItem(backupKey)) &&
+          safeWrite(backupKey, null, { remove: true }).ok
+        ) {
+          removed += 1;
+        }
+      });
+    });
+  } catch (error) {
+    console.error("Could not clean up storage backups.", error);
+  }
+  if (removed) {
+    console.info(`Mini Mart storage: removed ${removed} false corruption backup${removed === 1 ? "" : "s"}.`);
+  }
+  return removed;
+}
+
+function reportStorageIssue(key, status, error = null, backup = "failed") {
+  if (storageIssues.some((entry) => entry.key === key && entry.status === status)) return;
+  const issue = { key, status, backup, timestamp: new Date().toISOString() };
+  storageIssues.push(issue);
   console.error(
     `Mini Mart storage ${status} for "${key}". Using a fallback without overwriting the original.`,
     error || "",
@@ -309,15 +394,13 @@ function read(key, fallback, validator = null) {
   try {
     const value = JSON.parse(saved);
     if (!isValidStoredValue(key, value, fallback) || (validator && !validator(value))) {
-      backupCorruptValue(key, saved);
       const error = new Error("Stored value has the wrong shape.");
-      reportStorageIssue(key, "invalid", error);
+      reportStorageIssue(key, "invalid", error, backupCorruptValue(key, saved));
       return { status: "invalid", value: clone(fallback), error, raw: saved };
     }
     return { status: "ok", value, error: null, raw: saved };
   } catch (error) {
-    backupCorruptValue(key, saved);
-    reportStorageIssue(key, "corrupt", error);
+    reportStorageIssue(key, "corrupt", error, backupCorruptValue(key, saved));
     return { status: "corrupt", value: clone(fallback), error, raw: saved };
   }
 }
@@ -340,13 +423,30 @@ function normalizeCategoryIcons(icons) {
   return normalized;
 }
 
-function migrateCategoryIcons() {
-  const result = read(CATEGORY_ICONS_KEY, {});
-  if (result.status === "missing") return {};
-  const migrated = normalizeCategoryIcons(result.value);
-  const changed = JSON.stringify(migrated) !== JSON.stringify(result.value);
-  if (changed) write(CATEGORY_ICONS_KEY, migrated);
-  return migrated;
+function readCategoryIcons() {
+  return normalizeCategoryIcons(read(CATEGORY_ICONS_KEY, {}).value);
+}
+
+// One-time data upgrades. Product normalization is not one of them: it has to
+// keep running because products are saved without an id until their next read.
+function runDataMigrations() {
+  try {
+    if (Number(localStorage.getItem(DATA_VERSION_KEY)) >= DATA_VERSION) return;
+    const icons = read(CATEGORY_ICONS_KEY, {});
+    if (icons.status === "ok") {
+      const migrated = normalizeCategoryIcons(icons.value);
+      if (JSON.stringify(migrated) !== JSON.stringify(icons.value)) {
+        const result = safeWrite(CATEGORY_ICONS_KEY, migrated);
+        if (!result.ok) {
+          showStorageError(storageErrorMessage(result));
+          return;
+        }
+      }
+    }
+    safeWrite(DATA_VERSION_KEY, String(DATA_VERSION), { raw: true });
+  } catch (error) {
+    console.error("Could not run data migrations.", error);
+  }
 }
 
 function write(key, value) {
@@ -387,10 +487,117 @@ function normalizeProducts(products) {
   });
 }
 
+/* =========================================================
+   STOCK HISTORY
+   Entries keep the original fields (product, previousStock,
+   adjustment, stockAfter, reason, date). productId, source
+   and reference are optional, so older entries stay valid.
+========================================================= */
+
+function readStockHistory() {
+  const result = read(STOCK_HISTORY_KEY, []);
+  if (result.status === "ok" || result.status === "missing") return result.value;
+  // Damaged history must not stop sales once the original is safely backed up.
+  const backedUp = storageIssues.some(
+    (issue) => issue.key === STOCK_HISTORY_KEY && issue.backup === "saved",
+  );
+  return backedUp ? [] : null;
+}
+
+function stockHistoryExportState() {
+  const state = read(STOCK_HISTORY_EXPORT_KEY, {}).value;
+  return {
+    exportedAt: String(state.exportedAt || ""),
+    droppedUnexported: Number(state.droppedUnexported) || 0,
+  };
+}
+
+// Compares two product lists. New products start from 0 and removed ones end at 0.
+function stockChanges(previous, next, context = {}) {
+  const byId = new Map(previous.filter((product) => product.id).map((product) => [product.id, product]));
+  const byName = new Map(previous.map((product) => [product.name, product]));
+  const matched = new Set();
+  const changes = next.map((product) => {
+    const old = (product.id && byId.get(product.id)) || byName.get(product.name);
+    if (old) matched.add(old);
+    return { ...context, product, before: old ? Number(old.stock) || 0 : 0, after: Number(product.stock) || 0 };
+  });
+  previous
+    .filter((product) => !matched.has(product))
+    .forEach((product) => changes.push({ ...context, product, before: Number(product.stock) || 0, after: 0 }));
+  return changes.filter((change) => change.before !== change.after);
+}
+
+function withStockChanges(history, changes) {
+  const date = new Date().toISOString();
+  return [
+    ...history,
+    ...changes
+      .filter(({ before, after }) => Number.isFinite(before) && Number.isFinite(after) && before !== after)
+      .map(({ product, before, after, reason = "other", source = "", reference = null }) => ({
+        product: product.name,
+        productId: product.id || null,
+        previousStock: before,
+        adjustment: Number((after - before).toFixed(3)),
+        stockAfter: after,
+        reason,
+        source,
+        reference,
+        date,
+      })),
+  ];
+}
+
+// Takes one change or a list of them. Unchanged stock logs nothing.
+function recordStockChange(changes) {
+  const list = Array.isArray(changes) ? changes : [changes];
+  if (!list.some(({ before, after }) => before !== after)) {
+    return { ok: true, error: null, reason: null };
+  }
+  const history = readStockHistory();
+  if (!history) {
+    return { ok: false, error: new Error("Stock history could not be read."), reason: "unknown" };
+  }
+  const next = withStockChanges(history, list);
+  const kept = next.slice(-STOCK_HISTORY_LIMIT);
+  const result = safeWrite(STOCK_HISTORY_KEY, kept);
+  if (result.ok && kept.length < next.length) {
+    const state = stockHistoryExportState();
+    const dropped = next
+      .slice(0, next.length - kept.length)
+      .filter((entry) => String(entry.date) > state.exportedAt).length;
+    if (dropped) {
+      safeWrite(STOCK_HISTORY_EXPORT_KEY, {
+        ...state,
+        droppedUnexported: state.droppedUnexported + dropped,
+      });
+    }
+  }
+  return result;
+}
+
+function stockHistoryWarning() {
+  const history = read(STOCK_HISTORY_KEY, []).value;
+  const { exportedAt, droppedUnexported } = stockHistoryExportState();
+  const unexported = history.filter((entry) => String(entry.date) > exportedAt).length;
+  if (droppedUnexported) {
+    return `${droppedUnexported} older stock history ${droppedUnexported === 1 ? "entry was" : "entries were"} removed before being exported. Only the newest ${STOCK_HISTORY_LIMIT} are kept, so export it now.`;
+  }
+  if (unexported >= STOCK_HISTORY_WARNING_AT) {
+    return `${unexported} stock history entries have not been exported. Only the newest ${STOCK_HISTORY_LIMIT} are kept, so export it soon.`;
+  }
+  return "";
+}
+
 window.miniMartDB = {
   readStorage(key, fallback, validator = null) {
     return read(key, fallback, validator);
   },
+  // Unvalidated text for rollback snapshots, or null if the key is not set.
+  rawValue(key) {
+    return localStorage.getItem(key);
+  },
+  removeFalseCorruptBackups,
   isKnownCost,
   units: () => UNIT_RULES,
   normalizeUnit,
@@ -404,7 +611,8 @@ window.miniMartDB = {
       [...new Set(seedProducts.map((product) => product.category))],
     );
     if (result.status === "missing") {
-      write(CATEGORIES_KEY, result.value);
+      const seeded = safeWrite(CATEGORIES_KEY, result.value);
+      if (!seeded.ok) showStorageError(storageErrorMessage(seeded));
     }
     return result.value;
   },
@@ -428,7 +636,7 @@ window.miniMartDB = {
     const renamed = categories.map((category) =>
       category === oldName ? newName : category,
     );
-    const icons = migrateCategoryIcons();
+    const icons = readCategoryIcons();
     const units = read(CATEGORY_UNITS_KEY, {}).value;
     if (icons[oldName] && !icons[newName]) icons[newName] = icons[oldName];
     delete icons[oldName];
@@ -486,7 +694,7 @@ window.miniMartDB = {
       Dairy: "dairy",
       Bakery: DEFAULT_CATEGORY_ICON_ID,
     };
-    const saved = migrateCategoryIcons();
+    const saved = readCategoryIcons();
     const iconId = Object.prototype.hasOwnProperty.call(
       CATEGORY_ICON_ALLOWLIST,
       saved[category],
@@ -499,7 +707,7 @@ window.miniMartDB = {
     );
   },
   saveCategoryIcon(category, iconId) {
-    const icons = migrateCategoryIcons();
+    const icons = readCategoryIcons();
     icons[category] = Object.prototype.hasOwnProperty.call(
       CATEGORY_ICON_ALLOWLIST,
       iconId,
@@ -509,7 +717,7 @@ window.miniMartDB = {
     return write(CATEGORY_ICONS_KEY, icons);
   },
   categoryIconId(category) {
-    const icons = migrateCategoryIcons();
+    const icons = readCategoryIcons();
     const iconId = icons[category];
     return Object.prototype.hasOwnProperty.call(CATEGORY_ICON_ALLOWLIST, iconId)
       ? iconId
@@ -525,19 +733,42 @@ window.miniMartDB = {
   normalizeCategoryIcons,
   products() {
     const productsResult = read(PRODUCTS_KEY, seedProducts);
-    if (productsResult.status === "missing") write(PRODUCTS_KEY, seedProducts);
     const deletedNamesResult = read(DELETED_PRODUCTS_KEY, []);
     const deletedNames = new Set(deletedNamesResult.value);
     const products = normalizeProducts(productsResult.value).filter(
       (product) => !deletedNames.has(product.name),
     );
-    if (productsResult.status === "ok" || productsResult.status === "missing") {
-      const result = safeWrite(PRODUCTS_KEY, products);
+    if (
+      (productsResult.status === "ok" || productsResult.status === "missing") &&
+      JSON.stringify(products) !== productsResult.raw
+    ) {
+      const seeded = stockChanges(
+        productsResult.status === "ok" ? productsResult.value : [],
+        products,
+        { reason: "initial", source: "Seed data" },
+      ).filter((change) => change.after !== 0);
+      const historyResult = recordStockChange(seeded);
+      const result = historyResult.ok ? safeWrite(PRODUCTS_KEY, products) : historyResult;
       if (!result.ok) showStorageError(storageErrorMessage(result));
     }
     return products;
   },
-  saveProducts(products) {
+  // stockContext says why stock changed: { reason, source, reference }.
+  saveProducts(products, stockContext = {}) {
+    const stored = read(PRODUCTS_KEY, []);
+    const changes = stored.status === "ok" || stored.status === "missing"
+      ? stockChanges(stored.value, products, stockContext)
+      : [];
+    const snapshot = [PRODUCTS_KEY, DELETED_PRODUCTS_KEY, STOCK_HISTORY_KEY]
+      .map((key) => [key, localStorage.getItem(key)]);
+    const undo = () => snapshot.forEach(([key, raw]) => {
+      safeWrite(key, raw, raw === null ? { remove: true } : { raw: true });
+    });
+    const historyResult = recordStockChange(changes);
+    if (!historyResult.ok) {
+      showStorageError(storageErrorMessage(historyResult));
+      return historyResult;
+    }
     const names = new Set(products.map((product) => product.name));
     const deletedNames = new Set(read(DELETED_PRODUCTS_KEY, []).value);
     seedProducts.forEach((product) => {
@@ -545,8 +776,25 @@ window.miniMartDB = {
       else deletedNames.add(product.name);
     });
     const deletedResult = write(DELETED_PRODUCTS_KEY, [...deletedNames]);
-    if (!deletedResult.ok) return deletedResult;
-    return write(PRODUCTS_KEY, products);
+    if (!deletedResult.ok) {
+      undo();
+      return deletedResult;
+    }
+    const productsResult = write(PRODUCTS_KEY, products);
+    if (!productsResult.ok) undo();
+    return productsResult;
+  },
+  stockChanges,
+  recordStockChange,
+  withStockChanges,
+  stockHistory: readStockHistory,
+  stockHistoryWarning,
+  stockHistoryLimit: () => STOCK_HISTORY_LIMIT,
+  markStockHistoryExported() {
+    return safeWrite(STOCK_HISTORY_EXPORT_KEY, {
+      exportedAt: new Date().toISOString(),
+      droppedUnexported: 0,
+    });
   },
   sales() {
     return read(SALES_KEY, []).value;
@@ -585,3 +833,6 @@ window.miniMartDB = {
     return storageIssues.map((issue) => ({ ...issue }));
   },
 };
+
+removeFalseCorruptBackups();
+runDataMigrations();

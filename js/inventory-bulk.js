@@ -23,13 +23,10 @@
   let snapshot = [];
   let saving = false;
 
-  const escape = (value) => String(value ?? "").replace(/[&<>"']/g, (ch) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  })[ch]);
   const visibleRows = () => [...tbody.querySelectorAll("tr[data-product]")].filter((row) => row.style.display !== "none");
   const categoryNames = () => [...new Set([...db.categories(), ...db.products().map((p) => p.category)])];
   const categoryOptions = (categories, value) => categories.map((category) =>
-    `<option value="${escape(category)}"${category === value ? " selected" : ""}>${escape(category)}</option>`,
+    `<option value="${escapeHtml(category)}"${category === value ? " selected" : ""}>${escapeHtml(category)}</option>`,
   ).join("");
 
   function refreshSelection() {
@@ -60,7 +57,7 @@
   }
 
   function inputCell(product, field, label, value, step) {
-    return `<input data-field="${field}" type="number" min="0" step="${step}" value="${escape(value)}" aria-label="${escape(label + ' for ' + product.name)}" />`;
+    return `<input data-field="${field}" type="number" min="0" step="${step}" value="${escapeHtml(value)}" aria-label="${escapeHtml(label + ' for ' + product.name)}" />`;
   }
 
   function openEditor() {
@@ -73,8 +70,8 @@
       const unit = db.normalizeUnit(p.unit);
       const unitLabel = db.units()[unit].shortLabel;
       return `<tr data-bulk-index="${index}">
-        <th scope="row">${escape(p.name)}<small>${escape(unitLabel)}</small></th>
-        <td><select data-field="category" aria-label="${escape('Category for ' + p.name)}">${categoryOptions(categories, p.category)}</select></td>
+        <th scope="row">${escapeHtml(p.name)}<small>${escapeHtml(unitLabel)}</small></th>
+        <td><select data-field="category" aria-label="${escapeHtml('Category for ' + p.name)}">${categoryOptions(categories, p.category)}</select></td>
         <td>${inputCell(p, "costPrice", "Cost", db.isKnownCost(p.costPrice) ? p.costPrice : "", "0.01")}</td>
         <td>${inputCell(p, "price", "Sell price", p.price, "0.01")}</td>
         <td>${inputCell(p, "stock", "Total stock in " + unitLabel, p.stock, 10 ** -db.unitDecimals(unit))}</td>
@@ -180,7 +177,7 @@
       }
       saving = true;
       saveButton.disabled = true;
-      const result = db.saveProducts(products.map((p) => changes.get(p.name) || p));
+      const result = db.saveProducts(products.map((p) => changes.get(p.name) || p), { reason: "bulk-edit" });
       if (!result?.ok) throw result.error;
       closeEditor();
       selected.clear();
