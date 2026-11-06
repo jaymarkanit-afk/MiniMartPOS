@@ -43,8 +43,12 @@ const voidOnReports = async (saleId) => {
   F.contentWindow.prompt = () => "APPROVE";
   const alerts = [];
   F.contentWindow.alert = (message) => alerts.push(message);
+  F.contentWindow.__beforeVoid = true;
   e(`voidSale(${JSON.stringify(saleId)})`);
-  await sleep(350);
+  // A void reloads the page, and a repeat void does not, so this has its own limit.
+  const deadline = Date.now() + 1000;
+  while (F.contentWindow.__beforeVoid && Date.now() < deadline) await sleep(10);
+  await waitForPage(F);
   return alerts;
 };
 
@@ -377,6 +381,42 @@ test("a points change that cannot save returns a failure and changes nothing", a
   undo();
   eq(result.ok, false, "result");
   eq(localStorage.miniMartSukis, before, "stored customers");
+});
+
+test("an edit that cannot save leaves points, history and the expiry entry unwritten", async () => {
+  await fresh();
+  expiryOn();
+  saveCustomers(customer({ stamps: 15, history: [{ stampsEarned: 15, date: OLD }] }));
+  await go("suki-reward.html");
+  const before = localStorage.miniMartSukis;
+  const undo = failWrites((name) => name === "miniMartSukis");
+  e("(()=>{const list=sukiStore.read();list[0].phone='0917';sukiStore.save(list)})()");
+  undo();
+  eq(localStorage.miniMartSukis, before, "stored customers");
+});
+
+test("a sale that cannot write sales changes no points", async () => {
+  await fresh();
+  saveCustomers(customer());
+  await go("index.html");
+  const names = ["miniMartSales", "miniMartProducts", "miniMartSukis"];
+  const before = names.map((name) => localStorage[name]);
+  const undo = failWrites((name) => name === "miniMartSales");
+  await sell({ reward: 10, given: 55, mustComplete: false });
+  undo();
+  eq(names.map((name) => localStorage[name]), before, "storage");
+});
+
+test("a sale that cannot write stock changes no points", async () => {
+  await fresh();
+  saveCustomers(customer());
+  await go("index.html");
+  const names = ["miniMartSales", "miniMartProducts", "miniMartSukis"];
+  const before = names.map((name) => localStorage[name]);
+  const undo = failWrites((name) => name === "miniMartProducts");
+  await sell({ reward: 10, given: 55, mustComplete: false });
+  undo();
+  eq(names.map((name) => localStorage[name]), before, "storage");
 });
 
 test("the migration is switched off and does not run on load", async () => {

@@ -1,24 +1,26 @@
 # Test results
 
-From `node tests/run.js` and `node tests/mutate.js` on 2026-11-06. Two full runs gave identical results.
+From `node tests/run.js` on 2026-11-06.
 
-188 tests, 178 passed, 10 failed.
+261 tests, 261 passed, 0 failed. Known bugs: 17 tests, 17 still fail.
 
 | Suite | Passed | Failed |
 |---|---|---|
-| backup | 15 | 0 |
+| backup | 23 | 0 |
 | corruption | 25 | 0 |
 | suki-store | 17 | 0 |
-| stock-history | 23 | 1 |
-| checkout | 9 | 0 |
+| stock-history | 24 | 0 |
+| checkout | 10 | 0 |
 | measured-draft | 16 | 0 |
-| cart-draft | 13 | 1 |
+| cart-draft | 14 | 0 |
 | expiry | 6 | 0 |
-| static | 17 | 0 |
-| pages | 6 | 0 |
-| icons | 20 | 7 |
+| low-stock | 5 | 0 |
+| suki-points | 42 | 0 |
+| static | 20 | 0 |
+| pages | 12 | 0 |
+| icons | 35 | 0 |
 | overlay | 11 | 0 |
-| requests | 0 | 1 |
+| requests | 1 | 0 |
 
 ## All tests
 
@@ -38,6 +40,14 @@ From `node tests/run.js` and `node tests/mutate.js` on 2026-11-06. Two full runs
 | backup: restore stops and changes nothing if the automatic backup fails | PASS |  |
 | backup: a failed backup keeps the last date, and a partial backup says what it left out | PASS |  |
 | backup: sales, product and customer exports work in Excel and PDF | PASS |  |
+| backup: restore brings back exactly the products in the file: an old file with no seed products | PASS |  |
+| backup: restore keeps a product the file lists as deleted, and keeps every seed the file has | PASS |  |
+| backup: a file with some seed products restores just those | PASS |  |
+| backup: backup, reset, then restore gives back the same products | PASS |  |
+| backup: the preview does not claim the deleted list stays unchanged | PASS |  |
+| backup: reset stays empty after reloading every page | PASS |  |
+| backup: a product added after reset is kept, even with a sample product's name | PASS |  |
+| backup: a fresh first visit shows the 17 sample products once | PASS |  |
 | backup: the page reloads cleanly after a restore | PASS |  |
 | corruption: five normal sales create no corruption backups and no banner | PASS |  |
 | corruption: false corruption backups are removed on load | PASS |  |
@@ -102,7 +112,7 @@ From `node tests/run.js` and `node tests/mutate.js` on 2026-11-06. Two full runs
 | stock-history: a restore logs what it changed | PASS |  |
 | stock-history: restoring a file with no history keeps the current history | PASS |  |
 | stock-history: a first visit logs seed stock once | PASS |  |
-| stock-history: after Reset all data, seed products do not come back | **FAIL** | products after reset: expected 0, got 17 |
+| stock-history: after Reset all data, seed products do not come back | PASS |  |
 | stock-history: reading the app writes no products or history | PASS |  |
 | stock-history: damaged history does not stop a sale, and is kept | PASS |  |
 | checkout: a restored cart stays correct after adding, removing and selling | PASS |  |
@@ -110,7 +120,8 @@ From `node tests/run.js` and `node tests/mutate.js` on 2026-11-06. Two full runs
 | checkout: a measured item sold by amount keeps the exact amount | PASS |  |
 | checkout: a measured item sold by quantity is priced from its quantity | PASS |  |
 | checkout: a reward above the bill is clamped the same on screen and in the sale | PASS |  |
-| checkout: a stored balance below the points is the most that can be spent | PASS |  |
+| checkout: what can be spent comes from the points, whatever the old balance says | PASS |  |
+| checkout: no more than the points are worth can be spent | PASS |  |
 | checkout: with no customer, a reward value in the box is ignored | PASS |  |
 | checkout: below the redeem minimum, no reward applies | PASS |  |
 | checkout: split payment shows the right cash and change | PASS |  |
@@ -139,7 +150,7 @@ From `node tests/run.js` and `node tests/mutate.js` on 2026-11-06. Two full runs
 | cart-draft: a draft just under 24 hours old is restored | PASS |  |
 | cart-draft: a changed price uses today's price and tells the cashier | PASS |  |
 | cart-draft: lower stock clamps the quantity and tells the cashier | PASS |  |
-| cart-draft: a sold-out item is removed and counted once | **FAIL** | toast: 2 items were adjusted because stock or prices changed. |
+| cart-draft: a sold-out item is removed and counted once | PASS |  |
 | cart-draft: a deleted product is removed from the restored cart | PASS |  |
 | cart-draft: a finished sale clears the draft and it stays cleared | PASS |  |
 | cart-draft: holding a cart clears the draft | PASS |  |
@@ -150,6 +161,53 @@ From `node tests/run.js` and `node tests/mutate.js` on 2026-11-06. Two full runs
 | expiry: reading customers and running the preview changes no data | PASS |  |
 | expiry: a customer with no dates keeps their points at Checkout | PASS |  |
 | expiry: with expiry off, everyone keeps their points | PASS |  |
+| low-stock: Reports lists the same low-stock products with a store default of 10 | PASS |  |
+| low-stock: Inventory lists the same low-stock products with a store default of 10 | PASS |  |
+| low-stock: Reports lists the same low-stock products with a store default of 3 | PASS |  |
+| low-stock: Inventory lists the same low-stock products with a store default of 3 | PASS |  |
+| low-stock: with no settings saved, the store default is 10 | PASS |  |
+| suki-points: 30 points, redeem 10 on a P65 sale leaves 22, and the sale records both | PASS |  |
+| suki-points: history adds up through earn, redeem, void and expire | PASS |  |
+| suki-points: the Suki list, detail, Checkout and card scan all show the same balance | PASS |  |
+| suki-points: the ready-to-redeem filter and count use the derived balance | PASS |  |
+| suki-points: the amount that can be spent never exceeds what is shown | PASS |  |
+| suki-points: earning stops at 40 | PASS |  |
+| suki-points: a customer with 55 points over the cap keeps them | PASS |  |
+| suki-points: changing the peso value revalues the balance everywhere | PASS |  |
+| suki-points: with expiry off, old points stay spendable | PASS |  |
+| suki-points: with expiry on, expired points show as zero and stored data is untouched | PASS |  |
+| suki-points: an expired customer shows 0 points on every screen | PASS |  |
+| suki-points: a customer with no dates keeps their points through a sale, with expiry on | PASS |  |
+| suki-points: expired points do not come back after a new purchase | PASS |  |
+| suki-points: the expiry entry is written at the next edit of that customer | PASS |  |
+| suki-points: a plain read writes nothing to storage | PASS |  |
+| suki-points: only applyPointsChange can change points or history | PASS |  |
+| suki-points: a void returns spent points and removes earned points | PASS |  |
+| suki-points: a void uses the values on the sale, not today's settings | PASS |  |
+| suki-points: voiding the same sale twice does nothing the second time | PASS |  |
+| suki-points: a void floors at zero and records the shortfall | PASS |  |
+| suki-points: a void on an old sale uses its matching history entry | PASS |  |
+| suki-points: a void on an old sale that cannot be matched leaves points alone and says so | PASS |  |
+| suki-points: a void matching two customers leaves points alone and says so | PASS |  |
+| suki-points: a void that cannot write miniMartSales leaves sale, stock and points unchanged | PASS |  |
+| suki-points: a void that cannot write miniMartProducts leaves sale, stock and points unchanged | PASS |  |
+| suki-points: a void that cannot write miniMartSukis leaves sale, stock and points unchanged | PASS |  |
+| suki-points: a sale that cannot write customers changes nothing | PASS |  |
+| suki-points: a points change that cannot save returns a failure and changes nothing | PASS |  |
+| suki-points: an edit that cannot save leaves points, history and the expiry entry unwritten | PASS |  |
+| suki-points: a sale that cannot write sales changes no points | PASS |  |
+| suki-points: a sale that cannot write stock changes no points | PASS |  |
+| suki-points: the migration is switched off and does not run on load | PASS |  |
+| suki-points: before the migration, the old balance moves with each points change | PASS |  |
+| suki-points: the migration keeps the higher value and adds a correction entry only where needed | PASS |  |
+| suki-points: the migration converts the balance using the peso value | PASS |  |
+| suki-points: the migration backs up the raw list first, exactly | PASS |  |
+| suki-points: the migration refuses to run if the backup cannot be written | PASS |  |
+| suki-points: the migration leaves everything alone if its own write fails | PASS |  |
+| suki-points: a second migration run changes nothing | PASS |  |
+| suki-points: new customers and migrated customers have no stored balance | PASS |  |
+| suki-points: an old backup containing rewardBalance restores and shows the derived balance | PASS |  |
+| suki-points: two open tabs agree, and a stale tab cannot undo points | PASS |  |
 | static: index: no undefined functions | PASS |  |
 | static: index: no fatal redeclarations | PASS |  |
 | static: inventory: no undefined functions | PASS |  |
@@ -167,18 +225,27 @@ From `node tests/run.js` and `node tests/mutate.js` on 2026-11-06. Two full runs
 | static: reports: every required element exists | PASS |  |
 | static: settings: every required element exists | PASS |  |
 | static: suki-reward: every required element exists | PASS |  |
+| static: js: no helper is defined in two files | PASS |  |
+| static: js: every allowed duplicate still exists and really differs | PASS |  |
+| static: js: lowStockThreshold is only the Settings input | PASS |  |
 | pages: index loads with no console errors or failed requests | PASS |  |
 | pages: inventory loads with no console errors or failed requests | PASS |  |
 | pages: reports loads with no console errors or failed requests | PASS |  |
 | pages: settings loads with no console errors or failed requests | PASS |  |
 | pages: suki-reward loads with no console errors or failed requests | PASS |  |
 | pages: login loads with no console errors or failed requests | PASS |  |
+| pages: index declares an icon that loads | PASS |  |
+| pages: inventory declares an icon that loads | PASS |  |
+| pages: reports declares an icon that loads | PASS |  |
+| pages: settings declares an icon that loads | PASS |  |
+| pages: suki-reward declares an icon that loads | PASS |  |
+| pages: login declares an icon that loads | PASS |  |
 | icons: every allowed icon exists on disk, and the list has exactly 14 | PASS |  |
 | icons: Inventory picker shows exactly the 14 icons, with no cart and none broken | PASS |  |
 | icons: Inventory tooltip shows the right label on hover | PASS |  |
 | icons: Inventory tooltip shows the right label on keyboard focus | PASS |  |
 | icons: Settings picker shows exactly the 14 icons, with no cart and none broken | PASS |  |
-| icons: Settings tooltip shows the right label on hover | **FAIL** | hover 0: expected {"count":1,"text":"Amenities","onScreen":true}, got {"count":0} |
+| icons: Settings tooltip shows the right label on hover | PASS |  |
 | icons: Settings tooltip shows the right label on keyboard focus | PASS |  |
 | icons: old icon ids and paths move to the right PNG and stay there after two reloads | PASS |  |
 | icons: current icon ids and their paths are stable | PASS |  |
@@ -187,19 +254,27 @@ From `node tests/run.js` and `node tests/mutate.js` on 2026-11-06. Two full runs
 | icons: a tampered icon value falls back and injects nothing: "javascript:window.__pwned=1" | PASS |  |
 | icons: a tampered icon value falls back and injects nothing: "../../secret.png" | PASS |  |
 | icons: a tampered icon value falls back and injects nothing: "Icons/evil.svg" | PASS |  |
-| icons: a tampered icon value falls back and injects nothing: "constructor" | **FAIL** | state: expected {"stored":"bread","id":"bread","pwned":null,"scripts":0,"broken":[]}, got {"id":"bread","pwned":null,"scripts":0,"broken":[]} |
-| icons: a tampered icon value falls back and injects nothing: "__proto__" | **FAIL** | state: expected {"stored":"bread","id":"bread","pwned":null,"scripts":0,"broken":[]}, got {"stored":{},"id":"bread","pwned":null,"scripts":0,"broken":[]} |
-| icons: a tampered icon value falls back and injects nothing: "toString" | **FAIL** | state: expected {"stored":"bread","id":"bread","pwned":null,"scripts":0,"broken":[]}, got {"id":"bread","pwned":null,"scripts":0,"broken":[]} |
+| icons: a tampered icon value falls back and injects nothing: "constructor" | PASS |  |
+| icons: a tampered icon value falls back and injects nothing: "__proto__" | PASS |  |
+| icons: a tampered icon value falls back and injects nothing: "toString" | PASS |  |
+| icons: a tampered icon value falls back and injects nothing: "valueOf" | PASS |  |
+| icons: a tampered icon value falls back and injects nothing: "hasOwnProperty" | PASS |  |
 | icons: a tampered icon value falls back and injects nothing: 42 | PASS |  |
 | icons: a tampered icon value falls back and injects nothing: null | PASS |  |
 | icons: a tampered icon value falls back and injects nothing: {"path":"Icons/evil.svg"} | PASS |  |
+| icons: a tampered icon in a store that already ran the old migration is cleaned too | PASS |  |
 | icons: Inventory shows category icons with no broken images | PASS |  |
 | icons: Settings shows category icons with no broken images | PASS |  |
 | icons: Checkout shows category icons with no broken images | PASS |  |
-| icons: Manage categories: every Edit category opens with a mouse click at 1366x650 | **FAIL** | rows out of 4 that a click could not open: expected [], got [1,2,3] |
-| icons: Manage categories: every Edit category opens with a mouse click at 1264x805 | **FAIL** | rows out of 4 that a click could not open: expected [], got [1,2,3] |
+| icons: Manage categories: every Edit category opens with a mouse click at 1366x650 | PASS |  |
+| icons: Manage categories: every Edit category opens with a mouse click at 1264x805 | PASS |  |
 | icons: Manage categories: every Edit category opens with a mouse click at 1920x1040 | PASS |  |
-| icons: Manage categories: the empty message is hidden while categories are listed | **FAIL** | display: expected "none", got "grid" |
+| icons: Manage categories: all 16 rows are reachable by mouse at 1366x650 | PASS |  |
+| icons: Manage categories: all 16 rows are reachable by mouse at 1264x805 | PASS |  |
+| icons: Manage categories: all 16 rows are reachable by mouse at 1920x1040 | PASS |  |
+| icons: Manage categories: a mouse click on an icon saves it | PASS |  |
+| icons: Manage categories: the empty message is hidden while categories are listed | PASS |  |
+| icons: Manage categories: the empty message shows when a search finds nothing | PASS |  |
 | overlay: a fast navigation never shows the overlay | PASS |  |
 | overlay: a slow navigation shows the overlay after about 300 ms, then clears it | PASS |  |
 | overlay: pressing Back after a slow navigation clears the overlay, from the back-forward cache | PASS |  |
@@ -211,38 +286,81 @@ From `node tests/run.js` and `node tests/mutate.js` on 2026-11-06. Two full runs
 | overlay: offline, a slow action shows the offline message | PASS |  |
 | overlay: a finished action hides the overlay | PASS |  |
 | overlay: a failed action shows an error, then clears | PASS |  |
-| requests: no app request failed at any point in the run | **FAIL** | Failed requests: 404 /favicon.ico |
+| requests: no app request failed at any point in the run | PASS |  |
+
+## Known bugs
+
+These are reported, not fixed, and never affect the exit code.
+
+| Test | Result | Reason |
+|---|---|---|
+| known-bugs: shift cash: a P65 cash sale paid with P100 adds P65 to the shift | STILL FAILS | shift cash sales: expected 65, got 100 |
+| known-bugs: shift cash: the sale records P65 cash, not the P100 tendered | STILL FAILS | cash on the sale: expected 65, got 100 |
+| known-bugs: shift cash: a card sale adds nothing to shift cash | STILL FAILS | shift cash sales: expected 0, got 65 |
+| known-bugs: close shift: Cancel leaves the shift open | STILL FAILS | open shift: expected "S", got null |
+| known-bugs: close shift: a blank amount leaves the shift open | STILL FAILS | open shift: expected "S", got null |
+| known-bugs: reports today: a 7 AM sale counts as today | STILL FAILS | today's revenue: expected "₱100.00", got "₱0.00" |
+| known-bugs: reports today: at 7:30 AM, yesterday's sale is not counted as today | STILL FAILS | today's revenue: expected "₱0.00", got "₱40.00" |
+| known-bugs: trends: the comparison uses yesterday's real sales | STILL FAILS | revenue note: expected to contain "50% vs yesterday revenue", got "▲ 100% vs yesterday revenue" |
+| known-bugs: trends: the 7-day trend shows all 7 days with the Today filter on | STILL FAILS | last 7 days: expected [0,25,0,0,0,100,150], got [0,0,0,0,0,0,150] |
+| known-bugs: void: with a category filter on, every item's stock comes back | STILL FAILS | stock after the void: expected [10,10], got [10,7] |
+| known-bugs: exports: voided sales are left out | STILL FAILS | exported sales: expected ["kept"], got ["kept","gone"] |
+| known-bugs: hold: holding a cart clears the Suki customer | STILL FAILS | selected customer: expected "", got "s1" |
+| known-bugs-login: login check: settings sends a signed-out visitor to the login page | STILL FAILS | Timed out waiting for settings to send a signed-out visitor to login |
+| known-bugs-login: login check: suki-reward sends a signed-out visitor to the login page | STILL FAILS | Timed out waiting for suki-reward to send a signed-out visitor to login |
+| known-bugs-login: hidden: nothing marked hidden is on screen on index | STILL FAILS | On screen: total |
+| known-bugs-login: hidden: nothing marked hidden is on screen on reports | STILL FAILS | On screen: reportCustomRange |
+| known-bugs-login: hidden: nothing marked hidden is on screen on settings | STILL FAILS | On screen: removeLogo |
 
 ## Mutation check
 
-Each mutation reverts one fix in memory. Every listed test must fail while it is applied.
+`tests/mutations.js` has 46 mutations and 9 trial fixes. Every mutation was caught when last run, and run them again with `node tests/mutate.js`.
 
-| Mutation | Fix it reverts | Test | Result |
-|---|---|---|---|
-| `stale-line-total` | A fixed-price line is priced from its quantity (4ade2e6) | checkout: a held cart with a stale line total is priced from its quantity | CAUGHT |
-| `reward-ignores-balance` | One reward amount for screen and sale (a165fe2) | checkout: a stored balance below the points is the most that can be spent | CAUGHT |
-| `draft-drops-line-total` | Measured drafts save the running total (f9ecd73) | measured-draft: uneven amounts keep their exact values | CAUGHT |
-| `measured-keeps-last-amount` | Measured lines keep the running total, not the last entry (f9ecd73, fully reverted) | measured-draft: two amounts survive a reload | CAUGHT |
-| `measured-keeps-last-amount` | Measured lines keep the running total, not the last entry (f9ecd73, fully reverted) | measured-draft: editing a combined line shows the full amount | CAUGHT |
-| `draft-kept-after-sale` | A finished sale clears the draft | cart-draft: a finished sale clears the draft and it stays cleared | CAUGHT |
-| `no-premigration-backup` | Suki migration backs up the original list first | suki-store: the original list is backed up once, exactly | CAUGHT |
-| `no-shrink-guard` | Saves that lose customers are refused | suki-store: saves that would lose customers are refused | CAUGHT |
-| `no-shrink-guard` | Saves that lose customers are refused | suki-store: a stale tab cannot drop a customer added elsewhere | CAUGHT |
-| `backup-filename-utc` | Backup filename uses the store timezone | backup: backup filename uses the store timezone, not the computer's | CAUGHT |
-| `no-restore-rollback` | A failed restore puts every key back | backup: a restore that fails part way puts every key back | CAUGHT |
-| `no-backup-before-reset` | Reset backs up first | backup: reset downloads a backup first, then erases | CAUGHT |
-| `no-backup-before-reset` | Reset backs up first | backup: reset stops and erases nothing if the automatic backup fails | CAUGHT |
-| `no-backup-shape-check` | Broken backup files are rejected | backup: broken backup files are rejected and nothing is written | CAUGHT |
-| `no-false-corruption-cleanup` | False corruption backups are removed on load | corruption: false corruption backups are removed on load | CAUGHT |
-| `no-corruption-dedupe` | The same corruption is backed up once | corruption: the same corruption is backed up once and a change is backed up again | CAUGHT |
-| `stock-write-no-undo` | Stock and history are written atomically | stock-history: if stock cannot be written, the history entry is rolled back | CAUGHT |
-| `products-always-write` | products() is read-only unless normalization changed data | stock-history: reading the app writes no products or history | CAUGHT |
-| `missing-date-expires` | Missing dates never remove points (1d74e6e) | expiry: with expiry on, only customers with real old dates lose points | CAUGHT |
-| `missing-date-expires` | Missing dates never remove points (1d74e6e) | expiry: the rule treats missing dates as not expired | CAUGHT |
-| `cart-icon-in-picker` | The cart icon is not in the picker | icons: Inventory picker shows exactly the 14 icons, with no cart and none broken | CAUGHT |
-| `no-legacy-cart-alias` | Old cart ids move to the right PNG | icons: old icon ids and paths move to the right PNG and stay there after two reloads | CAUGHT |
-| `tooltip-no-focus` | The tooltip works from the keyboard | icons: Inventory tooltip shows the right label on keyboard focus | CAUGHT |
-| `tooltip-no-focus` | The tooltip works from the keyboard | icons: Settings tooltip shows the right label on keyboard focus | CAUGHT |
-| `overlay-no-delay` | The overlay waits 300 ms | overlay: a fast navigation never shows the overlay | CAUGHT |
-| `overlay-stuck-after-back` | The overlay clears when a page is restored | overlay: pressing Back after a slow navigation clears the overlay, from the back-forward cache | CAUGHT |
-| `overlay-no-offline-message` | Offline shows its own message | overlay: offline, a slow action shows the offline message | CAUGHT |
+| Mutation | Fix it reverts | Tests |
+|---|---|---|
+| `stale-line-total` | A fixed-price line is priced from its quantity (4ade2e6) | 1 |
+| `reward-ignores-points` | One reward amount for screen and sale, limited by the points (a165fe2) | 1 |
+| `draft-drops-line-total` | Measured drafts save the running total (f9ecd73) | 1 |
+| `measured-keeps-last-amount` | Measured lines keep the running total, not the last entry (f9ecd73, fully reverted) | 2 |
+| `draft-kept-after-sale` | A finished sale clears the draft | 1 |
+| `no-premigration-backup` | Suki migration backs up the original list first | 1 |
+| `no-shrink-guard` | Saves that lose customers are refused | 2 |
+| `backup-filename-utc` | Backup filename uses the store timezone | 1 |
+| `no-restore-rollback` | A failed restore puts every key back | 1 |
+| `no-backup-before-reset` | Reset backs up first | 2 |
+| `no-backup-shape-check` | Broken backup files are rejected | 1 |
+| `no-false-corruption-cleanup` | False corruption backups are removed on load | 1 |
+| `no-corruption-dedupe` | The same corruption is backed up once | 1 |
+| `stock-write-no-undo` | Stock and history are written atomically | 1 |
+| `products-always-write` | products() is read-only unless normalization changed data | 1 |
+| `missing-date-expires` | Missing dates never remove points (1d74e6e) | 2 |
+| `cart-icon-in-picker` | The cart icon is not in the picker | 1 |
+| `no-legacy-cart-alias` | Old cart ids move to the right PNG | 1 |
+| `tooltip-no-focus` | The tooltip works from the keyboard | 2 |
+| `category-rows-squeezed` | Manage Categories rows keep their full height | 5 |
+| `empty-message-always-on` | The empty message respects hidden | 1 |
+| `sold-out-counted-twice` | A sold-out item is counted once | 1 |
+| `icon-alias-inherited-names` | Icon lookups ignore inherited names | 3 |
+| `icon-path-inherited-names` | Icon lookups ignore inherited names | 1 |
+| `no-icon-remigration` | Stores that already ran the migration are cleaned too | 1 |
+| `favicon-dead-link` | Each page declares an icon that exists | 1 |
+| `favicon-removed` | Each page declares an icon that exists | 2 |
+| `reset-brings-seeds-back` | Reset keeps seed products out | 3 |
+| `restore-keeps-file-deleted-list` | Restore brings back exactly the products in the file | 3 |
+| `helper-defined-twice` | One shared copy of each helper | 1 |
+| `lexical-redeclaration` | No page declares the same name twice | 2 |
+| `low-stock-threshold-changed` | Low-stock results stay the same | 2 |
+| `sale-drops-earned-points` | A sale that redeems keeps its earned points | 1 |
+| `stored-balance-shown` | Every screen shows the derived balance | 1 |
+| `expired-points-revive` | Expired points are written off before a change | 2 |
+| `stale-save-changes-points` | Only applyPointsChange changes points | 2 |
+| `void-repeats` | A void only reverses once | 1 |
+| `void-no-shortfall-floor` | A void floors at zero and records the shortfall | 1 |
+| `void-outside-rollback` | A failed void also restores points | 1 |
+| `void-recalculates` | A void uses the values on the sale | 1 |
+| `migration-no-backup` | The migration backs up first and refuses without a backup | 2 |
+| `migration-keeps-stamps-only` | The migration keeps the higher value | 1 |
+| `migration-switched-on` | The migration stays off until approved | 1 |
+| `overlay-no-delay` | The overlay waits 300 ms | 1 |
+| `overlay-stuck-after-back` | The overlay clears when a page is restored | 1 |
+| `overlay-no-offline-message` | Offline shows its own message | 1 |
