@@ -309,6 +309,90 @@ const mutations = [
   },
 ];
 
-const trialFixes = [];
+// The reverse check for KNOWN BUGS: each entry fixes one bug in memory, and its tests
+// must then pass. It proves those tests fail because of the bug, not by accident. These
+// are test aids, not the final fixes.
+const notCash = "(paymentMethod.value === \"card\" || paymentMethod.value === \"gcash\")";
+const localDay = (date) => `new Date(${date}.getTime() - ${date}.getTimezoneOffset() * 60000).toISOString().slice(0, 10)`;
+const trialFixes = [
+  {
+    id: "trial-shift-cash",
+    tests: [
+      "known-bugs: shift cash: a P65 cash sale paid with P100 adds P65 to the shift",
+      "known-bugs: shift cash: the sale records P65 cash, not the P100 tendered",
+      "known-bugs: shift cash: a card sale adds nothing to shift cash",
+    ],
+    edits: [
+      { file: "js/checkout.js", from: "shift.cashSales += paid;", to: `shift.cashSales += ${notCash} ? 0 : paid - change;` },
+      { file: "js/checkout.js", from: "        cash: paid,\n", to: `        cash: ${notCash} ? 0 : paid - change,\n` },
+    ],
+  },
+  {
+    id: "trial-close-shift-cancel",
+    tests: ["known-bugs: close shift: Cancel leaves the shift open", "known-bugs: close shift: a blank amount leaves the shift open"],
+    edits: [{
+      file: "js/checkout.js",
+      from: "const closingCash = Number(window.prompt(",
+      to: "const closingCash = ((value) => (value === null || value.trim() === \"\" ? NaN : Number(value)))(window.prompt(",
+    }],
+  },
+  {
+    id: "trial-reports-local-day",
+    tests: ["known-bugs: reports today: a 7 AM sale counts as today", "known-bugs: reports today: at 7:30 AM, yesterday's sale is not counted as today"],
+    edits: [
+      { file: "js/reports.js", from: "const todayKey = new Date().toISOString().slice(0, 10);", to: `const todayKey = ((now) => ${localDay("now")})(new Date());` },
+      { file: "js/reports.js", from: "const saleKey = saleDate.toISOString().slice(0, 10);", to: `const saleKey = ${localDay("saleDate")};` },
+    ],
+  },
+  {
+    id: "trial-trends-all-sales",
+    tests: ["known-bugs: trends: the comparison uses yesterday's real sales", "known-bugs: trends: the 7-day trend shows all 7 days with the Today filter on"],
+    edits: [{ file: "js/reports.js", from: "const salesByDay = sales.reduce(", to: "const salesByDay = allSales.reduce(" }],
+  },
+  {
+    id: "trial-void-all-items",
+    tests: ["known-bugs: void: with a category filter on, every item's stock comes back"],
+    edits: [{
+      file: "js/reports.js",
+      from: "  const inventory = window.miniMartDB.products();\n  itemsForReport(sale).forEach((item) => {",
+      to: "  const inventory = window.miniMartDB.products();\n  (sale.items || []).forEach((item) => {",
+    }],
+  },
+  {
+    id: "trial-exports-skip-voided",
+    tests: ["known-bugs: exports: voided sales are left out"],
+    edits: [{
+      file: "js/settings.js",
+      from: "    const date = new Date(sale.date);\n    if (Number.isNaN(date.getTime())) return false;\n    const key = storeDateString(date);",
+      to: "    if (sale.status === \"voided\") return false;\n    const date = new Date(sale.date);\n    if (Number.isNaN(date.getTime())) return false;\n    const key = storeDateString(date);",
+    }],
+  },
+  {
+    id: "trial-hold-clears-customer",
+    tests: ["known-bugs: hold: holding a cart clears the Suki customer"],
+    edits: [{
+      file: "js/checkout.js",
+      from: "  showCheckoutToast(\"Cart held. Use RESUME CART to restore it.\", \"success\");",
+      to: "  selectedSukiId = \"\";\n  showCheckoutToast(\"Cart held. Use RESUME CART to restore it.\", \"success\");",
+    }],
+  },
+  {
+    id: "trial-login-check",
+    tests: [
+      "known-bugs-login: login check: settings sends a signed-out visitor to the login page",
+      "known-bugs-login: login check: suki-reward sends a signed-out visitor to the login page",
+    ],
+    edits: [{
+      file: "js/navigation.js",
+      from: "const settingsApi = window.miniMartSettings;",
+      to: "void (async () => { const client = window.supabaseClient; const reply = client ? await client.auth.getSession() : null; if (!reply?.data?.session) window.location.replace(\"login.html\"); })();\nconst settingsApi = window.miniMartSettings;",
+    }],
+  },
+  {
+    id: "trial-hidden-wins",
+    tests: ["index", "reports", "settings"].map((page) => `known-bugs-login: hidden: nothing marked hidden is on screen on ${page}`),
+    edits: [{ file: "css/styles.css", from: ":root {\n  --paper: #f5f4ee;", to: "[hidden] { display: none !important; }\n:root {\n  --paper: #f5f4ee;" }],
+  },
+];
 
 module.exports = { mutations, trialFixes };

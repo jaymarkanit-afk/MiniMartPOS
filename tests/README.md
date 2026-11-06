@@ -34,6 +34,12 @@ The test server changes the code as it serves it, so no file on disk ever change
 
 The mutations are listed in `mutations.js`. When a fix changes the code a mutation matches, the run stops and names that mutation, and it needs updating.
 
+## Known bugs
+
+The KNOWN BUGS section lists open bugs that are not fixed yet. Those tests print STILL FAILS or NOW PASSES and never change the exit code. When a fix lands, move its test into the main suite.
+
+`node tests/mutate.js --known` fixes each known bug in memory and confirms its test goes from failing to passing, so these tests are proven to fail because of the bug.
+
 ## Layout
 
 | Path | Contents |

@@ -160,5 +160,5 @@ async function runSuite() {
     clearTimeout(timer);
     await report({ suite: SUITE, name, ok: !reason, reason, ms: Date.now() - started });
   }
-  await report({ done: true });
+  await report({ suite: SUITE, done: true, loaded: tests.length });
 }

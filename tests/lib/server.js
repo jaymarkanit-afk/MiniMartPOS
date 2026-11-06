@@ -37,9 +37,12 @@ function applyMutation(mutation, file, buffer) {
   );
 }
 
-function createServer({ mutation = null, onResult = () => {} } = {}) {
-  if (mutation) checkMutation(mutation);
-  const state = { port: 0, requests: [], failed: new Set(), delays: [], hook: true, noStore: true };
+function createServer({ onResult = () => {} } = {}) {
+  const state = { port: 0, requests: [], failed: new Set(), delays: [], hook: true, noStore: true, mutation: null };
+  state.setMutation = (mutation) => {
+    if (mutation) checkMutation(mutation);
+    state.mutation = mutation;
+  };
 
   const send = async (response, url, status, type, body) => {
     state.requests.push({ url, status });
@@ -78,7 +81,7 @@ function createServer({ mutation = null, onResult = () => {} } = {}) {
     if (!file.startsWith(base)) return send(response, url, 403);
     fs.readFile(file, (error, data) => {
       if (error) return send(response, url, 404);
-      let body = applyMutation(mutation, file, data);
+      let body = applyMutation(state.mutation, file, data);
       if (file.endsWith(".html") && !inTests && state.hook) {
         body = String(body).replace("<head>", `<head>${HOOK}`);
       }

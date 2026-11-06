@@ -19,6 +19,15 @@ const CANDIDATES = [
 // External hosts are unreachable on purpose, so a test can never call the internet.
 const BLOCKED_HOSTS = ["cdn.jsdelivr.net", "fonts.googleapis.com", "fonts.gstatic.com"];
 
+// Clean-up never fails a run. A folder Windows still holds stays in the temp folder.
+function removeProfile(profile) {
+  try {
+    fs.rmSync(profile, { recursive: true, force: true, maxRetries: 20, retryDelay: 250 });
+  } catch (error) {
+    console.warn(`Could not remove ${profile}: ${error.message}`);
+  }
+}
+
 async function launch() {
   const binary = CANDIDATES.find((candidate) => candidate && fs.existsSync(candidate));
   if (!binary) throw new Error("Chrome was not found. Set CHROME_PATH to its location.");
@@ -42,16 +51,28 @@ async function launch() {
     "about:blank",
   ], { stdio: "ignore" });
 
+  // Windows locks this file while Chrome writes it, so a failed read means "not yet".
   const portFile = path.join(profile, "DevToolsActivePort");
+  const readPort = () => {
+    try {
+      const lines = fs.readFileSync(portFile, "utf8").trim().split("\n");
+      return lines.length < 2 ? null : lines;
+    } catch {
+      return null;
+    }
+  };
   const deadline = Date.now() + 20000;
-  while (!fs.existsSync(portFile) || fs.readFileSync(portFile, "utf8").trim().split("\n").length < 2) {
+  let lines = readPort();
+  while (!lines) {
     if (Date.now() > deadline) {
       child.kill();
+      removeProfile(profile);
       throw new Error("Chrome did not start within 20 seconds.");
     }
     await sleep(50);
+    lines = readPort();
   }
-  const [port, wsPath] = fs.readFileSync(portFile, "utf8").trim().split("\n");
+  const [port, wsPath] = lines;
   const cdp = await Cdp.connect(`ws://127.0.0.1:${port.trim()}${wsPath.trim()}`);
 
   const close = async () => {
@@ -60,7 +81,7 @@ async function launch() {
     await Promise.race([exited, sleep(5000)]);
     child.kill();
     cdp.close();
-    fs.rmSync(profile, { recursive: true, force: true, maxRetries: 20, retryDelay: 250 });
+    removeProfile(profile);
   };
   return { cdp, close, profile };
 }
