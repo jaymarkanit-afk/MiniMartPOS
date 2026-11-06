@@ -37,6 +37,7 @@ const IS_SLOW = "document.querySelector('.loading-overlay').classList.contains('
 // The real 8-second wait has its own test, so these only need the message to appear.
 const SLOW_SOON = "void window.showLoading('Working',{slowAfter:200})";
 const NAV_LINK = 'a[href="reports.html"]';
+const FAST_NAVIGATION_MS = 250;
 const overlayLog = (page) => page.eval("JSON.parse(sessionStorage.getItem('__overlay')||'[]')");
 const overlayVisible = (page) => page.eval("(()=>{const o=document.querySelector('.loading-overlay');return Boolean(o&&!o.hidden)})()");
 const message = (page) => page.eval("document.querySelector('.loading-message').textContent");
@@ -61,12 +62,21 @@ const tests = [
   {
     name: "a fast navigation never shows the overlay",
     run: async ({ page, server }) => {
-      await open(page, server);
-      await clickThrough(page);
-      await sleep(700);
-      const shown = (await overlayLog(page)).filter((entry) => entry.visible);
-      if (shown.length) fail(`Overlay flashed: ${JSON.stringify(shown)}`);
-      if (await overlayVisible(page)) fail("Overlay visible after load");
+      // A busy computer can take over 300 ms, and then the overlay is right to show.
+      // Only a navigation that really was fast counts, so a slow try is repeated.
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        await open(page, server);
+        const clicked = await page.eval("Date.now()");
+        await clickThrough(page);
+        const arrived = await page.eval("performance.timeOrigin");
+        await sleep(700);
+        if (arrived - clicked >= FAST_NAVIGATION_MS) continue;
+        const shown = (await overlayLog(page)).filter((entry) => entry.visible);
+        if (shown.length) fail(`Overlay flashed: ${JSON.stringify(shown)}`);
+        if (await overlayVisible(page)) fail("Overlay visible after load");
+        return;
+      }
+      fail("No navigation was fast enough to judge");
     },
   },
   {

@@ -117,6 +117,7 @@ test("void: with a category filter on, every item's stock comes back", async () 
     status: "completed",
   }]);
   await go("reports.html?period=all&category=Snacks");
+  eq(e("reportCategory.value"), "Snacks", "filter in use");
   F.contentWindow.prompt = () => "APPROVE";
   e("voidSale('v1')");
   await sleep(350);

@@ -308,6 +308,20 @@ class Page {
     await this.send("Input.dispatchKeyEvent", { type: "keyUp", ...key });
   }
 
+  async pressKey(key, { shift = false } = {}) {
+    const codes = { Enter: 13, Escape: 27, Tab: 9 };
+    const event = {
+      key,
+      code: key,
+      windowsVirtualKeyCode: codes[key],
+      nativeVirtualKeyCode: codes[key],
+      modifiers: shift ? 8 : 0,
+    };
+    await this.send("Input.dispatchKeyEvent", { type: "rawKeyDown", ...event });
+    if (key === "Enter") await this.send("Input.dispatchKeyEvent", { type: "char", ...event, text: "\r" });
+    await this.send("Input.dispatchKeyEvent", { type: "keyUp", ...event });
+  }
+
   async goBack() {
     const { currentIndex, entries } = await this.send("Page.getNavigationHistory");
     await this.send("Page.navigateToHistoryEntry", { entryId: entries[currentIndex - 1].id });

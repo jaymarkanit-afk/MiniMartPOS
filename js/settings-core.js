@@ -310,10 +310,33 @@ function safeSpreadsheetText(value) {
   return /^[=+\-@]/.test(text) ? `'${text}` : text;
 }
 
-function resetSettingsSection(section) {
-  if (!window.confirm("Reset this settings section to its defaults?")) {
-    return;
-  }
+// Only settings change. Suki rules decide what stored points are worth, so that is said.
+const RESET_SECTION_DIALOGS = {
+  store: {
+    title: "Reset Store Info to defaults?",
+    message: "The store name, address, contact number, register name, receipt footer, timezone, date format and logo go back to their defaults.",
+    details: "Products, sales and customers are not touched.",
+  },
+  inventory: {
+    title: "Reset Inventory Rules to defaults?",
+    message: "The low-stock threshold and the out-of-stock sales rule go back to their defaults.",
+    details: "Products, stock and sales are not touched.",
+  },
+  suki: {
+    title: "Reset Suki Rewards to defaults?",
+    message: "Suki on or off, pesos per point, peso value, the redeem minimum and point expiry go back to their defaults.",
+    details: "Customers and their stored points are not touched, but what a point is worth and whether points expire will follow the defaults.",
+  },
+};
+
+async function resetSettingsSection(section) {
+  const confirmed = await confirmDialog({
+    ...RESET_SECTION_DIALOGS[section],
+    confirmLabel: "Reset section",
+    cancelLabel: "Keep my settings",
+    tone: "danger",
+  });
+  if (!confirmed) return;
   const defaults = window.miniMartSettings.defaults;
   const changes = section === "store"
     ? {
