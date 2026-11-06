@@ -23,18 +23,10 @@ function numericValue(value, fallback = 0) {
   return Number.isFinite(number) ? number : fallback;
 }
 
-const LOW_STOCK_THRESHOLD = Number.isInteger(
-  Number(window.miniMartSettings?.get().lowStockThreshold),
-)
-  ? Number(window.miniMartSettings.get().lowStockThreshold)
-  : 10;
-const lowStockThreshold = (product) => {
-  const configured = numericValue(product?.restockMin);
-  return configured > 0 ? configured : LOW_STOCK_THRESHOLD;
-};
+const LOW_STOCK_THRESHOLD = productLowStockThreshold();
 const lowStockProductNames = new Set(
   products
-    .filter((product) => product.stock <= lowStockThreshold(product))
+    .filter((product) => product.stock <= productLowStockThreshold(product))
     .map((product) => product.name),
 );
 
@@ -201,7 +193,7 @@ products.forEach((product) => {
     lowStock: 0,
   };
   current.stock += numericValue(product.stock);
-  if (numericValue(product.stock) <= lowStockThreshold(product)) current.lowStock += 1;
+  if (numericValue(product.stock) <= productLowStockThreshold(product)) current.lowStock += 1;
   categoryOverview.set(category, current);
 });
 categoryCounts.forEach((units, category) => {
@@ -327,7 +319,7 @@ document.getElementById("todaySales").textContent = scopedTransactions;
 document.getElementById("productsSold").textContent = productsSold;
 document.getElementById("productsSoldNote").textContent = "Across all sales";
 const lowStockProducts = products
-  .filter((product) => product.stock <= lowStockThreshold(product))
+  .filter((product) => product.stock <= productLowStockThreshold(product))
   .sort((first, second) => first.stock - second.stock);
 const expiryLimit = new Date();
 expiryLimit.setHours(23, 59, 59, 999);
@@ -652,7 +644,7 @@ const categoryInventory = [
     };
     current.total += product.stock;
     current.products.push(product);
-    if (product.stock <= lowStockThreshold(product))
+    if (product.stock <= productLowStockThreshold(product))
       current.lowItems.push(product.name);
     groups.set(product.category, current);
     return groups;
@@ -686,7 +678,7 @@ const highlightLowStockCategory = (category) => {
   if (!categoryInfo) return;
   const [, values] = categoryInfo;
   const lowList = values.products
-    .filter((product) => product.stock <= lowStockThreshold(product))
+    .filter((product) => product.stock <= productLowStockThreshold(product))
     .sort((first, second) => first.stock - second.stock)
     .map(
       (product) =>

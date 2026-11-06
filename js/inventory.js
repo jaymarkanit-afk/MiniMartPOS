@@ -260,13 +260,6 @@ function renderRows() {
   updateVisibleRows();
 }
 
-function lowStockThreshold(product) {
-  const configured = Number(product?.restockMin);
-  return Number.isFinite(configured) && configured > 0
-    ? configured
-    : Number(window.miniMartSettings.get().lowStockThreshold) || 0;
-}
-
 function updateVisibleRows() {
   const rawQuery = search.value.trim();
   const query = rawQuery.toLowerCase();
@@ -291,7 +284,7 @@ function updateVisibleRows() {
   rows.forEach((row) => {
     const product = products.find((entry) => entry.name === row.dataset.product);
     const filterMatch = inventoryFilter.value === "all" ||
-      (inventoryFilter.value === "low" && Number(product?.stock) <= lowStockThreshold(product)) ||
+      (inventoryFilter.value === "low" && Number(product?.stock) <= productLowStockThreshold(product)) ||
       (inventoryFilter.value === "out" && Number(product?.stock) <= 0) ||
       (inventoryFilter.value === "expiring" && product?.expiryDate && product.expiryDate >= new Date().toISOString().slice(0, 10) && product.expiryDate <= new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10));
     const match = filterMatch && (matches(row) || row.dataset.product.toLowerCase().includes(query));
@@ -309,7 +302,7 @@ function updateVisibleRows() {
           if (row.dataset.category !== group.dataset.category || !matches(row)) return false;
           const product = products.find((entry) => entry.name === row.dataset.product);
           return inventoryFilter.value === "all" ||
-            (inventoryFilter.value === "low" && Number(product?.stock) <= lowStockThreshold(product)) ||
+            (inventoryFilter.value === "low" && Number(product?.stock) <= productLowStockThreshold(product)) ||
             (inventoryFilter.value === "out" && Number(product?.stock) <= 0) ||
             (inventoryFilter.value === "expiring" && product?.expiryDate && product.expiryDate >= new Date().toISOString().slice(0, 10) && product.expiryDate <= new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10));
         },

@@ -39,6 +39,10 @@ function applyMutation(mutation, file, buffer) {
 
 function createServer({ onResult = () => {} } = {}) {
   const state = { port: 0, requests: [], failed: new Set(), delays: [], hook: true, noStore: true, mutation: null };
+  state.source = (file) => {
+    const fullPath = path.join(ROOT, file);
+    return String(applyMutation(state.mutation, fullPath, fs.readFileSync(fullPath)));
+  };
   state.setMutation = (mutation) => {
     if (mutation) checkMutation(mutation);
     state.mutation = mutation;

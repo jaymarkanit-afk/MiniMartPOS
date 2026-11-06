@@ -7,7 +7,8 @@ const { ROOT } = require("../lib/server");
 
 const PAGES = ["index", "inventory", "reports", "settings", "suki-reward", "login"];
 const BUILTIN = new Set("if for while switch catch function return typeof await async super new void delete in of Number String Boolean Array Object Map Set Date Math JSON Error Promise RegExp Blob URL URLSearchParams Symbol parseInt parseFloat isNaN isFinite setTimeout clearTimeout setInterval clearInterval alert confirm prompt fetch CustomEvent Event FileReader NDEFReader Intl BigInt var".split(" "));
-const read = (file) => fs.readFileSync(path.join(ROOT, file), "utf8");
+let server = null;
+const read = (file) => (server ? server.source(file) : fs.readFileSync(path.join(ROOT, file), "utf8"));
 const strip = (code) => code
   .replace(/\/\*[\s\S]*?\*\//g, " ")
   .replace(/(^|[^:"'`])\/\/.*$/gm, "$1")
@@ -86,4 +87,74 @@ for (const page of ["index", "inventory", "reports", "settings", "suki-reward"])
   tests.push({ name: `${page}: every required element exists`, run: async () => expectNone(missingElements(page), "Missing") });
 }
 
-module.exports = { tests };
+// These share a name across files on purpose. Each pair never loads on the same page,
+// and they do different jobs, so a shared copy would be wrong. Anything else is a duplicate.
+const ALLOWED_DUPLICATES = {
+  search: "Each page's own search box",
+  selectedSukiId: "Each page's own selection state",
+  sukiStore: "Each page's short name for window.miniMartSukiStore",
+  sukiRules: "Each page's short name for window.miniMartSukiRules",
+  stockHistoryNotice: "Each page's own element",
+  updateStockHistoryNotice: "Inventory's notice has a span and Settings' does not",
+  validateForm: "Different forms",
+  openModal: "Different modals",
+  closeModal: "Different modals",
+  fields: "Different forms",
+};
+
+function definitionsByName() {
+  const names = new Map();
+  for (const file of fs.readdirSync(path.join(ROOT, "js")).filter((name) => name.endsWith(".js"))) {
+    for (const match of read(`js/${file}`).matchAll(/^(?:const|let|class|function|async function)\s+([A-Za-z_$][\w$]*)/gm)) {
+      names.set(match[1], (names.get(match[1]) || new Set()).add(file));
+    }
+  }
+  return [...names].filter(([, files]) => files.size > 1);
+}
+
+function functionBody(file, name) {
+  return read(`js/${file}`).match(new RegExp(`^function ${name}\\([\\s\\S]*?^}`, "m"))?.[0] ?? null;
+}
+
+tests.push({
+  name: "js: no helper is defined in two files",
+  run: async () => expectNone(
+    definitionsByName()
+      .filter(([name]) => !ALLOWED_DUPLICATES[name])
+      .map(([name, files]) => `${name} (${[...files].join(", ")})`),
+    "Duplicate",
+  ),
+});
+
+tests.push({
+  name: "js: every allowed duplicate still exists and really differs",
+  run: async () => {
+    const found = new Map(definitionsByName());
+    expectNone(Object.keys(ALLOWED_DUPLICATES).filter((name) => !found.has(name)), "No longer duplicated, remove from the list");
+    const identical = [...found].filter(([name, files]) => {
+      const bodies = [...files].map((file) => functionBody(file, name));
+      return ALLOWED_DUPLICATES[name] && bodies.every(Boolean) && new Set(bodies.map((body) => body.replace(/\s+/g, " "))).size === 1;
+    });
+    expectNone(identical.map(([name]) => name), "Identical copies");
+  },
+});
+
+tests.push({
+  name: "js: lowStockThreshold is only the Settings input",
+  run: async () => {
+    const found = fs.readdirSync(path.join(ROOT, "js"))
+      .filter((name) => name.endsWith(".js"))
+      .filter((name) => /^(?:const|let|function)\s+lowStockThreshold\b/m.test(read(`js/${name}`)));
+    expectNone(found.filter((name) => name !== "settings.js"), "Defined in");
+  },
+});
+
+module.exports = {
+  tests: tests.map((entry) => ({
+    ...entry,
+    run: (context) => {
+      ({ server } = context);
+      return entry.run(context);
+    },
+  })),
+};

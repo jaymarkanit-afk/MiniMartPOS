@@ -286,6 +286,35 @@ const mutations = [
     }],
   },
   {
+    id: "helper-defined-twice",
+    fix: "One shared copy of each helper",
+    tests: ["static: js: no helper is defined in two files"],
+    edits: [{
+      file: "js/reports.js",
+      from: "function numericValue(value, fallback = 0) {",
+      to: "function productLowStockThreshold() {}\nfunction numericValue(value, fallback = 0) {",
+    }],
+  },
+  {
+    id: "lexical-redeclaration",
+    fix: "No page declares the same name twice",
+    tests: ["static: reports: no fatal redeclarations", "pages: reports loads with no console errors or failed requests"],
+    edits: [{
+      file: "js/reports.js",
+      from: "function numericValue(value, fallback = 0) {",
+      to: "const productLowStockThreshold = 1;\nfunction numericValue(value, fallback = 0) {",
+    }],
+  },
+  {
+    id: "low-stock-threshold-changed",
+    fix: "Low-stock results stay the same",
+    tests: [
+      "low-stock: Reports lists the same low-stock products with a store default of 10",
+      "low-stock: Inventory lists the same low-stock products with a store default of 10",
+    ],
+    edits: [{ file: "js/utils.js", from: "Number.isFinite(configured) && configured > 0", to: "Number.isFinite(configured) && configured >= 0" }],
+  },
+  {
     id: "overlay-no-delay",
     fix: "The overlay waits 300 ms",
     tests: ["overlay: a fast navigation never shows the overlay"],
