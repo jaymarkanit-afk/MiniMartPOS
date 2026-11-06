@@ -839,7 +839,7 @@ tbody.addEventListener("keydown", (event) => {
   }
 });
 
-form.addEventListener("submit", (event) => {
+form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const products = window.miniMartDB.products();
   let category = canonicalCategory(categoryName.value);
@@ -893,9 +893,14 @@ form.addEventListener("submit", (event) => {
         candidate.split(/\s+/).length > 1)
     );
   });
-  if (similarProduct && !window.confirm(
-    `"${name}" is similar to "${similarProduct.name}". Add it anyway?`,
-  )) {
+  const editing = modalMode === "edit-product";
+  if (similarProduct && !(await confirmDialog({
+    title: `${editing ? "Save" : "Add"} "${name}" anyway?`,
+    message: `It looks similar to "${similarProduct.name}".`,
+    details: "Check that this is not the same product twice.",
+    confirmLabel: editing ? "Save anyway" : "Add anyway",
+    cancelLabel: "Go back",
+  }))) {
     return;
   }
 
@@ -1026,11 +1031,14 @@ categoryDefaultUnit.addEventListener("change", () => {
 });
 productCost.addEventListener("input", updateLossWarning);
 productPrice.addEventListener("input", updateLossWarning);
-productUnit.addEventListener("change", () => {
+productUnit.addEventListener("change", async () => {
   if (modalMode !== "edit-product") return;
   const product = window.miniMartDB.products().find((entry) => entry.id === editingId);
   if (product && product.unit !== productUnit.value && hasProductHistory(product)) {
-    window.alert("This product has stock or sales history. Create a new product if you need a different unit; existing inventory cannot be converted safely.");
+    await alertDialog({
+      title: "This unit can't be changed",
+      message: "This product has stock or sales history. Create a new product if you need a different unit; existing inventory cannot be converted safely.",
+    });
     productUnit.value = product.unit;
     updateProductUnitUi();
   }

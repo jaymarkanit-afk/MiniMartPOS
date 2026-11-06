@@ -367,4 +367,276 @@ tests.push({
   },
 });
 
+const answer = async (page, selector) => {
+  await page.until(`document.querySelector("${DIALOG}")`, { label: "the dialog" });
+  await page.click(selector);
+  await sleep(80);
+};
+const dialogText = (page) => page.eval((selector) => {
+  const card = document.querySelector(selector);
+  return {
+    title: card.querySelector("h2").textContent,
+    text: [...card.querySelectorAll("p")].map((line) => line.textContent),
+    buttons: [...card.querySelectorAll("button")].map((button) => button.textContent),
+    danger: card.classList.contains("is-danger"),
+  };
+}, DIALOG);
+const openDialogText = async (page) => {
+  await page.until(`document.querySelector("${DIALOG}")`, { label: "the dialog" });
+  return dialogText(page);
+};
+const stored = (page, key) => page.eval((name) => JSON.parse(localStorage.getItem(name) || "null"), key);
+const cartNames = (page) => page.eval("[...cart.values()].map(i=>i.name)");
+const PRODUCT = { category: "Snacks", price: 10, costPrice: 5, unit: "piece", icon: "x", accent: "var(--gold)" };
+const SEED_NAMES = ["Coke 1.5L", "Sprite 1.5L", "Nature's Spring 500ml", "Nestea Lemon 1L", "Lucky Me Pancit Canton", "Lucky Me Chicken Noodles", "Payless Xtra Big", "Nissin Cup Noodles", "Piattos 40g", "Chippy Barbecue 110g", "Choc Nut 24g", "Nova Country 78g", "Bear Brand 33g", "Alaska Fortified Milk 1L", "Selecta Ice Cream Cup", "Yakult 5-Pack", "Skyflakes Crackers"];
+const heldCartStore = {
+  miniMartHeldCarts: [{ id: "H1", createdAt: new Date().toISOString(), items: [{ productId: "b", name: "Beta", price: 10, quantity: 2, unit: "piece" }] }],
+  miniMartProducts: [{ ...PRODUCT, id: "a", name: "Alpha", stock: 9 }, { ...PRODUCT, id: "b", name: "Beta", stock: 9 }],
+  miniMartDeletedProducts: SEED_NAMES,
+};
+const openWithCart = async (page) => {
+  await page.seed(heldCartStore);
+  await page.goto("index.html");
+  await page.eval("addProductToCart(window.miniMartDB.products()[0])");
+  await page.click("#resumeCartButton");
+};
+
+tests.push({
+  name: "held cart: the dialog says the current cart will be removed",
+  run: async ({ page }) => {
+    await openWithCart(page);
+    expect(await openDialogText(page), {
+      title: "Replace the current cart?",
+      text: ["The held cart will take its place, and the items in the current cart will be removed.", "To keep them, hold this cart first."],
+      buttons: ["Keep current cart", "Replace cart"],
+      danger: true,
+    }, "dialog");
+  },
+});
+
+tests.push({
+  name: "held cart: cancelling keeps the current cart and the held cart",
+  run: async ({ page }) => {
+    await openWithCart(page);
+    await answer(page, CANCEL);
+    expect(await cartNames(page), ["Alpha"], "cart");
+    expect((await stored(page, "miniMartHeldCarts")).length, 1, "held carts");
+  },
+});
+
+tests.push({
+  name: "held cart: confirming replaces the current cart",
+  run: async ({ page }) => {
+    await openWithCart(page);
+    await answer(page, ACTION);
+    expect(await cartNames(page), ["Beta"], "cart");
+    expect((await stored(page, "miniMartHeldCarts")).length, 0, "held carts");
+  },
+});
+
+tests.push({
+  name: "held cart: with an empty cart no dialog appears",
+  run: async ({ page }) => {
+    await page.seed(heldCartStore);
+    await page.goto("index.html");
+    await page.click("#resumeCartButton");
+    await sleep(80);
+    expect(await dialogCount(page), 0, "dialogs open");
+    expect(await cartNames(page), ["Beta"], "cart");
+  },
+});
+
+const openSimilarProduct = async (page) => {
+  await page.seed({ miniMartProducts: [{ ...PRODUCT, id: "a", name: "Coke Zero", stock: 9 }], miniMartDeletedProducts: SEED_NAMES, miniMartCategories: ["Snacks"] });
+  await page.goto("inventory.html");
+  await page.eval("openProductModal('Snacks');productName.value='Coke';productCost.value='5';productPrice.value='7';productStock.value='11'");
+  await page.click("#modalSaveButton");
+};
+const productNames = (page) => page.eval("window.miniMartDB.products().map(p=>p.name)");
+
+tests.push({
+  name: "similar product: the dialog names both products",
+  run: async ({ page }) => {
+    await openSimilarProduct(page);
+    expect(await openDialogText(page), {
+      title: 'Add "Coke" anyway?',
+      text: ['It looks similar to "Coke Zero".', "Check that this is not the same product twice."],
+      buttons: ["Go back", "Add anyway"],
+      danger: false,
+    }, "dialog");
+  },
+});
+
+tests.push({
+  name: "similar product: going back adds nothing and keeps the form open",
+  run: async ({ page }) => {
+    await openSimilarProduct(page);
+    await answer(page, CANCEL);
+    expect(await productNames(page), ["Coke Zero"], "products");
+    expect(await page.eval("document.getElementById('categoryModal').hidden"), false, "form hidden");
+  },
+});
+
+tests.push({
+  name: "similar product: confirming adds it",
+  run: async ({ page }) => {
+    await openSimilarProduct(page);
+    await answer(page, ACTION);
+    expect((await productNames(page)).sort(), ["Coke", "Coke Zero"], "products");
+  },
+});
+
+tests.push({
+  name: "similar product: renaming an existing product says save, not add",
+  run: async ({ page }) => {
+    await page.seed({ miniMartProducts: [{ ...PRODUCT, id: "a", name: "Coke Zero", stock: 9 }, { ...PRODUCT, id: "b", name: "Water", stock: 9 }], miniMartDeletedProducts: SEED_NAMES });
+    await page.goto("inventory.html");
+    await page.eval("openModal(window.miniMartDB.products()[1]);productName.value='Coke'");
+    await page.click("#modalSaveButton");
+    const shown = await openDialogText(page);
+    expect([shown.title, shown.buttons], ['Save "Coke" anyway?', ["Go back", "Save anyway"]], "dialog");
+    await page.click(ACTION);
+    await sleep(80);
+    expect((await productNames(page)).sort(), ["Coke", "Coke Zero"], "products");
+  },
+});
+
+const openEmptyCategory = async (page) => {
+  await page.seed({ miniMartCategories: ["Empty One"] });
+  await page.goto("settings.html");
+  await page.eval("document.getElementById('openCategoryManagement').click()");
+  await page.until("document.querySelector('.category-management-row')", { label: "the category list" });
+  await page.eval(() => {
+    const row = [...document.querySelectorAll(".category-management-row")].find((entry) => entry.dataset.category === "Empty One");
+    row.querySelector(".category-management-edit-panel").open = true;
+    row.dataset.testTarget = "true";
+  });
+  await page.click('[data-test-target] [data-category-action="delete"]');
+};
+const categoryNames = (page) => page.eval("window.miniMartDB.categories()");
+
+tests.push({
+  name: "category delete: the dialog says what will happen",
+  run: async ({ page }) => {
+    await openEmptyCategory(page);
+    expect(await openDialogText(page), {
+      title: "Delete the Empty One category?",
+      text: ["It has no products, so none will be moved."],
+      buttons: ["Keep category", "Delete category"],
+      danger: true,
+    }, "dialog");
+  },
+});
+
+tests.push({
+  name: "category delete: cancelling keeps the category",
+  run: async ({ page }) => {
+    await openEmptyCategory(page);
+    await answer(page, CANCEL);
+    expect((await categoryNames(page)).includes("Empty One"), true, "category kept");
+  },
+});
+
+tests.push({
+  name: "category delete: Escape closes the dialog but not the category list",
+  run: async ({ page }) => {
+    await openEmptyCategory(page);
+    await page.until(`document.querySelector("${DIALOG}")`, { label: "the dialog" });
+    await page.pressKey("Escape");
+    await sleep(80);
+    expect((await categoryNames(page)).includes("Empty One"), true, "category kept");
+    expect(await page.eval("document.getElementById('categoryManagementModal').hidden"), false, "list closed");
+  },
+});
+
+tests.push({
+  name: "category delete: confirming deletes it",
+  run: async ({ page }) => {
+    await openEmptyCategory(page);
+    await answer(page, ACTION);
+    expect((await categoryNames(page)).includes("Empty One"), false, "category deleted");
+  },
+});
+
+const openUnitChange = async (page) => {
+  await page.seed({
+    miniMartProducts: [{ ...PRODUCT, id: "a", name: "Alpha", stock: 9 }],
+    miniMartDeletedProducts: SEED_NAMES,
+    miniMartSales: [{ id: "s", date: new Date().toISOString(), items: [{ name: "Alpha", productId: "a", quantity: 1, price: 10 }], total: 10, status: "completed" }],
+  });
+  await page.goto("inventory.html");
+  await page.eval(() => {
+    openModal(window.miniMartDB.products()[0]);
+    const select = document.getElementById("productUnit");
+    select.value = "kg";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+};
+
+tests.push({
+  name: "unit alert: it has one button and the right message",
+  run: async ({ page }) => {
+    await openUnitChange(page);
+    expect(await openDialogText(page), {
+      title: "This unit can't be changed",
+      text: ["This product has stock or sales history. Create a new product if you need a different unit; existing inventory cannot be converted safely."],
+      buttons: ["Got it"],
+      danger: false,
+    }, "dialog");
+  },
+});
+
+for (const [how, act] of [
+  ["the button", (page) => answer(page, ACTION)],
+  ["Escape", async (page) => {
+    await page.until(`document.querySelector("${DIALOG}")`, { label: "the dialog" });
+    await page.pressKey("Escape");
+    await sleep(80);
+  }],
+]) {
+  tests.push({
+    name: `unit alert: closing it with ${how} puts the unit back`,
+    run: async ({ page }) => {
+      await openUnitChange(page);
+      await act(page);
+      expect(await dialogCount(page), 0, "dialogs open");
+      expect(await page.eval("document.getElementById('productUnit').value"), "piece", "unit");
+    },
+  });
+}
+
+tests.push({
+  name: "void notice: it shows, and the page reloads once it is closed",
+  run: async ({ page }) => {
+    await page.seed({
+      miniMartSales: [{ id: "old1", date: new Date().toISOString(), items: [{ name: "Coke 1.5L", price: 65, quantity: 1, lineTotal: 65, category: "Beverages" }], total: 65, status: "completed", cashRequired: 65, rewardUsed: 0 }],
+    });
+    await page.goto("reports.html?period=all");
+    await page.eval("window.prompt=()=>'APPROVE';window.__sameDocument=true;void voidSale('old1')");
+    expect(await openDialogText(page), {
+      title: "Customer points not changed",
+      text: ["This older sale could not be matched to one customer, so customer points were not changed."],
+      buttons: ["Got it"],
+      danger: false,
+    }, "dialog");
+    const loaded = page.waitEvent("Page.loadEventFired");
+    await page.click(ACTION);
+    await loaded;
+    await sleep(100);
+    expect(await page.eval("window.__sameDocument===true"), false, "reloaded");
+  },
+});
+
+tests.push({
+  name: "an alert waits for an open dialog instead of being lost",
+  run: async ({ page }) => {
+    await openReset(page);
+    await page.eval("void alertDialog({title:'Later',message:'Waits'})");
+    expect(await dialogCount(page), 1, "dialogs open");
+    await page.click(CANCEL);
+    await page.until(`document.querySelector("${DIALOG} h2")?.textContent==='Later'`, { label: "the alert" });
+    expect(await dialogCount(page), 1, "dialogs open");
+  },
+});
+
 module.exports = { tests };

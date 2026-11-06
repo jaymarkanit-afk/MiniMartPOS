@@ -2,7 +2,7 @@
 
 From `node tests/run.js` on 2026-11-06.
 
-295 tests, 295 passed, 0 failed. Known bugs: 17 tests, 17 still fail.
+342 tests, 342 passed, 0 failed. Known bugs: 17 tests, 17 still fail.
 
 | Suite | Passed | Failed |
 |---|---|---|
@@ -18,9 +18,10 @@ From `node tests/run.js` on 2026-11-06.
 | suki-points | 42 | 0 |
 | product-ids | 23 | 0 |
 | settings-page | 11 | 0 |
-| static | 20 | 0 |
+| static | 21 | 0 |
 | pages | 12 | 0 |
 | icons | 35 | 0 |
+| dialogs | 46 | 0 |
 | overlay | 11 | 0 |
 | requests | 1 | 0 |
 
@@ -264,6 +265,7 @@ From `node tests/run.js` on 2026-11-06.
 | static: js: no helper is defined in two files | PASS |  |
 | static: js: every allowed duplicate still exists and really differs | PASS |  |
 | static: js: lowStockThreshold is only the Settings input | PASS |  |
+| static: js: no browser confirm or alert remains in app code | PASS |  |
 | pages: index loads with no console errors or failed requests | PASS |  |
 | pages: inventory loads with no console errors or failed requests | PASS |  |
 | pages: reports loads with no console errors or failed requests | PASS |  |
@@ -311,6 +313,52 @@ From `node tests/run.js` on 2026-11-06.
 | icons: Manage categories: a mouse click on an icon saves it | PASS |  |
 | icons: Manage categories: the empty message is hidden while categories are listed | PASS |  |
 | icons: Manage categories: the empty message shows when a search finds nothing | PASS |  |
+| dialogs: the store reset shows the right title and message | PASS |  |
+| dialogs: the action button resets the store section | PASS |  |
+| dialogs: the inventory reset shows the right title and message | PASS |  |
+| dialogs: the action button resets the inventory section | PASS |  |
+| dialogs: the suki reset shows the right title and message | PASS |  |
+| dialogs: the action button resets the suki section | PASS |  |
+| dialogs: the reset changes only that section | PASS |  |
+| dialogs: Cancel leaves the section unchanged | PASS |  |
+| dialogs: Escape leaves the section unchanged | PASS |  |
+| dialogs: a backdrop click leaves the section unchanged | PASS |  |
+| dialogs: a click on the card itself does not close it | PASS |  |
+| dialogs: Enter activates only the focused button | PASS |  |
+| dialogs: a danger dialog starts on the safe button | PASS |  |
+| dialogs: a normal dialog starts on the action button | PASS |  |
+| dialogs: Tab and Shift+Tab stay inside the dialog | PASS |  |
+| dialogs: focus returns to the button that opened it | PASS |  |
+| dialogs: page scroll is locked while open and released after | PASS |  |
+| dialogs: a second dialog does not stack | PASS |  |
+| dialogs: an error while opening leaves the page usable | PASS |  |
+| dialogs: the message is shown as text, so nothing can be injected | PASS |  |
+| dialogs: the dialog fits and is clickable at 1366x650 | PASS |  |
+| dialogs: the dialog fits and is clickable at 1264x805 | PASS |  |
+| dialogs: the dialog fits and is clickable at 1920x1040 | PASS |  |
+| dialogs: the dialog fits and is clickable at 390x844 | PASS |  |
+| dialogs: the buttons stack on a phone | PASS |  |
+| dialogs: the dialog is readable in light mode | PASS |  |
+| dialogs: the dialog is readable in dark mode | PASS |  |
+| dialogs: there is no animation with reduced motion | PASS |  |
+| dialogs: opening and closing the dialog causes no console errors | PASS |  |
+| dialogs: held cart: the dialog says the current cart will be removed | PASS |  |
+| dialogs: held cart: cancelling keeps the current cart and the held cart | PASS |  |
+| dialogs: held cart: confirming replaces the current cart | PASS |  |
+| dialogs: held cart: with an empty cart no dialog appears | PASS |  |
+| dialogs: similar product: the dialog names both products | PASS |  |
+| dialogs: similar product: going back adds nothing and keeps the form open | PASS |  |
+| dialogs: similar product: confirming adds it | PASS |  |
+| dialogs: similar product: renaming an existing product says save, not add | PASS |  |
+| dialogs: category delete: the dialog says what will happen | PASS |  |
+| dialogs: category delete: cancelling keeps the category | PASS |  |
+| dialogs: category delete: Escape closes the dialog but not the category list | PASS |  |
+| dialogs: category delete: confirming deletes it | PASS |  |
+| dialogs: unit alert: it has one button and the right message | PASS |  |
+| dialogs: unit alert: closing it with the button puts the unit back | PASS |  |
+| dialogs: unit alert: closing it with Escape puts the unit back | PASS |  |
+| dialogs: void notice: it shows, and the page reloads once it is closed | PASS |  |
+| dialogs: an alert waits for an open dialog instead of being lost | PASS |  |
 | overlay: a fast navigation never shows the overlay | PASS |  |
 | overlay: a slow navigation shows the overlay after about 300 ms, then clears it | PASS |  |
 | overlay: pressing Back after a slow navigation clears the overlay, from the back-forward cache | PASS |  |
@@ -350,7 +398,7 @@ These are reported, not fixed, and never affect the exit code.
 
 ## Mutation check
 
-`tests/mutations.js` has 46 mutations and 9 trial fixes. Every mutation was caught when last run, and run them again with `node tests/mutate.js`.
+`tests/mutations.js` has 60 mutations and 9 trial fixes. Every mutation was caught when last run, and run them again with `node tests/mutate.js`.
 
 | Mutation | Fix it reverts | Tests |
 |---|---|---|
@@ -397,6 +445,20 @@ These are reported, not fixed, and never affect the exit code.
 | `migration-no-backup` | The migration backs up first and refuses without a backup | 2 |
 | `migration-keeps-stamps-only` | The migration keeps the higher value | 1 |
 | `migration-switched-on` | The migration stays off until approved | 1 |
+| `dialog-cancel-resets` | Cancel changes nothing | 3 |
+| `dialog-no-focus-return` | Focus returns to the opening button | 1 |
+| `dialog-no-escape` | Escape means Cancel | 1 |
+| `dialog-scroll-stays-locked` | The scroll lock is released | 1 |
+| `dialog-no-focus-trap` | Tab stays inside the dialog | 1 |
+| `dialog-stacks` | Only one dialog at a time | 1 |
+| `dialog-focus-on-action` | A danger dialog starts on the safe button | 1 |
+| `dialog-error-leaves-page-stuck` | An error never leaves the page stuck | 1 |
+| `native-confirm-returns` | No browser confirm or alert remains | 1 |
+| `native-alert-returns` | No browser confirm or alert remains | 1 |
+| `held-cart-ignores-cancel` | Cancel keeps the current cart | 1 |
+| `similar-product-ignores-cancel` | Go back adds nothing | 1 |
+| `category-delete-ignores-cancel` | Keep category keeps it | 1 |
+| `alert-before-reset-lost` | An alert waits for an open dialog | 1 |
 | `overlay-no-delay` | The overlay waits 300 ms | 1 |
 | `overlay-stuck-after-back` | The overlay clears when a page is restored | 1 |
 | `overlay-no-offline-message` | Offline shows its own message | 1 |

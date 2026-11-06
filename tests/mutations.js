@@ -443,6 +443,42 @@ const mutations = [
     edits: [{ file: "js/utils.js", from: "    console.error(\"The dialog could not be shown.\", error);\n    close(false);", to: "    console.error(\"The dialog could not be shown.\", error);" }],
   },
   {
+    id: "native-confirm-returns",
+    fix: "No browser confirm or alert remains",
+    tests: ["static: js: no browser confirm or alert remains in app code"],
+    edits: [{ file: "js/utils.js", from: "function categoryIconPath(category) {", to: "function askAgain() { return window.confirm('Sure?'); }\nfunction categoryIconPath(category) {" }],
+  },
+  {
+    id: "native-alert-returns",
+    fix: "No browser confirm or alert remains",
+    tests: ["static: js: no browser confirm or alert remains in app code"],
+    edits: [{ file: "js/reports.js", from: "const OLD_SALE_MATCH_MS = 60000;", to: "const OLD_SALE_MATCH_MS = 60000;\nfunction warn() { alert('Careful'); }" }],
+  },
+  {
+    id: "held-cart-ignores-cancel",
+    fix: "Cancel keeps the current cart",
+    tests: ["dialogs: held cart: cancelling keeps the current cart and the held cart"],
+    edits: [{ file: "js/checkout.js", from: "    tone: \"danger\",\n  }))) {\n    return;\n  }\n  const [next, ...remaining] = held;", to: "    tone: \"danger\",\n  }))) {\n  }\n  const [next, ...remaining] = held;" }],
+  },
+  {
+    id: "similar-product-ignores-cancel",
+    fix: "Go back adds nothing",
+    tests: ["dialogs: similar product: going back adds nothing and keeps the form open"],
+    edits: [{ file: "js/inventory.js", from: "    cancelLabel: \"Go back\",\n  }))) {\n    return;\n  }", to: "    cancelLabel: \"Go back\",\n  }))) {\n  }" }],
+  },
+  {
+    id: "category-delete-ignores-cancel",
+    fix: "Keep category keeps it",
+    tests: ["dialogs: category delete: cancelling keeps the category"],
+    edits: [{ file: "js/settings-categories.js", from: "      tone: \"danger\",\n    })) {\n      window.miniMartDB.deleteCategory(category);", to: "      tone: \"danger\",\n    }) || true) {\n      window.miniMartDB.deleteCategory(category);" }],
+  },
+  {
+    id: "alert-before-reset-lost",
+    fix: "An alert waits for an open dialog",
+    tests: ["dialogs: an alert waits for an open dialog instead of being lost"],
+    edits: [{ file: "js/utils.js", from: "  while (activeDialog) await activeDialog;\n", to: "  if (activeDialog) return;\n" }],
+  },
+  {
     id: "overlay-no-delay",
     fix: "The overlay waits 300 ms",
     tests: ["overlay: a fast navigation never shows the overlay"],

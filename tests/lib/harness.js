@@ -141,6 +141,14 @@ function has(actual, expected, label = "text") {
     throw new Error(`${label}: expected to contain ${show(expected)}, got ${show(actual)}`);
   }
 }
+const dialog = () => F.contentDocument.querySelector(".confirm-dialog");
+// Answers an in-app dialog if one is open, with a click on its action button.
+const acceptDialog = async () => {
+  await sleep(20);
+  if (!dialog()) return;
+  dialog().querySelector(".is-confirm").click();
+  await sleep(40);
+};
 const test = (name, run, { timeout = 60000 } = {}) => tests.push({ name, run, timeout });
 const expectPageErrors = () => { allowErrors = true; };
 

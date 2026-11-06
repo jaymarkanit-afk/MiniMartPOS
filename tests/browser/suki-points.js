@@ -38,16 +38,20 @@ const sell = async ({ reward = 0, given, id = "c1", items = coke, mustComplete =
   if (mustComplete && sales.length !== count + 1) throw new Error(`The sale did not complete, reward ${reward}, given ${given}. ${refused}`);
   return sales.at(-1);
 };
-const voidOnReports = async (saleId) => {
+const voidOnReports = async (saleId, { reloads = true } = {}) => {
   await go("reports.html?period=all");
   F.contentWindow.prompt = () => "APPROVE";
   const alerts = [];
-  F.contentWindow.alert = (message) => alerts.push(message);
   F.contentWindow.__beforeVoid = true;
   e(`voidSale(${JSON.stringify(saleId)})`);
-  // A void reloads the page, and a repeat void does not, so this has its own limit.
-  const deadline = Date.now() + 1000;
-  while (F.contentWindow.__beforeVoid && Date.now() < deadline) await sleep(10);
+  const deadline = Date.now() + (reloads ? 8000 : 200);
+  while (F.contentWindow.__beforeVoid && Date.now() < deadline) {
+    if (dialog()) {
+      alerts.push(dialog().textContent);
+      dialog().querySelector(".is-confirm").click();
+    }
+    await sleep(10);
+  }
   await waitForPage(F);
   return alerts;
 };
@@ -276,7 +280,7 @@ test("voiding the same sale twice does nothing the second time", async () => {
   const sale = await sell({ reward: 10, given: 55 });
   await voidOnReports(sale.id);
   const once = localStorage.miniMartSukis;
-  await voidOnReports(sale.id);
+  await voidOnReports(sale.id, { reloads: false });
   eq(localStorage.miniMartSukis, once, "customers");
   e(`window.miniMartSukiStore.applyPointsChange("c1",{kind:"void-reverse",saleId:${JSON.stringify(sale.id)},earned:2,spent:10})`);
   eq(localStorage.miniMartSukis, once, "a repeat of the change itself");

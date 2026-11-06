@@ -802,7 +802,7 @@ function pointsToReverse(sale) {
     : { notice: "This older sale could not be matched to one customer, so customer points were not changed." };
 }
 
-function voidSale(saleId) {
+async function voidSale(saleId) {
   const approval = window.prompt("Manager approval required. Type APPROVE to void this sale.");
   if (approval !== "APPROVE") return;
   const currentSales = window.miniMartDB.sales();
@@ -847,7 +847,7 @@ function voidSale(saleId) {
     showStorageError(storageErrorMessage(salesResult));
     return;
   }
-  if (points?.notice) window.alert(points.notice);
+  if (points?.notice) await alertDialog({ title: "Customer points not changed", message: points.notice });
   window.location.reload();
 }
 

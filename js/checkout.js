@@ -1923,7 +1923,7 @@ function holdCurrentCart() {
   showCheckoutToast("Cart held. Use RESUME CART to restore it.", "success");
 }
 
-function resumeHeldCart() {
+async function resumeHeldCart() {
   const held = window.miniMartDB.readStorage(
     HELD_CARTS_KEY,
     [],
@@ -1933,7 +1933,14 @@ function resumeHeldCart() {
     showCheckoutToast("There are no held carts.");
     return;
   }
-  if (cart.size && !window.confirm("Replace the current cart with the held cart?")) {
+  if (cart.size && !(await confirmDialog({
+    title: "Replace the current cart?",
+    message: "The held cart will take its place, and the items in the current cart will be removed.",
+    details: "To keep them, hold this cart first.",
+    confirmLabel: "Replace cart",
+    cancelLabel: "Keep current cart",
+    tone: "danger",
+  }))) {
     return;
   }
   const [next, ...remaining] = held;

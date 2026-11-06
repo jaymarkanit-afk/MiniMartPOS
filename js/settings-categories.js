@@ -329,7 +329,7 @@ function keepCategoryManagementFocus(event) {
   }
 }
 
-categoryManagementList.addEventListener("click", (event) => {
+categoryManagementList.addEventListener("click", async (event) => {
   const iconButton = event.target.closest("[data-category-icon]");
   if (iconButton) {
     const category = iconButton.dataset.category;
@@ -381,7 +381,13 @@ categoryManagementList.addEventListener("click", (event) => {
       .some((product) => product.category === category);
     if (hasProducts) {
       openCategoryDeleteModal(category);
-    } else if (window.confirm(`Delete the ${category} category?`)) {
+    } else if (await confirmDialog({
+      title: `Delete the ${category} category?`,
+      message: "It has no products, so none will be moved.",
+      confirmLabel: "Delete category",
+      cancelLabel: "Keep category",
+      tone: "danger",
+    })) {
       window.miniMartDB.deleteCategory(category);
       renderCategoryManagement();
       setCategoryStatus("Saved");

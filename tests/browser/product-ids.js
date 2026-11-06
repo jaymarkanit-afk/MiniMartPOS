@@ -34,8 +34,8 @@ const seedOld = () => {
 const P = (name) => J("miniMartProducts").find((entry) => entry.name === name);
 const keys = (prefix) => Object.keys(localStorage).filter((key) => key.startsWith(prefix));
 const rename = async (from, to) => {
-  F.contentWindow.confirm = () => true;
   e(`openModal(window.miniMartDB.products().find(p=>p.name===${JSON.stringify(from)}));productName.value=${JSON.stringify(to)};form.requestSubmit()`);
+  await acceptDialog();
   await sleep(40);
 };
 

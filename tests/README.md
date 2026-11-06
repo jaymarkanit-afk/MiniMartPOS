@@ -34,6 +34,10 @@ The test server changes the code as it serves it, so no file on disk ever change
 
 The mutations are listed in `mutations.js`. When a fix changes the code a mutation matches, the run stops and names that mutation, and it needs updating.
 
+## Screenshots
+
+`node tests/screenshots.js` saves the dialogs to `tests/screenshots/` in light mode, dark mode and at phone width.
+
 ## Settings page
 
 `settings.html` loads the `js/settings-*.js` files in a fixed order. `settings-core.js` comes first and `settings-main.js` last, and start-up calls belong in `settings-main.js`, so a file can use functions from a file loaded after it.

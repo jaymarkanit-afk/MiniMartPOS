@@ -27,8 +27,8 @@ const saleUI = async (names, given) => {
   await sleep(40);
 };
 const form = async (name, setup) => {
-  F.contentWindow.confirm = () => true;
   e(`openModal(window.miniMartDB.products().find(p=>p.name===${JSON.stringify(name)}));${setup}form.requestSubmit()`);
+  await acceptDialog();
   await sleep(40);
 };
 const importRows = (rows) => `productImportRows=validateProductImportRows(${JSON.stringify(rows)});productDuplicateMode.value='update';`;

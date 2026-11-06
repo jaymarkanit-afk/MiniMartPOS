@@ -149,6 +149,21 @@ tests.push({
   },
 });
 
+tests.push({
+  name: "js: no browser confirm or alert remains in app code",
+  run: async () => {
+    const found = [];
+    for (const file of fs.readdirSync(path.join(ROOT, "js")).filter((name) => name.endsWith(".js"))) {
+      const code = strip(read(`js/${file}`));
+      if (/(^|[^\w$.])(confirm|alert)\s*\(|\bwindow\s*\.\s*(confirm|alert)\b/m.test(code)) found.push(file);
+    }
+    for (const page of PAGES) {
+      if (/\bwindow\.(confirm|alert)\b|[\s;(](confirm|alert)\(/.test(read(`${page}.html`))) found.push(`${page}.html`);
+    }
+    expectNone(found, "Found in");
+  },
+});
+
 module.exports = {
   tests: tests.map((entry) => ({
     ...entry,

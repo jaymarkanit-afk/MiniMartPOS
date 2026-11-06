@@ -149,6 +149,12 @@ function confirmDialog({ title, message, details, confirmLabel = "Continue", can
   return showDialog({ title, message, details, confirmLabel, cancelLabel, tone });
 }
 
+// A message with one button. If a dialog is open this waits its turn, so no message is lost.
+async function alertDialog({ title, message, details, buttonLabel = "Got it", tone } = {}) {
+  while (activeDialog) await activeDialog;
+  await showDialog({ title, message, details, confirmLabel: buttonLabel, tone });
+}
+
 function categoryIconPath(category) {
   return window.miniMartDB.categoryIcon(category);
 }
