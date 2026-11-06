@@ -61,7 +61,7 @@ test("renaming a product keeps its history together", async () => {
   await go("inventory.html");
   await form("Alpha", "productStock.value='30';");
   await form("Alpha", "productName.value='Alpha Two';productStock.value='29';");
-  e("openStockHistory('Alpha Two')");
+  e("openStockHistory(window.miniMartDB.products().find(p=>p.name==='Alpha Two').id)");
   eq(F.contentDocument.querySelectorAll(".stock-history-row").length, 2, "rows shown");
   eq(brief(H()).at(-1), ["Alpha Two", 30, -1, 29, "edit-form", "", null], "last entry");
 });
@@ -93,7 +93,7 @@ test("bulk edit logs each changed product", async () => {
 test("a manual adjustment and its undo are both logged", async () => {
   await seed();
   await go("inventory.html");
-  e("openStockAdjustment(['Alpha']);stockAdjustmentQuantity.value='5';stockAdjustmentReason.selectedIndex=0;document.getElementById('saveStockAdjustment').click()");
+  e("openStockAdjustment([window.miniMartDB.products().find(p=>p.name==='Alpha').id]);stockAdjustmentQuantity.value='5';stockAdjustmentReason.selectedIndex=0;document.getElementById('saveStockAdjustment').click()");
   await sleep(30);
   e("undoStockAdjustment.click()");
   await sleep(30);
@@ -104,7 +104,7 @@ test("a manual adjustment and its undo are both logged", async () => {
 test("deleting a product logs its stock going to zero", async () => {
   await seed();
   await go("inventory.html");
-  e("pendingDeleteName='Gamma';document.getElementById('confirmDeleteProduct').click()");
+  e("pendingDeleteId=window.miniMartDB.products().find(p=>p.name==='Gamma').id;document.getElementById('confirmDeleteProduct').click()");
   await sleep(30);
   eq(brief(H()), [["Gamma", 5, -5, 0, "delete", "", null]], "history");
 });
@@ -217,9 +217,9 @@ test("the viewer shows old and new entries, newest first, with no injected HTML"
   ]);
   await go("inventory.html");
   await form("Alpha", "productStock.value='41';");
-  e("openStockAdjustment(['Alpha']);stockAdjustmentQuantity.value='1';stockAdjustmentReason.selectedIndex=0;document.getElementById('saveStockAdjustment').click()");
+  e("openStockAdjustment([window.miniMartDB.products().find(p=>p.name==='Alpha').id]);stockAdjustmentQuantity.value='1';stockAdjustmentReason.selectedIndex=0;document.getElementById('saveStockAdjustment').click()");
   await sleep(30);
-  e("openStockHistory('Alpha')");
+  e("openStockHistory(window.miniMartDB.products().find(p=>p.name==='Alpha').id)");
   const rows = [...F.contentDocument.querySelectorAll(".stock-history-row")].map((row) => row.textContent.split(" · ").slice(0, -1).join(" · "));
   eq(rows, ["+1 Manual adjustment · Delivery41 → 42", "+1 Product edit40 → 41", "-5 <b>Damaged</b>45 → 40", "+5 Delivery40 → 45"], "rows");
   eq(F.contentDocument.querySelectorAll(".stock-history-row b").length, 0, "injected elements");

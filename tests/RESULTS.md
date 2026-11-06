@@ -2,7 +2,7 @@
 
 From `node tests/run.js` on 2026-11-06.
 
-261 tests, 261 passed, 0 failed. Known bugs: 17 tests, 17 still fail.
+284 tests, 284 passed, 0 failed. Known bugs: 17 tests, 17 still fail.
 
 | Suite | Passed | Failed |
 |---|---|---|
@@ -16,6 +16,7 @@ From `node tests/run.js` on 2026-11-06.
 | expiry | 6 | 0 |
 | low-stock | 5 | 0 |
 | suki-points | 42 | 0 |
+| product-ids | 23 | 0 |
 | static | 20 | 0 |
 | pages | 12 | 0 |
 | icons | 35 | 0 |
@@ -208,6 +209,29 @@ From `node tests/run.js` on 2026-11-06.
 | suki-points: new customers and migrated customers have no stored balance | PASS |  |
 | suki-points: an old backup containing rewardBalance restores and shows the derived balance | PASS |  |
 | suki-points: two open tabs agree, and a stale tab cannot undo points | PASS |  |
+| product-ids: every product gets a uuid, and an id that is already good stays | PASS |  |
+| product-ids: migration leaves stock, totals, favourites and held carts the same | PASS |  |
+| product-ids: references get the new id, and unmatched sale items are left alone | PASS |  |
+| product-ids: the raw originals are backed up first, and only once | PASS |  |
+| product-ids: if the backup fails, nothing migrates | PASS |  |
+| product-ids: if a migration write fails, every key goes back | PASS |  |
+| product-ids: reloading twice does not run the migration again or change ids | PASS |  |
+| product-ids: a first visit gives sample products uuids that stay the same | PASS |  |
+| product-ids: a new product gets a uuid | PASS |  |
+| product-ids: an id is never reused after a delete | PASS |  |
+| product-ids: a sale records the product id, and a void after a rename returns stock to it | PASS |  |
+| product-ids: after a rename, history, favourite, held cart and reports follow the product | PASS |  |
+| product-ids: a report filtered to a renamed product still finds its old sales | PASS |  |
+| product-ids: an unmatched sale item is still grouped by its name in reports | PASS |  |
+| product-ids: a draft follows a rename | PASS |  |
+| product-ids: two products with the same name stay separate | PASS |  |
+| product-ids: bulk edit selects a product by id, so twins are not mixed up | PASS |  |
+| product-ids: an old import with no ids matches by name, warns, and adds no duplicates | PASS |  |
+| product-ids: an import matches by barcode first, even when the name changed | PASS |  |
+| product-ids: an import matches by id before name | PASS |  |
+| product-ids: an imported new product gets a uuid | PASS |  |
+| product-ids: restoring an old backup with no ids runs the migration | PASS |  |
+| product-ids: a backup includes product ids | PASS |  |
 | static: index: no undefined functions | PASS |  |
 | static: index: no fatal redeclarations | PASS |  |
 | static: inventory: no undefined functions | PASS |  |

@@ -8,7 +8,7 @@ const { Page } = require("./cdp");
 
 const BROWSER_SUITES = [
   "backup", "corruption", "suki-store", "stock-history", "checkout", "measured-draft", "cart-draft", "expiry",
-  "low-stock", "suki-points", "known-bugs",
+  "low-stock", "suki-points", "product-ids", "known-bugs",
 ];
 const NODE_SUITES = ["static", "pages", "icons", "overlay", "known-bugs-login", "requests"];
 // These change shared server state or depend on timing, so nothing runs beside them.

@@ -50,7 +50,17 @@ const STOCK_HISTORY_EXPORT_KEY = "miniMartStockHistoryExport";
 const STOCK_HISTORY_LIMIT = 1000;
 const STOCK_HISTORY_WARNING_AT = 900;
 const DATA_VERSION_KEY = "miniMartDataVersion";
-const DATA_VERSION = 2;
+const DATA_VERSION = 3;
+const PRODUCT_ID_BACKUP_PREFIX = "miniMartProductIds__backup_";
+const PRODUCT_REFERENCE_KEYS = [
+  PRODUCTS_KEY,
+  SALES_KEY,
+  "miniMartHeldCarts",
+  "miniMartCheckoutDraft",
+  "miniMartFavoriteProducts",
+  "miniMartRecentProducts",
+  STOCK_HISTORY_KEY,
+];
 const STORAGE_BACKUP_LIMIT = 3;
 const LARGE_BACKUP_CHARS = 500 * 1024;
 // Free space a corruption backup must leave, so it cannot crowd out later sales.
@@ -434,6 +444,71 @@ function readCategoryIcons() {
 
 // One-time data upgrades. Product normalization is not one of them: it has to
 // keep running because products are saved without an id until their next read.
+// Ids built from a name, missing ids and repeated ids all get a new one. Every reference
+// then moves to the new id, and names stay as they were. An unmatched reference is left
+// alone. Returns false if nothing could be changed, so it runs again on the next load.
+function migrateProductIds() {
+  const stored = read(PRODUCTS_KEY, []);
+  if (stored.status === "missing") return true;
+  if (stored.status !== "ok") return false;
+  const usedIds = new Set();
+  const idChanges = new Map();
+  const products = stored.value.map((product) => {
+    const keep = product.id && !/^product-/.test(product.id) && !usedIds.has(product.id);
+    const id = keep ? product.id : createProductId();
+    usedIds.add(id);
+    if (product.id && !idChanges.has(product.id)) idChanges.set(product.id, id);
+    return keep ? product : { ...product, id };
+  });
+  const nameCounts = new Map();
+  products.forEach(({ name }) => nameCounts.set(name, (nameCounts.get(name) || 0) + 1));
+  const idsByName = new Map(products.filter(({ name }) => nameCounts.get(name) === 1).map(({ name, id }) => [name, id]));
+  const resolve = (productId, name) => {
+    if (usedIds.has(productId)) return productId;
+    return idChanges.get(productId) || idsByName.get(name) || productId;
+  };
+  const linkItem = (item) => {
+    const productId = resolve(item?.productId, item?.name);
+    return productId && productId !== item.productId ? { ...item, productId } : item;
+  };
+  const linkName = (value) => idsByName.get(value) || value;
+  const linkers = {
+    [PRODUCTS_KEY]: () => products,
+    [SALES_KEY]: (sales) => sales.map((sale) => ({ ...sale, items: (sale.items || []).map(linkItem) })),
+    miniMartHeldCarts: (carts) => carts.map((cart) => ({ ...cart, items: (cart.items || []).map(linkItem) })),
+    miniMartCheckoutDraft: (draft) => ({ ...draft, items: (draft.items || []).map(linkItem) }),
+    miniMartFavoriteProducts: (names) => names.map(linkName),
+    miniMartRecentProducts: (names) => names.map(linkName),
+    [STOCK_HISTORY_KEY]: (history) => history.map((entry) => {
+      const productId = resolve(entry.productId, entry.product);
+      return productId ? { ...entry, productId } : entry;
+    }),
+  };
+  const originals = Object.fromEntries(PRODUCT_REFERENCE_KEYS.map((key) => [key, localStorage.getItem(key)]));
+  const writes = PRODUCT_REFERENCE_KEYS.flatMap((key) => {
+    if (originals[key] === null) return [];
+    const current = read(key, null);
+    if (current.status !== "ok" || current.value === null) return [];
+    const next = linkers[key](current.value);
+    return JSON.stringify(next) === JSON.stringify(current.value) ? [] : [[key, next]];
+  });
+  if (!writes.length) return true;
+  const backup = safeWrite(`${PRODUCT_ID_BACKUP_PREFIX}${Date.now()}`, JSON.stringify(originals), { raw: true });
+  if (!backup.ok) {
+    console.error("Product ids were not added because their backup failed.", backup.error);
+    return false;
+  }
+  for (const [index, [key, value]] of writes.entries()) {
+    const result = safeWrite(key, value);
+    if (!result.ok) {
+      writes.slice(0, index + 1).forEach(([written]) => safeWrite(written, originals[written], { raw: true }));
+      console.error("Product ids were not added because a write failed.", result.error);
+      return false;
+    }
+  }
+  return true;
+}
+
 function runDataMigrations() {
   try {
     if (Number(localStorage.getItem(DATA_VERSION_KEY)) >= DATA_VERSION) return;
@@ -448,6 +523,7 @@ function runDataMigrations() {
         }
       }
     }
+    if (!migrateProductIds()) return;
     safeWrite(DATA_VERSION_KEY, String(DATA_VERSION), { raw: true });
   } catch (error) {
     console.error("Could not run data migrations.", error);
@@ -467,6 +543,18 @@ function write(key, value) {
   return result;
 }
 
+function createProductId() {
+  if (typeof crypto?.randomUUID === "function") return crypto.randomUUID();
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+}
+
+// A product read before it could be saved keeps one id for as long as this page is open.
+const sessionProductIds = new Map();
+function sessionProductId(name) {
+  if (!sessionProductIds.has(name)) sessionProductIds.set(name, createProductId());
+  return sessionProductIds.get(name);
+}
+
 function normalizeProducts(products) {
   const existingNames = new Set(products.map((product) => product.name));
   const missingProducts = seedProducts.filter(
@@ -478,7 +566,7 @@ function normalizeProducts(products) {
     return {
       ...seed,
       ...product,
-      id: product.id || `product-${String(product.name).trim().toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+      id: product.id || sessionProductId(product.name),
       category: product.category || seed.category || "Snacks",
       icon: product.icon || seed.icon || "◇",
       accent: product.accent || seed.accent || "var(--gold)",
@@ -520,7 +608,7 @@ function stockHistoryExportState() {
 // Compares two product lists. New products start from 0 and removed ones end at 0.
 function stockChanges(previous, next, context = {}) {
   const byId = new Map(previous.filter((product) => product.id).map((product) => [product.id, product]));
-  const byName = new Map(previous.map((product) => [product.name, product]));
+  const byName = new Map(previous.filter((product) => !product.id).map((product) => [product.name, product]));
   const matched = new Set();
   const changes = next.map((product) => {
     const old = (product.id && byId.get(product.id)) || byName.get(product.name);
@@ -736,6 +824,7 @@ window.miniMartDB = {
     }));
   },
   normalizeCategoryIcons,
+  createProductId,
   seedProductNames() {
     return seedProducts.map((product) => product.name);
   },
@@ -762,7 +851,8 @@ window.miniMartDB = {
     return products;
   },
   // stockContext says why stock changed: { reason, source, reference }.
-  saveProducts(products, stockContext = {}) {
+  saveProducts(productList, stockContext = {}) {
+    const products = productList.map((product) => (product.id ? product : { ...product, id: createProductId() }));
     const stored = read(PRODUCTS_KEY, []);
     const changes = stored.status === "ok" || stored.status === "missing"
       ? stockChanges(stored.value, products, stockContext)

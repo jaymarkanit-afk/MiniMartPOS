@@ -13,6 +13,18 @@ void (async () => {
 })();
 
 const products = window.miniMartDB.products();
+const productsById = new Map(products.map((product) => [product.id, product]));
+
+// An old item may hold its name as productId. Any other unknown id is a deleted product.
+function productForItem(item) {
+  if (productsById.has(item.productId)) return productsById.get(item.productId);
+  if (item.productId && item.productId !== item.name) return null;
+  return products.find((product) => product.name === item.name) || null;
+}
+
+// Reports show today's name. An item with no product is grouped by the name it sold under.
+const itemLabel = (item) => productForItem(item)?.name ?? item.name;
+
 const allSales = window.miniMartDB.sales().filter((sale) => sale.status !== "voided");
 const itemCounts = new Map();
 const categoryCounts = new Map();
@@ -61,7 +73,7 @@ products
   .slice()
   .sort((first, second) => first.name.localeCompare(second.name))
   .forEach((product) => {
-    reportProduct.insertAdjacentHTML("beforeend", `<option value="${escapeHtml(product.name)}">${escapeHtml(product.name)}</option>`);
+    reportProduct.insertAdjacentHTML("beforeend", `<option value="${escapeHtml(product.id)}">${escapeHtml(product.name)}</option>`);
   });
 reportPeriod.value = reportParams.get("period") || "today";
 reportCategory.value = reportParams.get("category") || "all";
@@ -110,7 +122,7 @@ function itemsForReport(sale) {
   return (sale.items || []).filter((item) => {
     const category = categoryForItem(item);
     return (reportCategory.value === "all" || category === reportCategory.value) &&
-      (reportProduct.value === "all" || item.name === reportProduct.value);
+      (reportProduct.value === "all" || productForItem(item)?.id === reportProduct.value);
   });
 }
 
@@ -132,8 +144,7 @@ function saleMatchesReport(sale) {
 const sales = allSales.filter(saleMatchesReport);
 
 function categoryForItem(item) {
-  const product = products.find((entry) => entry.name === item.name);
-  return item.category || product?.category || "Other";
+  return item.category || productForItem(item)?.category || "Other";
 }
 
 function orderedCategoryEntriesFrom(map) {
@@ -166,7 +177,7 @@ window.addEventListener("miniMartDatabaseChanged", (event) => {
 
 sales.forEach((sale) =>
   itemsForReport(sale).forEach((item) => {
-    itemCounts.set(item.name, (itemCounts.get(item.name) || 0) + item.quantity);
+    itemCounts.set(itemLabel(item), (itemCounts.get(itemLabel(item)) || 0) + item.quantity);
     const category = categoryForItem(item);
     categoryCounts.set(
       category,
@@ -255,7 +266,7 @@ const trendDayStats = trendDays.map((day) => {
         itemsForReport(sale).reduce(
           (itemTotal, item) =>
             itemTotal +
-            (lowStockProductNames.has(item.name) ? item.quantity : 0),
+            (lowStockProductNames.has(itemLabel(item)) ? item.quantity : 0),
           0,
         ),
       0,
@@ -399,8 +410,8 @@ document.addEventListener("keydown", (event) => {
 const productLastSoldTime = sales.reduce((latest, sale) => {
   const saleTimestamp = new Date(sale.date).getTime();
   itemsForReport(sale).forEach((item) => {
-    const current = latest.get(item.name) || 0;
-    if (saleTimestamp > current) latest.set(item.name, saleTimestamp);
+    const current = latest.get(itemLabel(item)) || 0;
+    if (saleTimestamp > current) latest.set(itemLabel(item), saleTimestamp);
   });
   return latest;
 }, new Map());
@@ -799,9 +810,7 @@ function voidSale(saleId) {
   if (!sale || sale.status === "voided") return;
   const inventory = window.miniMartDB.products();
   itemsForReport(sale).forEach((item) => {
-    const product = inventory.find((entry) =>
-      (item.productId && entry.id === item.productId) || entry.name === item.name,
-    );
+    const product = inventory.find((entry) => entry.id === productForItem(item)?.id);
     if (product) {
       product.stock = window.miniMartDB.roundQuantity(
         Number(product.stock) + Number(item.quantity),
@@ -1071,8 +1080,9 @@ const profitProductRows = [
   ...sales
     .reduce((groups, sale) => {
       itemsForReport(sale).forEach((item) => {
-        const current = groups.get(item.name) || {
-          name: item.name,
+        const key = productForItem(item)?.id ?? `name:${item.name}`;
+        const current = groups.get(key) || {
+          name: itemLabel(item),
           units: 0,
           revenue: 0,
           knownRevenue: 0,
@@ -1092,7 +1102,7 @@ const profitProductRows = [
         } else {
           current.unknownUnits += row.quantity;
         }
-        groups.set(item.name, current);
+        groups.set(key, current);
       });
       return groups;
     }, new Map())

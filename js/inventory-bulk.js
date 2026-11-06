@@ -31,14 +31,14 @@
 
   function refreshSelection() {
     const allRows = [...tbody.querySelectorAll("tr[data-product]")];
-    const existing = new Set(allRows.map((row) => row.dataset.product));
-    for (const name of selected) if (!existing.has(name)) selected.delete(name);
+    const existing = new Set(allRows.map((row) => row.dataset.productId));
+    for (const id of selected) if (!existing.has(id)) selected.delete(id);
     allRows.forEach((row) => {
-      row.querySelector(".product-select").checked = selected.has(row.dataset.product);
-      row.classList.toggle("is-selected", selected.has(row.dataset.product));
+      row.querySelector(".product-select").checked = selected.has(row.dataset.productId);
+      row.classList.toggle("is-selected", selected.has(row.dataset.productId));
     });
     const visible = visibleRows();
-    const visibleSelected = visible.filter((row) => selected.has(row.dataset.product)).length;
+    const visibleSelected = visible.filter((row) => selected.has(row.dataset.productId)).length;
     selectVisible.disabled = visible.length === 0;
     selectVisible.checked = visible.length > 0 && visibleSelected === visible.length;
     selectVisible.indeterminate = visibleSelected > 0 && visibleSelected < visible.length;
@@ -61,7 +61,7 @@
   }
 
   function openEditor() {
-    snapshot = db.products().filter((p) => selected.has(p.name)).map((p) => ({ ...p }));
+    snapshot = db.products().filter((p) => selected.has(p.id)).map((p) => ({ ...p }));
     if (!snapshot.length) return refreshSelection();
     form.reset();
     const categories = categoryNames();
@@ -153,7 +153,7 @@
       const losses = [];
       for (const row of rows.querySelectorAll("tr")) {
         const original = snapshot[Number(row.dataset.bulkIndex)];
-        const current = products.find((p) => p.name === original.name);
+        const current = products.find((p) => p.id === original.id);
         if (!current || versionFields(current) !== versionFields(original)) {
           throw new Error(`${original.name} changed in inventory while this editor was open. Close and reopen Bulk edit to load its current values.`);
         }
@@ -164,7 +164,7 @@
           const input = row.querySelector(`[data-field="${field}"]`);
           updated[field] = numberValue(input.value, field, original, input);
         }
-        if (versionFields(updated) !== versionFields(current)) changes.set(original.name, updated);
+        if (versionFields(updated) !== versionFields(current)) changes.set(original.id, updated);
         if (db.isKnownCost(updated.costPrice) && updated.price < updated.costPrice &&
             (updated.price !== current.price || updated.costPrice !== current.costPrice)) losses.push(original.name);
       }
@@ -177,7 +177,7 @@
       }
       saving = true;
       saveButton.disabled = true;
-      const result = db.saveProducts(products.map((p) => changes.get(p.name) || p), { reason: "bulk-edit" });
+      const result = db.saveProducts(products.map((p) => changes.get(p.id) || p), { reason: "bulk-edit" });
       if (!result?.ok) throw result.error;
       closeEditor();
       selected.clear();
@@ -194,14 +194,14 @@
 
   tbody.addEventListener("change", (event) => {
     if (!event.target.matches(".product-select")) return;
-    const name = event.target.dataset.selectProduct;
-    if (event.target.checked) selected.add(name); else selected.delete(name);
+    const id = event.target.dataset.selectProduct;
+    if (event.target.checked) selected.add(id); else selected.delete(id);
     refreshSelection();
   });
   selectVisible.addEventListener("change", () => {
     visibleRows().forEach((row) => {
-      if (selectVisible.checked) selected.add(row.dataset.product);
-      else selected.delete(row.dataset.product);
+      if (selectVisible.checked) selected.add(row.dataset.productId);
+      else selected.delete(row.dataset.productId);
     });
     refreshSelection();
   });

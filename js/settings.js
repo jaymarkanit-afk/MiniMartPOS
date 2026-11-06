@@ -441,6 +441,16 @@ function validateProductImportRows(rawRows) {
   const products = window.miniMartDB.products();
   const categories = window.miniMartDB.categories();
   const existingByName = new Map(products.map((product) => [product.name.trim().toLowerCase(), product]));
+  const findExisting = (raw, name) => {
+    const barcode = String(raw.barcode ?? "").trim();
+    const id = String(raw.id ?? "").trim();
+    const byBarcode = barcode && products.find((product) => String(product.barcode || "").trim() === barcode);
+    if (byBarcode) return { product: byBarcode, matchedBy: "barcode" };
+    const byId = id && products.find((product) => product.id === id);
+    if (byId) return { product: byId, matchedBy: "id" };
+    const byName = existingByName.get(name.toLowerCase());
+    return byName ? { product: byName, matchedBy: "name" } : { product: null, matchedBy: null };
+  };
   const seen = new Set();
   return rawRows.map((raw, index) => {
     const name = String(raw.name ?? "").trim();
@@ -457,18 +467,24 @@ function validateProductImportRows(rawRows) {
       cost,
       price,
       stock,
+      barcode: String(raw.barcode ?? "").trim(),
       duplicate: false,
       warning: false,
       error: "",
       existing: null,
+      matchedBy: null,
     };
     if (!name) row.error = "Name is required.";
     else if (name.length > 80) row.error = "Name must be 80 characters or fewer.";
     else if (seen.has(name.toLowerCase())) row.error = "Duplicate in file.";
     else seen.add(name.toLowerCase());
-    if (!row.error && existingByName.has(name.toLowerCase())) {
+    const match = findExisting(raw, name);
+    if (!row.error && match.product) {
       row.duplicate = true;
-      row.existing = existingByName.get(name.toLowerCase());
+      row.existing = match.product;
+      row.matchedBy = match.matchedBy;
+      // A name is the weakest match, so it gets a second look.
+      if (match.matchedBy === "name") row.warning = true;
     }
     if (!row.error && categoryInput && !categoryMatch) row.newCategory = true;
     if (!row.error && !categoryInput) row.error = "Category is required.";
@@ -746,6 +762,7 @@ function salePaymentValue(sale, names) {
 function salesRows(sales) {
   const products = window.miniMartDB.products();
   const productMap = new Map(products.map((product) => [product.name, product]));
+  const productsById = new Map(products.map((product) => [product.id, product]));
   const transactions = [];
   const items = [];
   const sortedSales = [...sales].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -756,7 +773,7 @@ function salesRows(sales) {
     saleItems.forEach((item) => {
       const quantity = Number(item.quantity) || 0;
       const price = Number(item.price) || 0;
-      const product = productMap.get(item.name);
+      const product = productsById.get(item.productId) || productMap.get(item.name);
       const recordedCost = Object.prototype.hasOwnProperty.call(item, "costPrice") ? item.costPrice : product?.costPrice;
       const cost = Number(recordedCost);
       const hasCost = Number.isFinite(cost);
@@ -1195,10 +1212,10 @@ function importProducts() {
   try {
     if (productDuplicateMode.value === "skip") skipped = counts.duplicates;
     included.forEach((row) => {
-      const normalizedName = row.name.toLowerCase();
-      const product = byName.get(normalizedName);
+      const product = row.existing || byName.get(row.name.toLowerCase());
       const nextProduct = {
-        ...(product || {}),
+        ...(product || { id: window.miniMartDB.createProductId() }),
+        ...(row.barcode ? { barcode: row.barcode } : {}),
         name: row.name,
         category: row.category,
         costPrice: row.cost,
@@ -1208,12 +1225,12 @@ function importProducts() {
         accent: product?.accent || "var(--blue)",
       };
       if (product && productDuplicateMode.value === "update") {
-        const index = nextProducts.findIndex((entry) => entry.name.toLowerCase() === normalizedName);
+        const index = nextProducts.findIndex((entry) => entry.id === product.id);
         nextProducts[index] = nextProduct;
         updated += 1;
       } else if (!product) {
         nextProducts.push(nextProduct);
-        byName.set(normalizedName, nextProduct);
+        byName.set(row.name.toLowerCase(), nextProduct);
         imported += 1;
       }
       if (!nextCategories.some((category) => category.toLowerCase() === row.category.toLowerCase())) nextCategories.push(row.category);
@@ -1378,6 +1395,8 @@ function restoreBackupData(backup) {
       throw Object.assign(new Error(storageErrorMessage(result)), { unrestored });
     }
   }
+  // An older file may have no product ids, so the one-time upgrades run again on reload.
+  safeWrite("miniMartDataVersion", null, { remove: true });
 }
 
 async function confirmPendingRestore() {

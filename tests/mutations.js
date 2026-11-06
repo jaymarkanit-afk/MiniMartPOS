@@ -44,7 +44,7 @@ const mutations = [
       },
       {
         file: "js/checkout.js",
-        from: "item.amountMode = measuredMode === \"amount\" || (!measuredEditName && Boolean(item.amountMode));\n  item.inputValue = String(item.amountMode ? item.lineTotal : item.quantity);",
+        from: "item.amountMode = measuredMode === \"amount\" || (!measuredEditId && Boolean(item.amountMode));\n  item.inputValue = String(item.amountMode ? item.lineTotal : item.quantity);",
         to: "item.amountMode = measuredMode === \"amount\";\n  item.inputValue = measureValue.value;",
       },
     ],

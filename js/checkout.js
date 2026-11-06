@@ -48,7 +48,7 @@ const productsSection = document.getElementById("products");
 
 let productCards = [];
 let measuredProduct = null;
-let measuredEditName = null;
+let measuredEditId = null;
 let measuredMode = "quantity";
 let saleInProgress = false;
 let measureReturnFocus = null;
@@ -111,7 +111,7 @@ function floorQuantity(value, unit) {
 function closeMeasureModal() {
   measureModal.hidden = true;
   measuredProduct = null;
-  measuredEditName = null;
+  measuredEditId = null;
   measureValue.value = "";
   measureReturnFocus?.focus();
   measureReturnFocus = null;
@@ -175,7 +175,7 @@ function updateMeasuredPreview() {
     }
   }
 
-  const alreadyInCart = measuredEditName ? 0 : Number(cart.get(measuredProduct.name)?.quantity || 0);
+  const alreadyInCart = measuredEditId ? 0 : Number(cart.get(measuredProduct.id)?.quantity || 0);
   const availableStock = window.miniMartDB.roundQuantity(
     Math.max(0, Number(measuredProduct.stock) - alreadyInCart), unit,
   );
@@ -206,7 +206,7 @@ function updateMeasuredPreview() {
   measureValue.setAttribute("aria-invalid", String(Boolean(error)));
 }
 
-function openMeasureModal(product, editName = null) {
+function openMeasureModal(product, editId = null) {
   const unit = window.miniMartDB.normalizeUnit(product.unit);
   const stock = Number(product.stock) || 0;
   const blocking = window.miniMartSettings.get().blockOutOfStockSales !== false;
@@ -217,16 +217,16 @@ function openMeasureModal(product, editName = null) {
   }
 
   measuredProduct = { ...product, unit };
-  measuredEditName = editName;
-  measureReturnFocus = editName
+  measuredEditId = editId;
+  measureReturnFocus = editId
     ? null
-    : productCards.find((card) => card.dataset.name === product.name);
+    : productCards.find((card) => card.dataset.productId === product.id);
   measureProductSummary.textContent = `${product.name} — ${peso(product.price)} / ${unitText(unit)}`;
   measureStock.textContent = `${window.miniMartDB.formatQuantity(stock, unit)} left`;
-  measureValue.value = editName && cart.get(editName)
-    ? cart.get(editName).inputValue || cart.get(editName).quantity
+  measureValue.value = editId && cart.get(editId)
+    ? cart.get(editId).inputValue || cart.get(editId).quantity
     : "";
-  setMeasureMode(editName && cart.get(editName)?.amountMode ? "amount" : "quantity");
+  setMeasureMode(editId && cart.get(editId)?.amountMode ? "amount" : "quantity");
   measureModal.hidden = false;
   measureValue.focus();
   return true;
@@ -245,8 +245,9 @@ function addMeasuredLine() {
   const lineTotal = window.miniMartDB.roundMoney(
     measuredMode === "amount" ? entered : quantity * measuredProduct.price,
   );
-  const existing = measuredEditName ? cart.get(measuredEditName) : cart.get(measuredProduct.name);
-  const item = existing && !measuredEditName ? { ...existing } : {
+  const existing = measuredEditId ? cart.get(measuredEditId) : cart.get(measuredProduct.id);
+  const item = existing && !measuredEditId ? { ...existing } : {
+    productId: measuredProduct.id,
     name: measuredProduct.name,
     price: Number(measuredProduct.price),
     quantity: 0,
@@ -254,7 +255,7 @@ function addMeasuredLine() {
     lineTotal: 0,
   };
 
-  if (measuredEditName) {
+  if (measuredEditId) {
     item.quantity = quantity;
     item.lineTotal = lineTotal;
   } else {
@@ -263,10 +264,10 @@ function addMeasuredLine() {
   }
   item.unit = unit;
   // A line built from several additions keeps its running total, not the last entry.
-  item.amountMode = measuredMode === "amount" || (!measuredEditName && Boolean(item.amountMode));
+  item.amountMode = measuredMode === "amount" || (!measuredEditId && Boolean(item.amountMode));
   item.inputValue = String(item.amountMode ? item.lineTotal : item.quantity);
-  if (measuredEditName) cart.delete(measuredEditName);
-  cart.set(item.name, item);
+  if (measuredEditId) cart.delete(measuredEditId);
+  cart.set(item.productId, item);
   closeMeasureModal();
   renderCart();
 }
@@ -308,6 +309,7 @@ function draftSnapshot() {
     version: CHECKOUT_DRAFT_VERSION,
     updatedAt: new Date().toISOString(),
     items: [...cart.values()].map((item) => ({
+      productId: item.productId,
       name: item.name,
       priceAtSave: Number(item.price),
       quantity: item.quantity,
@@ -398,7 +400,7 @@ function restoreCheckoutDraft() {
   let adjusted = 0;
   restoringDraft = true;
   result.value.items.forEach((saved) => {
-    const product = products.find((entry) => entry.name === saved.name);
+    const product = products.find((entry) => (saved.productId ? entry.id === saved.productId : entry.name === saved.name));
     if (!product) {
       adjusted += 1;
       return;
@@ -429,7 +431,8 @@ function restoreCheckoutDraft() {
     if (clamped <= 0) {
       return;
     }
-    cart.set(product.name, {
+    cart.set(product.id, {
+      productId: product.id,
       name: product.name,
       price: Number(product.price),
       quantity: clamped,
@@ -900,6 +903,7 @@ function renderProducts() {
                   style="--accent:${safeAccent(product.accent)}"
                   data-category="${escapeHtml(product.category)}"
                   data-name="${escapeHtml(product.name)}"
+                  data-product-id="${escapeHtml(product.id)}"
                   data-barcode="${escapeHtml(product.barcode || "")}"
                   data-price="${product.price}"
                   data-stock="${product.stock}"
@@ -923,7 +927,7 @@ function renderProducts() {
 
                   <h2>
                     ${escapeHtml(product.name)}
-                    <button type="button" class="product-favorite${favorites.has(product.name) ? " is-favorite" : ""}" data-favorite="${escapeHtml(product.name)}" aria-label="${favorites.has(product.name) ? "Remove from" : "Add to"} favorites">★</button>
+                    <button type="button" class="product-favorite${favorites.has(product.id) ? " is-favorite" : ""}" data-favorite="${escapeHtml(product.id)}" aria-label="${favorites.has(product.id) ? "Remove from" : "Add to"} favorites">★</button>
                   </h2>
 
                   <p class="price">
@@ -959,25 +963,25 @@ function renderProducts() {
   });
   productCards = [...productsSection.querySelectorAll(".product")];
 
-  const recentNames = window.miniMartDB.readStorage(
+  const recentIds = window.miniMartDB.readStorage(
     "miniMartRecentProducts",
     [],
     (value) => Array.isArray(value),
   ).value;
-  const recentProducts = recentNames
-    .map((name) => products.find((product) => product.name === name))
+  const recentProducts = recentIds
+    .map((id) => products.find((product) => product.id === id))
     .filter(Boolean)
     .slice(0, 5);
   if (recentProducts.length) {
     const recentBar = document.createElement("div");
     recentBar.className = "checkout-recent-products";
     recentBar.innerHTML = `<span>RECENT</span>${recentProducts
-      .map((product) => `<button type="button" data-recent-product="${escapeHtml(product.name)}">${escapeHtml(product.name)}</button>`)
+      .map((product) => `<button type="button" data-recent-product="${escapeHtml(product.id)}">${escapeHtml(product.name)}</button>`)
       .join("")}`;
     productsSection.prepend(recentBar);
     recentBar.querySelectorAll("[data-recent-product]").forEach((button) => {
       button.addEventListener("click", () => {
-        const product = products.find((entry) => entry.name === button.dataset.recentProduct);
+        const product = products.find((entry) => entry.id === button.dataset.recentProduct);
         if (product) addProductToCart(product);
       });
     });
@@ -1021,7 +1025,7 @@ function renderProducts() {
 }
 
 function addToCart() {
-  const product = window.miniMartDB.products().find((entry) => entry.name === this.dataset.name);
+  const product = window.miniMartDB.products().find((entry) => entry.id === this.dataset.productId);
   if (product) addProductToCart(product);
 }
 
@@ -1035,7 +1039,8 @@ function addProductToCart(product) {
   const blockOutOfStockSales =
     window.miniMartSettings.get().blockOutOfStockSales !== false;
 
-  const item = cart.get(name) || {
+  const item = cart.get(product.id) || {
+    productId: product.id,
     name,
     price: Number(product.price),
     quantity: 0,
@@ -1053,15 +1058,15 @@ function addProductToCart(product) {
 
   item.quantity += 1;
 
-  cart.set(name, item);
+  cart.set(product.id, item);
   scheduleCheckoutDraftSave();
   const recent = window.miniMartDB.readStorage(
     "miniMartRecentProducts",
     [],
     (value) => Array.isArray(value),
   ).value
-    .filter((entry) => entry !== name);
-  recent.unshift(name);
+    .filter((entry) => entry !== product.id);
+  recent.unshift(product.id);
   const recentResult = safeWrite("miniMartRecentProducts", recent.slice(0, 8));
   if (!recentResult.ok) showStorageError(storageErrorMessage(recentResult));
 
@@ -1105,7 +1110,7 @@ function addScannedBarcode() {
     setBarcodeStatus(`Enter the quantity or amount for ${product.name}.`);
     return;
   }
-  setBarcodeStatus(`Added ${product.name}. Quantity: ${cart.get(product.name).quantity}.`);
+  setBarcodeStatus(`Added ${product.name}. Quantity: ${cart.get(product.id).quantity}.`);
   search.focus({ preventScroll: true });
 }
 
@@ -1182,14 +1187,15 @@ function filterProducts() {
 window.addEventListener("miniMartDatabaseChanged", (event) => {
   if (event.detail?.key !== "miniMartProducts") return;
 
-  const currentNames = new Set(
-    window.miniMartDB.products().map((product) => product.name),
+  const currentProducts = new Map(
+    window.miniMartDB.products().map((product) => [product.id, product]),
   );
   const removedCartItems = [...cart.keys()].filter(
-    (name) => !currentNames.has(name),
+    (id) => !currentProducts.has(id),
   );
 
-  removedCartItems.forEach((name) => cart.delete(name));
+  removedCartItems.forEach((id) => cart.delete(id));
+  cart.forEach((item, id) => { item.name = currentProducts.get(id).name; });
   renderProducts();
 
   if (removedCartItems.length) {
@@ -1457,7 +1463,7 @@ function completeSale() {
   const currentInventory = window.miniMartDB.products();
   if (window.miniMartSettings.get().blockOutOfStockSales !== false) {
     for (const item of entries) {
-      const product = currentInventory.find((entry) => entry.name === item.name);
+      const product = currentInventory.find((entry) => entry.id === item.productId);
       if (
         product &&
         Number(item.quantity) > Number(product.stock)
@@ -1530,7 +1536,7 @@ function completeSale() {
   const inventory = window.miniMartDB.products();
 
   entries.forEach((item) => {
-    const product = inventory.find((entry) => entry.name === item.name);
+    const product = inventory.find((entry) => entry.id === item.productId);
 
     if (product) {
       const unit = window.miniMartDB.normalizeUnit(product.unit);
@@ -1550,7 +1556,7 @@ function completeSale() {
   });
 
   const saleItems = entries.map((item) => {
-    const product = inventory.find((entry) => entry.name === item.name);
+    const product = inventory.find((entry) => entry.id === item.productId);
 
     return {
       name: item.name,
@@ -1559,7 +1565,7 @@ function completeSale() {
 
       quantity: item.quantity,
 
-      productId: product?.id || item.name,
+      productId: item.productId,
 
       category: product?.category || "Other",
 
@@ -1782,7 +1788,7 @@ function renderCart() {
     .map(
       (item) =>
         `
-          <div class="cart-row" data-measured="${String(Boolean(item.unit && measuredUnit(item.unit)))}" data-edit="${escapeHtml(item.name)}">
+          <div class="cart-row" data-measured="${String(Boolean(item.unit && measuredUnit(item.unit)))}" data-edit="${escapeHtml(item.productId)}">
             <span>
               ${escapeHtml(item.name)}
 
@@ -1805,9 +1811,9 @@ function renderCart() {
                   ? ""
                   : `
                     <span class="cart-quantity-controls" aria-label="Quantity for ${escapeHtml(item.name)}">
-                      <button type="button" class="cart-quantity-button" data-decrement="${escapeHtml(item.name)}" aria-label="Decrease ${escapeHtml(item.name)} quantity">−</button>
+                      <button type="button" class="cart-quantity-button" data-decrement="${escapeHtml(item.productId)}" aria-label="Decrease ${escapeHtml(item.name)} quantity">−</button>
                       <span class="cart-quantity">${item.quantity}</span>
-                      <button type="button" class="cart-quantity-button" data-increment="${escapeHtml(item.name)}" aria-label="Increase ${escapeHtml(item.name)} quantity">+</button>
+                      <button type="button" class="cart-quantity-button" data-increment="${escapeHtml(item.productId)}" aria-label="Increase ${escapeHtml(item.name)} quantity">+</button>
                     </span>
                   `
               }
@@ -1815,7 +1821,7 @@ function renderCart() {
               <button
                 type="button"
                 class="remove"
-                data-remove="${escapeHtml(item.name)}"
+                data-remove="${escapeHtml(item.productId)}"
                 aria-label="Remove ${escapeHtml(item.name)}"
               >
                 x
@@ -1835,7 +1841,7 @@ function renderCart() {
       const item = cart.get(button.dataset.increment);
       if (!item) return;
       const product = window.miniMartDB.products().find(
-        (entry) => entry.name === item.name,
+        (entry) => entry.id === item.productId,
       );
       if (!product) return;
 
@@ -1863,7 +1869,7 @@ function renderCart() {
       const item = cart.get(button.dataset.decrement);
       if (!item) return;
       if (item.quantity <= 1) {
-        cart.delete(item.name);
+        cart.delete(item.productId);
       } else {
         item.quantity -= 1;
       }
@@ -1885,9 +1891,9 @@ function renderCart() {
       if (event.target.closest("[data-remove]")) return;
       const item = cart.get(row.dataset.edit);
       const product = window.miniMartDB.products().find(
-        (entry) => entry.name === row.dataset.edit,
+        (entry) => entry.id === row.dataset.edit,
       );
-      if (item && product) openMeasureModal(product, item.name);
+      if (item && product) openMeasureModal(product, item.productId);
     }),
   );
 }
@@ -1937,7 +1943,12 @@ function resumeHeldCart() {
     return;
   }
   cart.clear();
-  next.items.forEach((item) => cart.set(item.name, item));
+  const products = window.miniMartDB.products();
+  next.items.forEach((item) => {
+    const product = products.find((entry) => (item.productId ? entry.id === item.productId : entry.name === item.name));
+    const productId = product?.id || item.productId || item.name;
+    cart.set(productId, { ...item, productId, name: product?.name || item.name });
+  });
   scheduleCheckoutDraftSave();
   renderCart();
   showCheckoutToast("Held cart restored.", "success");

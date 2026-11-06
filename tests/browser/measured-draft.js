@@ -73,7 +73,7 @@ test("editing a combined line shows the full amount", async () => {
   await seed();
   await go("index.html");
   e(line("amount", 20) + line("amount", 30));
-  e("openMeasureModal(window.miniMartDB.products()[0],'Rice')");
+  e("openMeasureModal(window.miniMartDB.products()[0],window.miniMartDB.products()[0].id)");
   const value = e("measureValue.value");
   e("closeMeasureModal()");
   eq(Number(value), 50, "edit box");
@@ -141,7 +141,7 @@ test("editing a combined line replaces it", async () => {
   await seed();
   await go("index.html");
   e(line("amount", 20) + line("amount", 30));
-  e("openMeasureModal(window.miniMartDB.products()[0],'Rice');measureValue.value='10';updateMeasuredPreview();addMeasuredLine();");
+  e("openMeasureModal(window.miniMartDB.products()[0],window.miniMartDB.products()[0].id);measureValue.value='10';updateMeasuredPreview();addMeasuredLine();");
   save();
   await go("index.html");
   eq(cartNow(), [{ q: 0.2, t: 10 }], "cart");

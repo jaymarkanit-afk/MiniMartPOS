@@ -140,7 +140,7 @@ test("restore into an empty app shows a preview, backs up first, restores every 
   // Stock history is the one section that grows: a restore appends its own entries.
   eq(different, ["inventoryAdjustments"], "sections that differ from the file");
   await go("index.html");
-  eq(e("resumeHeldCart();cart.get('Rice')?.quantity"), 2, "held cart after restore");
+  eq(e("resumeHeldCart();[...cart.values()].find(i=>i.name==='Rice')?.quantity"), 2, "held cart after restore");
 });
 
 test("restoring a backup with no open shift clears the open shift", async () => {
