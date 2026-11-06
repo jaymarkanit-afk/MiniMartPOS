@@ -658,7 +658,16 @@ const mutations = [
       "card-duplicates: badge for USB only: customer detail",
       "card-duplicates: badge for USB only: Checkout customer panel",
     ],
-    edits: [{ file: "js/utils.js", from: "  if (customer?.cardCode) labels.push(`USB card ····${cardEnding(customer.cardCode)}`);\n", to: "" }],
+    edits: [
+      { file: "js/utils.js", from: "  if (customer?.cardCode) labels.push(`USB card ····${cardEnding(customer.cardCode)}`);\n", to: "" },
+      { file: "js/utils.js", from: "  if (customer?.cardCode) lines.push(`USB card ${customer.cardCode}`);\n", to: "" },
+    ],
+  },
+  {
+    id: "card-change-leaves-list-stale",
+    fix: "The list updates after a card is linked or removed",
+    tests: ["card-reader: linking then removing a card updates the detail view and the list with no reload"],
+    edits: [{ file: "js/suki-reward.js", from: "  const refresh = () => {\n    renderSukiList();\n", to: "  const refresh = () => {\n" }],
   },
   {
     id: "caret-stays-after-read",

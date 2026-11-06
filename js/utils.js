@@ -66,6 +66,14 @@ function cardLabels(customer) {
   return labels.length ? labels : ["No card"];
 }
 
+// The same cards with their full numbers, for the customer's Card Information box.
+function cardSerials(customer) {
+  const lines = [];
+  if (customer?.cardCode) lines.push(`USB card ${customer.cardCode}`);
+  if (customer?.nfcId) lines.push(`Phone NFC card ${customer.nfcId}`);
+  return lines.length ? lines : ["No NFC card linked"];
+}
+
 function joinNames(names) {
   return names.length < 2 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
 }

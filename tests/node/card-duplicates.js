@@ -346,13 +346,13 @@ for (const [name, file] of [["Checkout", "index"], ["Suki Rewards", "suki-reward
 }
 
 const COMBOS = [
-  ["none", {}, ["No card"]],
-  ["USB only", { cardCode: FIRST }, ["USB card ····4756"]],
-  ["phone only", { nfcId: "AA:BB" }, ["Phone NFC card"]],
-  ["both", { cardCode: SECOND, nfcId: "AA:BB" }, ["USB card ····4852", "Phone NFC card"]],
+  ["none", {}, ["No card"], ["No NFC card linked"]],
+  ["USB only", { cardCode: FIRST }, ["USB card ····4756"], [`USB card ${FIRST}`]],
+  ["phone only", { nfcId: "AA:BB" }, ["Phone NFC card"], ["Phone NFC card AA:BB"]],
+  ["both", { cardCode: SECOND, nfcId: "AA:BB" }, ["USB card ····4852", "Phone NFC card"], [`USB card ${SECOND}`, "Phone NFC card AA:BB"]],
 ];
 
-for (const [name, card, labels] of COMBOS) {
+for (const [name, card, labels, serials] of COMBOS) {
   tests.push({
     name: `badge for ${name}: All Sukis list`,
     run: async ({ page }) => {
@@ -367,8 +367,7 @@ for (const [name, card, labels] of COMBOS) {
     run: async ({ page }) => {
       await open(page, [jaymark(card)]);
       await page.eval("showSukiDetails('j')");
-      const shown = await page.eval("document.querySelector('.suki-nfc-serial').innerText");
-      labels.forEach((label) => { if (!shown.includes(label)) throw new Error(`Missing ${label}: ${shown}`); });
+      expect(await page.eval("document.querySelector('.suki-nfc-serial').innerText.split('\\n')"), serials, "card lines");
       expect(await page.eval("document.querySelector('.suki-nfc-status').textContent.trim()"), name === "none" ? "Not Linked" : "Linked", "status");
     },
   });
@@ -388,7 +387,7 @@ tests.push({
   run: async ({ page }) => {
     await open(page, [jaymark({ cardCode: FIRST })]);
     await page.eval("showSukiDetails('j')");
-    expect(await page.eval("document.querySelector('[data-usb-card-box] strong').textContent"), FIRST, "code");
+    expect(await page.eval("document.querySelector('.suki-nfc-serial').innerText"), `USB card ${FIRST}`, "code");
     expect(await page.eval("[...document.querySelectorAll('[data-usb-card-box] button')].map(b=>b.textContent)"), ["Replace card", "Remove card", "Cancel"], "buttons");
   },
 });

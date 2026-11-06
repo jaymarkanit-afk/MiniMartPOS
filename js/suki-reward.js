@@ -611,8 +611,10 @@ function addUsbCardControls(suki) {
   const box = detailContent.querySelector("[data-usb-card-box]");
   if (!box || isNfcSupported()) return;
   detailContent.querySelector(".suki-nfc-actions")?.remove();
-  const value = document.createElement("strong");
-  value.textContent = suki.cardCode || "";
+  const refresh = () => {
+    renderSukiList();
+    showSukiDetails(suki.id);
+  };
   const scan = document.createElement("button");
   scan.type = "button";
   scan.className = "secondary-button";
@@ -630,10 +632,10 @@ function addUsbCardControls(suki) {
     status,
     ownerId: suki.id,
     onCode: (code) => {
-      if (sukiStore.setCardCode(suki.id, code).ok) showSukiDetails(suki.id);
+      if (sukiStore.setCardCode(suki.id, code).ok) refresh();
     },
   }));
-  box.append(value, scan, cancel, status);
+  box.append(scan, cancel, status);
   if (!suki.cardCode) return;
   const remove = document.createElement("button");
   remove.type = "button";
@@ -648,7 +650,7 @@ function addUsbCardControls(suki) {
       cancelLabel: "Keep card",
       tone: "danger",
     });
-    if (confirmed && sukiStore.clearCardCode(suki.id).ok) showSukiDetails(suki.id);
+    if (confirmed && sukiStore.clearCardCode(suki.id).ok) refresh();
   });
   scan.after(remove);
 }
@@ -1259,8 +1261,7 @@ function showSukiDetails(id) {
                 hasCard(suki) ? "" : " suki-nfc-serial-empty"
               }"
             >
-              ${cardLabels(suki).map((label) => escapeHtml(label)).join("<br>")}
-              ${suki.nfcId ? `<br>${escapeHtml(suki.nfcId)}` : ""}
+              ${cardSerials(suki).map((line) => escapeHtml(line)).join("<br>")}
             </strong>
 
             ${
@@ -1287,6 +1288,8 @@ function showSukiDetails(id) {
                   </div>
                 `
             }
+
+            <div class="usb-card-box" data-usb-card-box></div>
 
           </div>
 
@@ -1433,8 +1436,6 @@ function showSukiDetails(id) {
         }
 
       </section>
-
-      <div class="usb-card-box" data-usb-card-box></div>
 
 
       <!-- ===============================================
@@ -1612,6 +1613,7 @@ async function linkNfcToSelectedSuki() {
     const result = sukiStore.save(sukis);
     if (!result.ok) return;
 
+    renderSukiList();
     showSukiDetails(sukiId);
   });
 }
@@ -1660,6 +1662,7 @@ function confirmUnlinkSelectedNfc() {
 
   closeModal(unlinkNfcModal);
 
+  renderSukiList();
   showSukiDetails(selectedSukiId);
 }
 

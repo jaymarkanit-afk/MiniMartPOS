@@ -589,7 +589,7 @@ tests.push({
     await page.eval("[...document.querySelectorAll('[data-usb-card-box] button')].find(b=>b.textContent.startsWith('Scan')).click()");
     await page.typeBurst("A1B2C3D4", { gap: 10 });
     expect((await stored(page))[1].cardCode, "A1B2C3D4", "card code");
-    expect(await page.eval("document.querySelector('[data-usb-card-box] strong').textContent"), "A1B2C3D4", "shown");
+    expect(await page.eval("document.querySelector('.suki-nfc-serial').innerText"), "USB card A1B2C3D4", "shown");
   },
 });
 
@@ -880,7 +880,36 @@ tests.push({
     await answer(page, ACTION);
     expect(await rawCustomers(page), before.replace(`,"cardCode":"${CARD}"`, ""), "stored customers");
     expect(await page.eval("sukiStore.findByCardCode('" + CARD + "')"), null, "lookup");
-    expect(await page.eval("document.querySelector('[data-usb-card-box] strong').textContent"), "", "shown");
+    expect(await page.eval("document.querySelector('.suki-nfc-serial').innerText"), "Phone NFC card AA:BB", "shown");
+  },
+});
+
+// Keys sent inside the page arrive with no gaps, so this test does not depend on timing.
+const tapInPage = (page, code) => page.eval((text) => {
+  [...text, "Enter"].forEach((key) => document.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true })));
+}, code);
+const cardBox = (page) => page.eval(() => ({
+  serial: document.querySelector(".suki-nfc-card .suki-nfc-serial").innerText,
+  status: document.querySelector(".suki-nfc-card .suki-nfc-status").textContent.trim(),
+  buttons: [...document.querySelectorAll(".suki-nfc-card [data-usb-card-box] button")].filter((b) => !b.hidden).map((b) => b.textContent),
+  list: [...document.querySelectorAll(".suki-card-badges span")].map((s) => s.textContent),
+  activeCards: document.getElementById("sukiActiveCards")?.textContent,
+}));
+
+tests.push({
+  name: "linking then removing a card updates the detail view and the list with no reload",
+  run: async ({ page }) => {
+    await page.seed({ miniMartSukis: [customer("a", "Ana")] });
+    await page.goto("suki-reward.html");
+    await page.eval("document.getElementById('allSukisTab').click();showSukiDetails('a')");
+    expect(await cardBox(page), { serial: "No NFC card linked", status: "Not Linked", buttons: ["Scan card with USB reader"], list: ["No card"], activeCards: "0" }, "before");
+    await page.eval("[...document.querySelectorAll('[data-usb-card-box] button')].find(b=>b.textContent.startsWith('Scan')).click()");
+    await tapInPage(page, "0016814852");
+    expect(await cardBox(page), { serial: "USB card 0016814852", status: "Linked", buttons: ["Replace card", "Remove card"], list: ["USB card ····4852"], activeCards: "1" }, "linked");
+    await page.eval("[...document.querySelectorAll('[data-usb-card-box] button')].forEach((b)=>{b.dataset.test=b.textContent.trim()})");
+    await page.click('[data-test="Remove card"]');
+    await answer(page, ACTION);
+    expect(await cardBox(page), { serial: "No NFC card linked", status: "Not Linked", buttons: ["Scan card with USB reader"], list: ["No card"], activeCards: "0" }, "removed");
   },
 });
 
