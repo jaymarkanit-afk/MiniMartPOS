@@ -315,6 +315,57 @@ const mutations = [
     edits: [{ file: "js/utils.js", from: "Number.isFinite(configured) && configured > 0", to: "Number.isFinite(configured) && configured >= 0" }],
   },
   {
+    id: "sale-drops-earned-points",
+    fix: "A sale that redeems keeps its earned points",
+    tests: ["suki-points: 30 points, redeem 10 on a P65 sale leaves 22, and the sale records both"],
+    edits: [{ file: "js/suki-store.js", from: "pointsChange: earned - spent,", to: "pointsChange: -spent," }],
+  },
+  {
+    id: "stored-balance-shown",
+    fix: "Every screen shows the derived balance",
+    tests: ["suki-points: the Suki list, detail, Checkout and card scan all show the same balance"],
+    edits: [{ file: "js/suki-reward.js", from: "${peso(sukiRules.balance(suki))}", to: "${peso(suki.rewardBalance)}" }],
+  },
+  {
+    id: "expired-points-revive",
+    fix: "Expired points are written off before a change",
+    tests: [
+      "suki-points: expired points do not come back after a new purchase",
+      "suki-points: the expiry entry is written at the next edit of that customer",
+    ],
+    edits: [{ file: "js/suki-store.js", from: "if (!(record.stamps > 0) || !rules.isExpired(rules.pointsEntryDate(record))) return record;", to: "return record;" }],
+  },
+  {
+    id: "stale-save-changes-points",
+    fix: "Only applyPointsChange changes points",
+    tests: ["suki-points: only applyPointsChange can change points or history", "suki-points: two open tabs agree, and a stale tab cannot undo points"],
+    edits: [{ file: "js/suki-store.js", from: "const kept = { ...record, stamps: current.stamps, history: current.history };", to: "const kept = { ...record };" }],
+  },
+  {
+    id: "void-repeats",
+    fix: "A void only reverses once",
+    tests: ["suki-points: voiding the same sale twice does nothing the second time"],
+    edits: [{ file: "js/suki-store.js", from: "records[index].history.some((entry) => entry.kind === \"void-reverse\" && entry.saleId === change.saleId)", to: "false" }],
+  },
+  {
+    id: "void-no-shortfall-floor",
+    fix: "A void floors at zero and records the shortfall",
+    tests: ["suki-points: a void floors at zero and records the shortfall"],
+    edits: [{ file: "js/suki-store.js", from: "shortfall: Math.max(0, -after),", to: "shortfall: 0," }],
+  },
+  {
+    id: "void-outside-rollback",
+    fix: "A failed void also restores points",
+    tests: ["suki-points: a void that cannot write miniMartSales leaves sale, stock and points unchanged"],
+    edits: [{ file: "js/reports.js", from: "\"miniMartInventoryAdjustments\", \"miniMartSukis\"]", to: "\"miniMartInventoryAdjustments\"]" }],
+  },
+  {
+    id: "void-recalculates",
+    fix: "A void uses the values on the sale",
+    tests: ["suki-points: a void uses the values on the sale, not today's settings"],
+    edits: [{ file: "js/reports.js", from: "{ sukiId: sale.sukiId, earned: sale.pointsEarned, spent: sale.pointsSpent }", to: "{ sukiId: sale.sukiId, earned: window.miniMartSukiRules.pointsEarned(sale.cashRequired), spent: window.miniMartSukiRules.pointsForPesos(sale.rewardUsed) }" }],
+  },
+  {
     id: "overlay-no-delay",
     fix: "The overlay waits 300 ms",
     tests: ["overlay: a fast navigation never shows the overlay"],

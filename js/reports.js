@@ -758,6 +758,39 @@ document.getElementById("recentSales").innerHTML =
     })
     .join("") || `<div class="sale-details">No sales recorded yet.</div>`;
 
+const OLD_SALE_MATCH_MS = 60000;
+
+// Sales before the points work name no customer, so their history entry has to be found.
+function matchesOldSale(entry, sale) {
+  return !entry.saleId &&
+    Number(entry.purchaseTotal) === Number(sale.total) &&
+    Number(entry.rewardUsed || 0) === Number(sale.rewardUsed || 0) &&
+    Number(entry.cashRequired) === Number(sale.cashRequired) &&
+    Math.abs(new Date(entry.date) - new Date(sale.date)) <= OLD_SALE_MATCH_MS;
+}
+
+// Uses what the sale recorded, never today's settings. Returns null if no customer is
+// involved, or a notice for the cashier if the customer cannot be worked out.
+function pointsToReverse(sale) {
+  const sukis = window.miniMartSukiStore.read();
+  if (sale.sukiId) {
+    return sukis.some((suki) => suki.id === sale.sukiId)
+      ? { sukiId: sale.sukiId, earned: sale.pointsEarned, spent: sale.pointsSpent }
+      : { notice: "This customer no longer exists, so their points were not changed." };
+  }
+  if (Object.prototype.hasOwnProperty.call(sale, "sukiId")) return null;
+  const matches = sukis.flatMap((suki) => suki.history
+    .filter((entry) => matchesOldSale(entry, sale))
+    .map((entry) => ({
+      sukiId: suki.id,
+      earned: Number(entry.stampsEarned) || 0,
+      spent: window.miniMartSukiRules.pointsForPesos(entry.rewardUsed),
+    })));
+  return matches.length === 1
+    ? matches[0]
+    : { notice: "This older sale could not be matched to one customer, so customer points were not changed." };
+}
+
 function voidSale(saleId) {
   const approval = window.prompt("Manager approval required. Type APPROVE to void this sale.");
   if (approval !== "APPROVE") return;
@@ -781,13 +814,22 @@ function voidSale(saleId) {
   sale.voidReason = "Manager-approved void";
   // Hold the automatic refresh so a failure message stays on screen.
   reportRefreshPending = true;
-  const snapshot = ["miniMartProducts", "miniMartDeletedProducts", "miniMartInventoryAdjustments"]
+  const snapshot = ["miniMartProducts", "miniMartDeletedProducts", "miniMartInventoryAdjustments", "miniMartSukis"]
     .map((key) => [key, window.miniMartDB.rawValue(key)]);
+  const points = pointsToReverse(sale);
   const productsResult = window.miniMartDB.saveProducts(inventory, {
     reason: "void",
     reference: sale.id,
   });
-  const salesResult = productsResult?.ok ? window.miniMartDB.saveSales(currentSales) : productsResult;
+  const pointsResult = productsResult?.ok && points?.sukiId
+    ? window.miniMartSukiStore.applyPointsChange(points.sukiId, {
+      kind: "void-reverse",
+      saleId: sale.id,
+      earned: points.earned,
+      spent: points.spent,
+    })
+    : productsResult;
+  const salesResult = pointsResult?.ok ? window.miniMartDB.saveSales(currentSales) : pointsResult;
   if (!salesResult?.ok) {
     snapshot.forEach(([key, raw]) => {
       safeWrite(key, raw, raw === null ? { remove: true } : { raw: true });
@@ -796,6 +838,7 @@ function voidSale(saleId) {
     showStorageError(storageErrorMessage(salesResult));
     return;
   }
+  if (points?.notice) window.alert(points.notice);
   window.location.reload();
 }
 

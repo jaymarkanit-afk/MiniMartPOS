@@ -23,7 +23,7 @@ const customer = (overrides = {}) => {
 const saveCustomers = (...list) => L("miniMartSukis", list);
 const S = (id = "c1") => J("miniMartSukis").find((suki) => suki.id === id);
 const expiryOn = () => L("miniMartSettings", { sukiPointsExpiry: "days", sukiPointsExpiryDays: 90 });
-const historyTotal = (id = "c1") => e(`sukiRules.historyPoints(sukiStore.read().find(s=>s.id==='${id}'))`);
+const historyTotal = (id = "c1") => e(`window.miniMartSukiRules.historyPoints(window.miniMartSukiStore.read().find(s=>s.id==='${id}'))`);
 const keys = (prefix) => Object.keys(localStorage).filter((key) => key.startsWith(prefix));
 const BACKUP_PREFIX = "miniMartSukis__pointsBackup_";
 
@@ -85,6 +85,7 @@ test("the Suki list, detail, Checkout and card scan all show the same balance", 
   await fresh();
   saveCustomers(customer({ stamps: 20, rewardBalance: 5 }));
   const stubCardReader = (w) => {
+    w.NDEFReader = class {};
     Object.defineProperty(w, "scanNfcCard", { configurable: true, get: () => async (found) => found("AA:BB"), set() {} });
   };
   await goEarly("suki-reward.html", stubCardReader);
