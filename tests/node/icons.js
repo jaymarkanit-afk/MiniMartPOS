@@ -173,27 +173,30 @@ for (const screen of [INVENTORY, SETTINGS]) {
   });
 }
 
-const iconsAfterLoads = async (page, category) => {
-  const results = [];
+// Stores every value in one category each, so a few page loads check them all.
+const checkIconValues = async (page, values) => {
+  const categories = values.map(([stored]) => `Icon ${stored}`);
+  await page.seed({
+    miniMartCategories: categories,
+    miniMartCategoryIcons: Object.fromEntries(values.map(([stored]) => [`Icon ${stored}`, stored])),
+  });
   for (let load = 0; load < 3; load += 1) {
     await page.goto("inventory.html", 150);
-    results.push(await page.eval((name) => ({
+    const state = await page.eval((names) => names.map((name) => ({
       stored: JSON.parse(localStorage.getItem("miniMartCategoryIcons"))[name],
       id: window.miniMartDB.categoryIconId(name),
       path: window.miniMartDB.categoryIcon?.(name) ?? categoryIconPath(name),
-    }), category));
+    })), categories);
+    values.forEach(([stored, id], index) => {
+      same(state[index], { stored: id, id, path: ALLOWED[id][0] }, `${stored} on load ${load + 1}`);
+    });
   }
-  return results;
 };
 
 tests.push({
   name: "old icon ids and paths move to the right PNG and stay there after two reloads",
   run: async ({ page, server }) => {
-    for (const [legacy, expectedId] of Object.entries(LEGACY)) {
-      await page.seed({ miniMartCategories: ["Old"], miniMartCategoryIcons: { Old: legacy } });
-      const expected = { stored: expectedId, id: expectedId, path: ALLOWED[expectedId][0] };
-      same(await iconsAfterLoads(page, "Old"), [expected, expected, expected], legacy);
-    }
+    await checkIconValues(page, Object.entries(LEGACY));
     noFailedRequests(server);
   },
 });
@@ -201,13 +204,7 @@ tests.push({
 tests.push({
   name: "current icon ids and their paths are stable",
   run: async ({ page }) => {
-    for (const [id, [iconPath]] of Object.entries(ALLOWED)) {
-      for (const stored of [id, iconPath]) {
-        await page.seed({ miniMartCategories: ["Current"], miniMartCategoryIcons: { Current: stored } });
-        const expected = { stored: id, id, path: iconPath };
-        same((await iconsAfterLoads(page, "Current")).slice(-1), [expected], stored);
-      }
-    }
+    await checkIconValues(page, Object.entries(ALLOWED).flatMap(([id, [iconPath]]) => [[id, id], [iconPath, id]]));
   },
 });
 

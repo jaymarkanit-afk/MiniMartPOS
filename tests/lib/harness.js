@@ -57,17 +57,26 @@ window.__hook = (w) => {
   if (early) early(w);
 };
 
-const go = (url, wait = 450, frame = F) => new Promise((resolve, reject) => {
+// Signed-in pages finish their login check after the page's own start-up.
+const pageIsReady = (w) => w.miniMartInitialDataReady &&
+  (w.miniMartAuthReady || !/\/(index|inventory|reports)\.html/.test(w.location.pathname));
+const waitForPage = async (frame) => {
+  const deadline = Date.now() + 2000;
+  while (!pageIsReady(frame.contentWindow) && Date.now() < deadline) await sleep(10);
+  await sleep(40);
+};
+// With no wait given, this returns as soon as the page says it is ready.
+const go = (url, wait = null, frame = F) => new Promise((resolve, reject) => {
   const timer = setTimeout(() => reject(new Error(`Page did not load: ${url}`)), 20000);
   frame.onload = async () => {
     clearTimeout(timer);
     frame.onload = null;
-    await sleep(wait);
+    await (wait === null ? waitForPage(frame) : sleep(wait));
     resolve();
   };
   frame.src = url;
 });
-const goEarly = async (url, setup, wait = 450) => {
+const goEarly = async (url, setup, wait = null) => {
   early = setup;
   try {
     await go(url, wait);

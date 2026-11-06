@@ -34,7 +34,8 @@ const RECORDER = `(() => {
 })();`;
 
 const IS_SLOW = "document.querySelector('.loading-overlay').classList.contains('is-slow')";
-const NEVER_ENDS = "void window.withLoading('Working',()=>new Promise(()=>{}))";
+// The real 8-second wait has its own test, so these only need the message to appear.
+const SLOW_SOON = "void window.showLoading('Working',{slowAfter:200})";
 const NAV_LINK = 'a[href="reports.html"]';
 const overlayLog = (page) => page.eval("JSON.parse(sessionStorage.getItem('__overlay')||'[]')");
 const overlayVisible = (page) => page.eval("(()=>{const o=document.querySelector('.loading-overlay');return Boolean(o&&!o.hidden)})()");
@@ -141,7 +142,7 @@ const tests = [
     name: "Dismiss closes the slow message",
     run: async ({ page, server }) => {
       await open(page, server);
-      await page.eval(NEVER_ENDS);
+      await page.eval(SLOW_SOON);
       await page.until(IS_SLOW, { timeout: 9000, label: "the slow message" });
       if (!(await actionsVisible(page))) fail("Retry and Dismiss are not visible");
       const details = await page.eval("document.querySelector('.loading-details').textContent");
@@ -155,7 +156,7 @@ const tests = [
     name: "Retry reloads the page and clears the overlay",
     run: async ({ page, server }) => {
       await open(page, server);
-      await page.eval(`window.__sameDocument=true;${NEVER_ENDS}`);
+      await page.eval(`window.__sameDocument=true;${SLOW_SOON}`);
       await page.until(IS_SLOW, { timeout: 9000, label: "the slow message" });
       const loaded = page.waitEvent("Page.loadEventFired");
       await page.click(".loading-retry");
@@ -170,7 +171,7 @@ const tests = [
     run: async ({ page, server }) => {
       await open(page, server);
       await page.send("Network.emulateNetworkConditions", { offline: true, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
-      await page.eval(NEVER_ENDS);
+      await page.eval(SLOW_SOON);
       await page.until(IS_SLOW, { timeout: 9000, label: "the slow message" });
       const text = await message(page);
       if (text !== "You are offline") fail(`Message: ${text}`);

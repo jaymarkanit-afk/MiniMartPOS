@@ -8,7 +8,7 @@ node tests/run.js
 
 It prints a table of every test with PASS or FAIL and the reason for any failure. The exit code is 0 when everything passes and 1 when anything fails. Exit code 2 means the run itself could not finish.
 
-It needs Node 18 or newer and the installed Chrome. There is nothing to install. If Chrome is somewhere unusual, set `CHROME_PATH` to its location. A full run takes about 5 minutes.
+It needs Node 18 or newer and the installed Chrome. There is nothing to install. If Chrome is somewhere unusual, set `CHROME_PATH` to its location. A full run takes about 5 minutes. Most suites run side by side, and the overlay and page suites run alone.
 
 ## Safety
 
@@ -28,7 +28,7 @@ It needs Node 18 or newer and the installed Chrome. There is nothing to install.
 
 ## Mutation check
 
-A test that cannot fail is not proof. `node tests/mutate.js` reverts one fix at a time and confirms that the test covering it fails. It takes about 5 minutes.
+A test that cannot fail is not proof. `node tests/mutate.js` reverts one fix at a time and confirms that the test covering it fails. Each check opens only the suites it needs, in one shared Chrome.
 
 The test server changes the code as it serves it, so no file on disk ever changes, and a crash cannot leave a reverted fix behind. The script first confirms that each test passes on the real code, so a test that was already failing cannot count as catching a mutation.
 
