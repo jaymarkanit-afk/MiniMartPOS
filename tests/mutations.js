@@ -603,6 +603,54 @@ const mutations = [
     edits: [{ file: "js/usb-reader.js", from: "    if (changed) element.dispatchEvent(", to: "    element.dispatchEvent(" }],
   },
   {
+    id: "card-no-fresh-read",
+    fix: "A write checks the stored list, not an in-memory copy",
+    tests: [
+      "card-duplicates: a stale list cannot put a stored card on a second customer",
+      "card-duplicates: two saves from one moment: the first wins and the second is refused",
+    ],
+    edits: [{ file: "js/suki-store.js", from: "const owner = [...storedRecords, ...records].find(", to: "const owner = [...records].find(" }],
+  },
+  {
+    id: "stale-list-drops-card",
+    fix: "A stale list cannot delete a card",
+    tests: ["card-duplicates: a stale list cannot remove a card"],
+    edits: [{ file: "js/suki-store.js", from: "const kept = { ...current, ...record, stamps: current.stamps, history: current.history };", to: "const kept = { ...record, stamps: current.stamps, history: current.history };" }],
+  },
+  {
+    id: "old-duplicate-blocks-edits",
+    fix: "An old duplicate does not block other edits",
+    tests: ["card-duplicates: an old duplicate does not block edits to anyone"],
+    edits: [{ file: "js/suki-store.js", from: "if (!record.cardCode || record.cardCode === stored.get(record.id)?.cardCode) continue;", to: "if (!record.cardCode) continue;" }],
+  },
+  {
+    id: "ambiguous-card-guesses",
+    fix: "An ambiguous card selects nobody",
+    tests: [
+      "card-duplicates: an ambiguous card at Checkout selects nobody, and a sale earns no points",
+      "card-duplicates: an ambiguous card on the Scan tab shows nobody",
+    ],
+    edits: [{ file: "js/suki-store.js", from: "    return owners.length === 1 ? owners[0] : null;", to: "    return owners[0] || null;" }, { file: "js/suki-store.js", from: "    return cardOwners(code).length > 1;", to: "    return false;" }],
+  },
+  {
+    id: "restore-hides-duplicate",
+    fix: "A restore reports duplicates",
+    tests: ["card-duplicates: a restore with a duplicate warns and enters the resolve flow"],
+    edits: [{ file: "js/settings-data.js", from: "duplicateCardGroups(data.customers || []).map(", to: "[].map(" }],
+  },
+  {
+    id: "no-duplicate-backup",
+    fix: "The list is backed up before anything changes",
+    tests: ["card-duplicates: a duplicate backs up the raw list once, and nothing changes"],
+    edits: [{ file: "js/suki-store.js", from: "  if (!startupProblem && duplicateCards().length) saveOneTimeBackup(CARD_DUPLICATES_PREFIX, loadStored().raw);\n", to: "" }],
+  },
+  {
+    id: "keep-card-ignores-cancel",
+    fix: "Decide later changes nothing",
+    tests: ["card-duplicates: Decide later changes nothing"],
+    edits: [{ file: "js/suki-reward.js", from: "if (!confirmed || !sukiStore.keepCardFor(owner.id, code).ok) return;", to: "if (!sukiStore.keepCardFor(owner.id, code).ok) return;" }],
+  },
+  {
     id: "overlay-no-delay",
     fix: "The overlay waits 300 ms",
     tests: ["overlay: a fast navigation never shows the overlay"],

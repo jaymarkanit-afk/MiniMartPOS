@@ -610,7 +610,21 @@ async function armUsbCheckout() {
   }
   const suki = sukiStore.findByCardCode(code);
   if (suki) selectCardCustomer(suki);
+  else if (sukiStore.isAmbiguousCard(code)) refuseAmbiguousCard();
   else showUnknownCheckoutCard(code);
+}
+
+// A card held by two customers selects nobody, so no sale can earn points by mistake.
+function refuseAmbiguousCard() {
+  selectedSukiId = "";
+  scheduleCheckoutDraftSave();
+  updateSukiCheckoutInfo();
+  updatePayment();
+  showCheckoutToast(sukiStore.AMBIGUOUS_CARD_MESSAGE);
+  const scanStatus = document.getElementById("checkoutSukiScanStatus");
+  if (!scanStatus) return;
+  scanStatus.textContent = sukiStore.AMBIGUOUS_CARD_MESSAGE;
+  scanStatus.classList.add("is-error");
 }
 
 function showUnknownCheckoutCard(code) {
@@ -757,7 +771,8 @@ async function scanSukiCard() {
 // A USB card does what a phone tap does. At Checkout only a registered card gets here:
 // any other code is a barcode.
 window.miniMartCardReader.onCard((code, suki) => {
-  if (suki && document.getElementById("checkoutSukiInfo")) selectCardCustomer(suki);
+  if (sukiStore.isAmbiguousCard(code)) refuseAmbiguousCard();
+  else if (suki && document.getElementById("checkoutSukiInfo")) selectCardCustomer(suki);
 });
 
 function showReaderStatus({ title, help }) {

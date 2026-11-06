@@ -186,6 +186,18 @@ class Page {
     return this.cdp.send(method, params, this.sessionId);
   }
 
+  // A second tab in the same browser context, so it shares this page's storage.
+  async openSiblingTab() {
+    const { targetId } = await this.cdp.send("Target.createTarget", {
+      url: "about:blank",
+      browserContextId: this.contextId,
+    });
+    const { sessionId } = await this.cdp.send("Target.attachToTarget", { targetId, flatten: true });
+    const page = new Page(this.cdp, sessionId, this.contextId, this.server);
+    await Promise.all(["Page.enable", "Runtime.enable"].map((method) => page.send(method)));
+    return page;
+  }
+
   onEvent({ method, params }) {
     if (method === "Page.javascriptDialogOpening") {
       this.send("Page.handleJavaScriptDialog", { accept: params.type === "beforeunload" }).catch(() => {});

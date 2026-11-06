@@ -10,9 +10,9 @@ const BROWSER_SUITES = [
   "backup", "corruption", "suki-store", "stock-history", "checkout", "measured-draft", "cart-draft", "expiry",
   "low-stock", "suki-points", "product-ids", "settings-page", "known-bugs",
 ];
-const NODE_SUITES = ["static", "pages", "icons", "dialogs", "card-reader", "overlay", "known-bugs-login", "requests"];
+const NODE_SUITES = ["static", "pages", "icons", "dialogs", "card-reader", "card-duplicates", "overlay", "known-bugs-login", "requests"];
 // These change shared server state or depend on timing, so nothing runs beside them.
-const RUN_ALONE = ["pages", "card-reader", "overlay", "requests"];
+const RUN_ALONE = ["pages", "card-reader", "card-duplicates", "overlay", "requests"];
 const REPORT_ORDER = [...BROWSER_SUITES, ...NODE_SUITES];
 const KNOWN_SUITES = new Set(["known-bugs", "known-bugs-login"]);
 const WORKERS = 4;

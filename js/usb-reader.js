@@ -171,8 +171,10 @@
       finishCapture(code);
       return true;
     }
-    const suki = window.miniMartSukiStore?.findByCardCode?.(code) || null;
-    if (!isCardMode() && !suki) return false;
+    const store = window.miniMartSukiStore;
+    const suki = store?.findByCardCode?.(code) || null;
+    const ambiguous = Boolean(store?.isAmbiguousCard?.(code));
+    if (!isCardMode() && !suki && !ambiguous) return false;
     markRead();
     if (onCard) onCard(code, suki);
     else showNote(NO_USE_NOTE);

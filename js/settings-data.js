@@ -143,7 +143,10 @@ function showRestorePreview(data, filename) {
     `${count("categories")} categories, ${count("customers")} customers, ` +
     `${count("inventoryAdjustments")} stock adjustments, ${count("shiftHistory")} closed shifts, ` +
     `${count("heldCarts")} held carts, and settings. A safety backup of your current data downloads first.` +
-    (kept.length ? ` Not in this file, so left unchanged: ${kept.join(", ")}.` : "");
+    (kept.length ? ` Not in this file, so left unchanged: ${kept.join(", ")}.` : "") +
+    duplicateCardGroups(data.customers || []).map(({ code, owners }) => (
+      ` Warning: the card ending ${cardEnding(code)} is registered to ${joinNames(owners.map((owner) => owner.name))}. You will choose who keeps it on Suki Rewards.`
+    )).join("");
   backupRestorePreview.hidden = false;
   confirmRestoreBackup.focus();
 }

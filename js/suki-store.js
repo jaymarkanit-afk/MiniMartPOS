@@ -10,6 +10,8 @@
   const PREMIGRATION_PREFIX = `${STORAGE_KEY}__premigration_`;
   const UNUSABLE_PREFIX = `${STORAGE_KEY}__unusable_`;
   const POINTS_BACKUP_PREFIX = `${STORAGE_KEY}__pointsBackup_`;
+  const CARD_DUPLICATES_PREFIX = `${STORAGE_KEY}__cardDuplicates_`;
+  const AMBIGUOUS_CARD_MESSAGE = "This card is registered to two customers. Resolve it on the Suki Rewards page.";
   // Stays false until the owner has checked the preview numbers and approved them.
   const SUKI_MIGRATION_ENABLED = false;
   const UNREADABLE_MESSAGE =
@@ -265,28 +267,59 @@
     return { ...writeRecords(records), suki: next, entry: next.history.at(-1) };
   }
 
-  // The first customer holding a card code that a later customer also holds.
-  function sharedCardOwner(records) {
-    const owners = new Map();
-    for (const { cardCode, name } of records) {
-      if (!cardCode) continue;
-      if (owners.has(cardCode)) return owners.get(cardCode);
-      owners.set(cardCode, name);
+  // The one place that decides whether a write may set a card code. A customer keeping
+  // the code they already have is fine, so an old duplicate cannot block other edits.
+  function cardConflict(records, storedRecords) {
+    const stored = new Map(storedRecords.map((record) => [record.id, record]));
+    for (const record of records) {
+      if (!record.cardCode || record.cardCode === stored.get(record.id)?.cardCode) continue;
+      const owner = [...storedRecords, ...records].find(
+        (other) => other.id !== record.id && other.cardCode === record.cardCode,
+      );
+      if (owner) return owner.name;
     }
     return null;
   }
 
-  function findByCardCode(code) {
+  function cardOwners(code) {
     const cardCode = normalizeCardCode(code);
-    if (!cardCode) return null;
-    return normalizeList(loadStored().list).records.find((record) => record.cardCode === cardCode) || null;
+    if (!cardCode) return [];
+    return normalizeList(loadStored().list).records.filter((record) => record.cardCode === cardCode);
+  }
+
+  // A code held by two customers finds nobody. Guessing could give points to the wrong one.
+  function findByCardCode(code) {
+    const owners = cardOwners(code);
+    return owners.length === 1 ? owners[0] : null;
+  }
+
+  function isAmbiguousCard(code) {
+    return cardOwners(code).length > 1;
+  }
+
+  function duplicateCards() {
+    return duplicateCardGroups(normalizeList(loadStored().list).records);
+  }
+
+  // Keeps the code on one customer and takes it from the others. Nothing else changes.
+  function keepCardFor(id, code) {
+    const problem = migrate();
+    if (problem) return refuse(problem);
+    const stored = loadStored();
+    if (!saveOneTimeBackup(CARD_DUPLICATES_PREFIX, stored.raw)) return refuse(BACKUP_FAILED_MESSAGE);
+    const { records } = normalizeList(stored.list);
+    return writeRecords(records.map((record) => {
+      if (record.id === id || record.cardCode !== code) return record;
+      const { cardCode, ...rest } = record;
+      return rest;
+    }));
   }
 
   function setCardCode(id, code) {
     const cardCode = normalizeCardCode(code);
     if (!cardCode) return refuse("That card code is not valid, so nothing was saved.");
-    const owner = findByCardCode(cardCode);
-    if (owner && owner.id !== id) return refuse(`This card is already registered to ${owner.name}.`);
+    const owner = cardOwners(cardCode).find((record) => record.id !== id);
+    if (owner) return refuse(`This card is already registered to ${owner.name}.`);
     const sukis = read();
     const suki = sukis.find((record) => record.id === id);
     if (!suki) return refuse("That customer could not be found, so nothing was saved.");
@@ -299,11 +332,11 @@
     const suki = sukis.find((record) => record.id === id);
     if (!suki) return refuse("That customer could not be found, so nothing was saved.");
     delete suki.cardCode;
-    return save(sukis);
+    return saveList(sukis, id);
   }
 
   // Use remove() to delete. This refuses any list that loses a customer.
-  function save(sukis) {
+  function saveList(sukis, clearingCardOf = null) {
     if (!Array.isArray(sukis)) return refuse("The customer list is not valid, so nothing was saved.");
     const problem = migrate();
     if (problem) return refuse(problem);
@@ -319,18 +352,23 @@
         `${lost.size} customer record${lost.size === 1 ? "" : "s"} would have been lost, so nothing was saved.`,
       );
     }
-    const cardOwner = sharedCardOwner(records);
+    const cardOwner = cardConflict(records, storedRecords);
     if (cardOwner) return refuse(`This card is already registered to ${cardOwner}.`);
     // Points and history stay as stored: only applyPointsChange changes them, and a
-    // stale tab must not undo them.
+    // stale tab must not undo them. The same goes for a card a stale list does not know.
     const stored = new Map(storedRecords.map((record) => [record.id, record]));
     return writeRecords(records.map((record) => {
       const current = stored.get(record.id);
       if (!current) return record;
-      const kept = { ...record, stamps: current.stamps, history: current.history };
+      const kept = { ...current, ...record, stamps: current.stamps, history: current.history };
+      if (record.id === clearingCardOf) delete kept.cardCode;
       if ("rewardBalance" in current) kept.rewardBalance = current.rewardBalance;
       return JSON.stringify(kept) === JSON.stringify(current) ? kept : settleExpiry(kept);
     }));
+  }
+
+  function save(sukis) {
+    return saveList(sukis);
   }
 
   function remove(id) {
@@ -399,7 +437,12 @@
     remove,
     createId,
     applyPointsChange,
+    AMBIGUOUS_CARD_MESSAGE,
     findByCardCode,
+    cardOwners,
+    isAmbiguousCard,
+    duplicateCards,
+    keepCardFor,
     setCardCode,
     clearCardCode,
     runPointsMigration,
@@ -409,4 +452,5 @@
   const startupProblem = migrate();
   if (startupProblem) showStorageError(startupProblem);
   else if (SUKI_MIGRATION_ENABLED) runPointsMigration();
+  if (!startupProblem && duplicateCards().length) saveOneTimeBackup(CARD_DUPLICATES_PREFIX, loadStored().raw);
 })();

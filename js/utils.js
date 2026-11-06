@@ -50,6 +50,24 @@ function normalizeCardCode(value) {
 
 window.normalizeCardCode = normalizeCardCode;
 
+function cardEnding(code) {
+  return String(code).slice(-4);
+}
+
+function joinNames(names) {
+  return names.length < 2 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
+}
+
+// Card codes held by more than one customer, with the customers that hold them.
+function duplicateCardGroups(customers) {
+  const byCode = new Map();
+  customers.forEach((customer) => {
+    const code = normalizeCardCode(customer?.cardCode);
+    if (code) byCode.set(code, [...(byCode.get(code) || []), customer]);
+  });
+  return [...byCode].filter(([, owners]) => owners.length > 1).map(([code, owners]) => ({ code, owners }));
+}
+
 // One dialog at a time. Only this file changes activeDialog.
 let activeDialog = null;
 

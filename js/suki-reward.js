@@ -275,8 +275,8 @@ async function captureUsbCard({ scanButton, cancelButton, status, ownerId = null
     status.textContent = cancelled ? "Cancelled." : "No card was read. Try again.";
     return;
   }
-  const owner = sukiStore.findByCardCode(code);
-  if (owner && owner.id !== ownerId) {
+  const owner = sukiStore.cardOwners(code).find((suki) => suki.id !== ownerId);
+  if (owner) {
     status.textContent = `This card is already registered to ${owner.name}.`;
     return;
   }
@@ -659,6 +659,12 @@ cardReader.setCardMode(() => Boolean(scanView && !scanView.hidden) &&
   unlinkNfcModal?.hidden !== false);
 
 function handleCardTap(code, suki) {
+  if (sukiStore.isAmbiguousCard(code)) {
+    usbCardUnknown.hidden = true;
+    scanTitle.textContent = "Card needs attention";
+    scanStatus.textContent = sukiStore.AMBIGUOUS_CARD_MESSAGE;
+    return;
+  }
   if (!suki) {
     showUnknownCard(code);
     return;
@@ -708,6 +714,45 @@ if (!isNfcSupported()) {
     document.getElementById("usbReaderStateHelp").textContent = help;
   });
 }
+
+// A code two customers hold is never guessed at, so the owner has to choose.
+function renderDuplicateCards() {
+  const notice = document.getElementById("cardDuplicateNotice");
+  const groups = sukiStore.duplicateCards();
+  notice.hidden = groups.length === 0;
+  notice.replaceChildren(...groups.map(({ code, owners }) => {
+    const names = owners.map((owner) => owner.name);
+    const row = document.createElement("div");
+    row.className = "card-duplicate";
+    const message = document.createElement("p");
+    message.textContent = `The card ending ${cardEnding(code)} is registered to ${joinNames(names)}. Choose who keeps it.`;
+    row.append(message);
+    owners.forEach((owner) => {
+      const others = names.filter((name) => name !== owner.name);
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "secondary-button";
+      button.textContent = `Keep for ${owner.name}`;
+      button.addEventListener("click", async () => {
+        const confirmed = await confirmDialog({
+          title: `Keep this card for ${owner.name}?`,
+          message: `The card ending ${cardEnding(code)} will be removed from ${joinNames(others)}.`,
+          details: "Points, history and every other detail stay as they are.",
+          confirmLabel: `Keep for ${owner.name}`,
+          cancelLabel: "Decide later",
+          tone: "danger",
+        });
+        if (!confirmed || !sukiStore.keepCardFor(owner.id, code).ok) return;
+        renderDuplicateCards();
+        renderSukiList();
+      });
+      row.append(button);
+    });
+    return row;
+  }));
+}
+
+renderDuplicateCards();
 
 addUsbCardScan.addEventListener("click", scanUsbCardForNewSuki);
 usbAttachCard.addEventListener("click", attachUnknownCard);
