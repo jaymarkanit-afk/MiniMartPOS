@@ -238,6 +238,26 @@ const mutations = [
     edits: [{ file: "js/database.js", from: "const DATA_VERSION = 2;", to: "const DATA_VERSION = 1;" }],
   },
   {
+    id: "favicon-dead-link",
+    fix: "Each page declares an icon that exists",
+    tests: ["pages: index declares an icon that loads"],
+    edits: [{
+      file: "index.html",
+      from: "<link rel=\"icon\" type=\"image/png\" href=\"Icons/grocery-store.png\" />",
+      to: "<link rel=\"icon\" type=\"image/png\" href=\"Icons/missing.png\" />",
+    }],
+  },
+  {
+    id: "favicon-removed",
+    fix: "Each page declares an icon that exists",
+    tests: ["pages: login declares an icon that loads"],
+    edits: [{
+      file: "login.html",
+      from: "<link rel=\"icon\" type=\"image/png\" href=\"Icons/grocery-store.png\" />",
+      to: "",
+    }],
+  },
+  {
     id: "overlay-no-delay",
     fix: "The overlay waits 300 ms",
     tests: ["overlay: a fast navigation never shows the overlay"],
