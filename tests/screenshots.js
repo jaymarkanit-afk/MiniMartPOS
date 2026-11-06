@@ -11,9 +11,10 @@ const OUTPUT = path.join(__dirname, "screenshots");
 const DESKTOP = { width: 1264, height: 805 };
 const PHONE = { width: 390, height: 844 };
 const CARD = "0004521977";
-const customers = [
-  { id: "a", name: "Ana", phone: "", joined: "2026-01-02", nfcId: "", cardCode: CARD, stamps: 12, active: true, history: [] },
-  { id: "b", name: "Ben", phone: "", joined: "2026-01-02", nfcId: "", stamps: 0, active: true, history: [] },
+const BASE = { phone: "", joined: "2026-01-02", nfcId: "", stamps: 0, active: true, history: [] };
+const defaultCustomers = [
+  { ...BASE, id: "a", name: "Ana", cardCode: CARD, stamps: 12 },
+  { ...BASE, id: "b", name: "Ben" },
 ];
 const closeDetail = "closeModal(detailModal)";
 const dialogOpen = (page) => page.until("document.querySelector('.confirm-dialog')", { label: "the dialog" });
@@ -35,6 +36,26 @@ const SHOTS = [
   { file: "alert-light.png", theme: "light", open: async (page) => { await page.eval(OPEN_ALERT); await dialogOpen(page); } },
   { file: "alert-dark.png", theme: "dark", open: async (page) => { await page.eval(OPEN_ALERT); await dialogOpen(page); } },
   { file: "scan-tab-waiting.png", url: "suki-reward.html", open: async () => {} },
+  {
+    file: "all-sukis-badges.png",
+    url: "suki-reward.html",
+    customers: [
+      { ...BASE, id: "a", name: "USB only", cardCode: "0033194756" },
+      { ...BASE, id: "b", name: "Phone only", nfcId: "AA:BB" },
+      { ...BASE, id: "c", name: "Both cards", cardCode: "0016814852", nfcId: "CC:DD" },
+      { ...BASE, id: "d", name: "No card" },
+    ],
+    open: (page) => page.eval("document.getElementById('allSukisTab').click()"),
+  },
+  {
+    file: "duplicate-card-notice.png",
+    url: "suki-reward.html",
+    customers: [
+      { ...BASE, id: "a", name: "Jaymark Anit", cardCode: "0033194756" },
+      { ...BASE, id: "b", name: "Kent", cardCode: "0033194756" },
+    ],
+    open: async () => {},
+  },
   {
     file: "scan-tab-after-good-tap.png",
     url: "suki-reward.html",
@@ -70,7 +91,7 @@ async function main() {
   await server.start();
   const chrome = await launch();
   try {
-    for (const { file, url = "settings.html", size = DESKTOP, theme = "light", open } of SHOTS) {
+    for (const { file, url = "settings.html", size = DESKTOP, theme = "light", customers = defaultCustomers, open } of SHOTS) {
       const page = await Page.open(chrome.cdp, server);
       await page.send("Emulation.setDeviceMetricsOverride", { ...size, deviceScaleFactor: 1, mobile: false });
       await page.seed({ miniMartSettings: { theme, storeName: "My Corner Store" }, miniMartSukis: customers });

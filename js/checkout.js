@@ -935,6 +935,8 @@ function updateSukiCheckoutInfo() {
     ${window.miniMartSettings.formatCurrency(
       sukiRules.balance(suki),
     )}
+    <br>
+    ${cardLabels(suki).map((label) => escapeHtml(label)).join(" · ")}
   `;
 
   const usablePoints = sukiRules.usablePoints(suki);

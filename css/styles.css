@@ -16,6 +16,18 @@
   --field: #fffefb;
   --accent-glow: rgba(210, 55, 32, 0.18);
 }
+/* Only something a person can type into shows a caret, even with Caret Browsing on. */
+body {
+  caret-color: transparent;
+}
+
+input,
+textarea,
+select,
+[contenteditable] {
+  caret-color: auto;
+}
+
 .usb-reader-note {
   position: fixed;
   right: 16px;

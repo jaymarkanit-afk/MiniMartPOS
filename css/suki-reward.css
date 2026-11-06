@@ -446,6 +446,13 @@ html[data-theme="dark"] .suki-page .save-button {
    NFC WARNING
 ========================================================= */
 
+.suki-card-badges {
+  display: grid;
+  gap: 2px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .card-duplicate-notice {
   display: grid;
   gap: 12px;

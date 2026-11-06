@@ -54,6 +54,18 @@ function cardEnding(code) {
   return String(code).slice(-4);
 }
 
+function hasCard(customer) {
+  return Boolean(customer?.cardCode || customer?.nfcId);
+}
+
+// What every screen says about a customer's cards.
+function cardLabels(customer) {
+  const labels = [];
+  if (customer?.cardCode) labels.push(`USB card ····${cardEnding(customer.cardCode)}`);
+  if (customer?.nfcId) labels.push("Phone NFC card");
+  return labels.length ? labels : ["No card"];
+}
+
 function joinNames(names) {
   return names.length < 2 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
 }

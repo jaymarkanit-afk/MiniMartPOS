@@ -651,6 +651,28 @@ const mutations = [
     edits: [{ file: "js/suki-reward.js", from: "if (!confirmed || !sukiStore.keepCardFor(owner.id, code).ok) return;", to: "if (!sukiStore.keepCardFor(owner.id, code).ok) return;" }],
   },
   {
+    id: "badge-ignores-card-code",
+    fix: "Badges show USB cards",
+    tests: [
+      "card-duplicates: badge for USB only: All Sukis list",
+      "card-duplicates: badge for USB only: customer detail",
+      "card-duplicates: badge for USB only: Checkout customer panel",
+    ],
+    edits: [{ file: "js/utils.js", from: "  if (customer?.cardCode) labels.push(`USB card ····${cardEnding(customer.cardCode)}`);\n", to: "" }],
+  },
+  {
+    id: "caret-stays-after-read",
+    fix: "A read leaves no caret behind",
+    tests: ["card-duplicates: after a read the status shows no caret and nothing typeable is focused"],
+    edits: [{ file: "js/usb-reader.js", from: "    clearStrayCaret();\n", to: "" }],
+  },
+  {
+    id: "caret-color-removed",
+    fix: "Status text never shows a caret",
+    tests: ["card-duplicates: after a read the status shows no caret and nothing typeable is focused"],
+    edits: [{ file: "css/styles.css", from: "body {\n  caret-color: transparent;\n}\n", to: "" }],
+  },
+  {
     id: "overlay-no-delay",
     fix: "The overlay waits 300 ms",
     tests: ["overlay: a fast navigation never shows the overlay"],

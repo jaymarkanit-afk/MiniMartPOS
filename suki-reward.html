@@ -216,6 +216,8 @@
                 Press the NFC icon to start the reader.
               </p>
 
+              <p class="scan-hint" id="scanCardRead" aria-live="polite"></p>
+
               <!-- USB CARD READER -->
 
               <div class="usb-reader-state" id="usbReaderState" hidden>
@@ -330,7 +332,7 @@
               <input
                 id="sukiSearch"
                 type="search"
-                placeholder="Search by name, phone, or NFC card"
+                placeholder="Search by name, phone, or card"
                 autocomplete="off"
               />
             </label>
@@ -340,10 +342,10 @@
                 All
               </button>
               <button class="suki-filter" type="button" data-suki-filter="linked" aria-pressed="false">
-                NFC linked
+                Has a card
               </button>
               <button class="suki-filter" type="button" data-suki-filter="unlinked" aria-pressed="false">
-                No NFC card
+                No card
               </button>
               <button class="suki-filter" type="button" data-suki-filter="ready" aria-pressed="false">
                 Ready to redeem

@@ -204,7 +204,7 @@ function renderSukiOverview() {
   }
 
   totalCustomers.textContent = sukis.length;
-  activeCards.textContent = sukis.filter((suki) => suki.active && suki.nfcId).length;
+  activeCards.textContent = sukis.filter((suki) => suki.active && hasCard(suki)).length;
   readyRewards.textContent = sukis.filter(
     (suki) => suki.active && sukiRules.canRedeem(sukiRules.usablePoints(suki)) && sukiRules.balance(suki) > 0,
   ).length;
@@ -558,7 +558,9 @@ async function scanExistingSuki() {
   }
 }
 
-function showScannedSuki(suki) {
+function showScannedSuki(suki, code = "") {
+  document.getElementById("scanCardRead").textContent = code ? `Card ····${cardEnding(code)}` : "";
+
   if (scanTitle) {
     scanTitle.textContent = suki.name;
   }
@@ -602,7 +604,7 @@ function attachUnknownCard() {
   unknownCardCode = "";
   renderSukiList();
   showSukiToast(`Card attached to ${suki.name}.`, "success");
-  showScannedSuki(suki);
+  showScannedSuki(suki, suki.cardCode);
 }
 
 function addUsbCardControls(suki) {
@@ -610,7 +612,7 @@ function addUsbCardControls(suki) {
   if (!box || isNfcSupported()) return;
   detailContent.querySelector(".suki-nfc-actions")?.remove();
   const value = document.createElement("strong");
-  value.textContent = suki.cardCode || "No USB card linked";
+  value.textContent = suki.cardCode || "";
   const scan = document.createElement("button");
   scan.type = "button";
   scan.className = "secondary-button";
@@ -670,7 +672,7 @@ function handleCardTap(code, suki) {
     return;
   }
   usbCardUnknown.hidden = true;
-  showScannedSuki(suki);
+  showScannedSuki(suki, code);
 }
 
 cardReader.onCard((code, suki) => {
@@ -821,11 +823,11 @@ function renderSukiList() {
 
   const matchesFilter = (suki) => {
     if (selectedSukiFilter === "linked") {
-      return Boolean(suki.active && suki.nfcId);
+      return Boolean(suki.active && hasCard(suki));
     }
 
     if (selectedSukiFilter === "unlinked") {
-      return !suki.nfcId;
+      return !hasCard(suki);
     }
 
     if (selectedSukiFilter === "ready") {
@@ -846,7 +848,7 @@ function renderSukiList() {
 
     const name = String(suki.name || "").toLowerCase();
     const phone = String(suki.phone || "").toLowerCase();
-    const nfc = String(suki.nfcId || "").toLowerCase();
+    const nfc = `${suki.nfcId || ""} ${suki.cardCode || ""}`.toLowerCase();
 
     if (name.startsWith(query)) {
       return 0;
@@ -864,7 +866,7 @@ function renderSukiList() {
     .filter((suki) => {
       const name = String(suki.name || "").toLowerCase();
       const phone = String(suki.phone || "").toLowerCase();
-      const nfc = String(suki.nfcId || "").toLowerCase();
+      const nfc = `${suki.nfcId || ""} ${suki.cardCode || ""}`.toLowerCase();
 
       return (
         !query ||
@@ -905,9 +907,7 @@ function renderSukiList() {
           ? "Inactive"
           : isReady
             ? "Ready to redeem"
-            : suki.nfcId
-              ? "NFC linked"
-              : "No NFC card";
+            : "";
 
         return `
           <button
@@ -926,8 +926,12 @@ function renderSukiList() {
                 ${suki.phone ? escapeHtml(suki.phone) : "No phone number"}
               </small>
 
-              <span class="suki-card-status ${isReady ? "is-ready" : ""} ${suki.active ? "" : "is-inactive"}">
+              ${statusLabel ? `<span class="suki-card-status ${isReady ? "is-ready" : ""} ${suki.active ? "" : "is-inactive"}">
                 ${statusLabel}
+              </span>` : ""}
+
+              <span class="suki-card-badges">
+                ${cardLabels(suki).map((label) => `<span>${escapeHtml(label)}</span>`).join("")}
               </span>
 
               <div class="suki-card-progress" aria-label="${sukiRules.displayPoints(suki)} of ${sukiRules.maxPoints()} points">
@@ -1226,7 +1230,7 @@ function showSukiDetails(id) {
           <div>
 
             <span class="suki-section-label">
-              NFC CARD
+              CARD
             </span>
 
             <h4>
@@ -1247,15 +1251,16 @@ function showSukiDetails(id) {
           <div class="suki-nfc-info">
 
             <span>
-              Card Serial Number
+              Card
             </span>
 
             <strong
               class="suki-nfc-serial${
-                suki.nfcId ? "" : " suki-nfc-serial-empty"
+                hasCard(suki) ? "" : " suki-nfc-serial-empty"
               }"
             >
-              ${suki.nfcId ? escapeHtml(suki.nfcId) : "No NFC card linked"}
+              ${cardLabels(suki).map((label) => escapeHtml(label)).join("<br>")}
+              ${suki.nfcId ? `<br>${escapeHtml(suki.nfcId)}` : ""}
             </strong>
 
             ${
@@ -1287,13 +1292,13 @@ function showSukiDetails(id) {
 
           <div
             class="suki-nfc-status${
-              suki.nfcId
+              hasCard(suki)
                 ? " suki-nfc-status-linked"
                 : " suki-nfc-status-unlinked"
             }"
           >
 
-            ${suki.nfcId ? "Linked" : "Not Linked"}
+            ${hasCard(suki) ? "Linked" : "Not Linked"}
 
           </div>
 

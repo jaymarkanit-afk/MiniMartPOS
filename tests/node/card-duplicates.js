@@ -345,4 +345,132 @@ for (const [name, file] of [["Checkout", "index"], ["Suki Rewards", "suki-reward
   });
 }
 
+const COMBOS = [
+  ["none", {}, ["No card"]],
+  ["USB only", { cardCode: FIRST }, ["USB card ····4756"]],
+  ["phone only", { nfcId: "AA:BB" }, ["Phone NFC card"]],
+  ["both", { cardCode: SECOND, nfcId: "AA:BB" }, ["USB card ····4852", "Phone NFC card"]],
+];
+
+for (const [name, card, labels] of COMBOS) {
+  tests.push({
+    name: `badge for ${name}: All Sukis list`,
+    run: async ({ page }) => {
+      await open(page, [jaymark(card)]);
+      await page.eval("document.getElementById('allSukisTab').click()");
+      expect(await page.eval("[...document.querySelectorAll('.suki-card-badges span')].map(s=>s.textContent)"), labels, "badges");
+      expect(await page.eval("document.querySelector('.suki-card').textContent.toUpperCase().includes('NO NFC CARD')"), false, "old badge");
+    },
+  });
+  tests.push({
+    name: `badge for ${name}: customer detail`,
+    run: async ({ page }) => {
+      await open(page, [jaymark(card)]);
+      await page.eval("showSukiDetails('j')");
+      const shown = await page.eval("document.querySelector('.suki-nfc-serial').innerText");
+      labels.forEach((label) => { if (!shown.includes(label)) throw new Error(`Missing ${label}: ${shown}`); });
+      expect(await page.eval("document.querySelector('.suki-nfc-status').textContent.trim()"), name === "none" ? "Not Linked" : "Linked", "status");
+    },
+  });
+  tests.push({
+    name: `badge for ${name}: Checkout customer panel`,
+    run: async ({ page }) => {
+      await open(page, [jaymark(card)], "index.html");
+      await page.eval("addProductToCart(window.miniMartDB.products()[0]);selectedSukiId='j';updateSukiCheckoutInfo()");
+      const shown = await page.eval("document.getElementById('checkoutSukiInfo').textContent");
+      if (!shown.includes(labels.join(" · "))) throw new Error(`Missing ${labels}: ${shown}`);
+    },
+  });
+}
+
+tests.push({
+  name: "the edit screen shows the full code, leading zeros and all, with Remove card",
+  run: async ({ page }) => {
+    await open(page, [jaymark({ cardCode: FIRST })]);
+    await page.eval("showSukiDetails('j')");
+    expect(await page.eval("document.querySelector('[data-usb-card-box] strong').textContent"), FIRST, "code");
+    expect(await page.eval("[...document.querySelectorAll('[data-usb-card-box] button')].map(b=>b.textContent)"), ["Replace card", "Remove card", "Cancel"], "buttons");
+  },
+});
+
+tests.push({
+  name: "the list can be searched by a USB card code, and filtered by having a card",
+  run: async ({ page }) => {
+    await open(page, [jaymark({ cardCode: FIRST }), kent({ nfcId: "AA:BB" }), customer("z", "Zed")]);
+    await page.eval("document.getElementById('allSukisTab').click()");
+    const names = () => page.eval("[...document.querySelectorAll('.suki-card-name')].map(n=>n.textContent.trim())");
+    await page.eval((code) => {
+      const box = document.querySelector("#allSukisView input");
+      box.value = code;
+      box.dispatchEvent(new Event("input", { bubbles: true }));
+    }, FIRST);
+    await sleep(60);
+    expect(await names(), ["Jaymark Anit"], "search");
+    await page.eval(() => {
+      const box = document.querySelector("#allSukisView input");
+      box.value = "";
+      box.dispatchEvent(new Event("input", { bubbles: true }));
+      document.querySelector('[data-suki-filter="linked"]').click();
+    });
+    await sleep(60);
+    expect((await names()).sort(), ["Jaymark Anit", "Kent"], "has a card");
+    await page.eval("document.querySelector('[data-suki-filter=\"unlinked\"]').click()");
+    await sleep(60);
+    expect(await names(), ["Zed"], "no card");
+  },
+});
+
+tests.push({
+  name: "the active cards count includes USB cards",
+  run: async ({ page }) => {
+    await open(page, [jaymark({ cardCode: FIRST }), kent()]);
+    expect(await page.eval("document.getElementById('sukiActiveCards').textContent"), "1", "count");
+  },
+});
+
+tests.push({
+  name: "the Scan tab shows which card was read",
+  run: async ({ page }) => {
+    await open(page, [jaymark({ cardCode: FIRST })]);
+    await page.typeBurst(FIRST, { gap: 10 });
+    expect(await page.eval("document.getElementById('scanCardRead').textContent"), "Card ····4756", "card");
+  },
+});
+
+const caretState = (page) => page.eval(() => {
+  const active = document.activeElement;
+  const selection = window.getSelection();
+  return {
+    selected: selection.rangeCount,
+    editable: active.isContentEditable || active.matches("input, textarea, select"),
+    caret: getComputedStyle(document.getElementById("usbReaderStateHelp")).caretColor,
+  };
+});
+
+tests.push({
+  name: "after a read the status shows no caret and nothing typeable is focused",
+  run: async ({ page }) => {
+    await open(page, [jaymark({ cardCode: FIRST })]);
+    await page.eval(() => {
+      const range = document.createRange();
+      range.selectNodeContents(document.getElementById("usbReaderStateHelp"));
+      range.collapse(false);
+      window.getSelection().addRange(range);
+    });
+    await page.typeBurst(FIRST, { gap: 10 });
+    await page.eval("closeModal(detailModal)");
+    expect(await caretState(page), { selected: 0, editable: false, caret: "rgba(0, 0, 0, 0)" }, "caret");
+  },
+});
+
+tests.push({
+  name: "a field the person focused keeps its focus and its caret after a read",
+  run: async ({ page }) => {
+    await open(page, [jaymark({ cardCode: FIRST })], "index.html");
+    await page.click("#search");
+    await page.typeBurst(FIRST, { gap: 10 });
+    expect(await page.eval("[document.activeElement.id,getComputedStyle(document.activeElement).caretColor!=='rgba(0, 0, 0, 0)']"), ["search", true], "field");
+  },
+});
+
 module.exports = { tests };

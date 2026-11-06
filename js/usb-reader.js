@@ -68,6 +68,7 @@
   // Only a recognized card gets here. Silence never changes the state.
   function markRead() {
     lastReadAt = Date.now();
+    clearStrayCaret();
     statusListeners.forEach((listener) => listener(readerStatus()));
   }
 
@@ -79,6 +80,14 @@
     note.textContent = message;
     document.body.append(note);
     window.setTimeout(() => note.remove(), NOTE_MS);
+  }
+
+  // Text selected or clicked earlier would otherwise keep a caret after a tap. A field
+  // the person is typing in keeps its place.
+  function clearStrayCaret() {
+    const active = document.activeElement;
+    if (active?.isContentEditable || active?.matches?.("input, textarea, select")) return;
+    window.getSelection()?.removeAllRanges();
   }
 
   function startCapture(timeoutMs) {

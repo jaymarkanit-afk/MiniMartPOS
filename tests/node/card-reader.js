@@ -880,7 +880,7 @@ tests.push({
     await answer(page, ACTION);
     expect(await rawCustomers(page), before.replace(`,"cardCode":"${CARD}"`, ""), "stored customers");
     expect(await page.eval("sukiStore.findByCardCode('" + CARD + "')"), null, "lookup");
-    expect(await page.eval("document.querySelector('[data-usb-card-box] strong').textContent"), "No USB card linked", "shown");
+    expect(await page.eval("document.querySelector('[data-usb-card-box] strong').textContent"), "", "shown");
   },
 });
 

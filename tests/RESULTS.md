@@ -2,7 +2,7 @@
 
 From `node tests/run.js` on 2026-11-06.
 
-437 tests, 437 passed, 0 failed. Known bugs: 17 tests, 17 still fail.
+480 tests, 480 passed, 0 failed. Known bugs: 17 tests, 17 still fail.
 
 | Suite | Passed | Failed |
 |---|---|---|
@@ -23,6 +23,7 @@ From `node tests/run.js` on 2026-11-06.
 | icons | 35 | 0 |
 | dialogs | 46 | 0 |
 | card-reader | 95 | 0 |
+| card-duplicates | 43 | 0 |
 | overlay | 11 | 0 |
 | requests | 1 | 0 |
 
@@ -455,6 +456,49 @@ From `node tests/run.js` on 2026-11-06.
 | card-reader: a test tap sends nothing and stores nothing | PASS |  |
 | card-reader: Checkout has no console errors or failed requests after a tap | PASS |  |
 | card-reader: Suki Rewards has no console errors or failed requests after a tap | PASS |  |
+| card-duplicates: a stale list cannot put a stored card on a second customer | PASS |  |
+| card-duplicates: a stale list cannot remove a card | PASS |  |
+| card-duplicates: two saves from one moment: the first wins and the second is refused | PASS |  |
+| card-duplicates: two real tabs: the second is refused once it can see the first | PASS |  |
+| card-duplicates: Add Suki refuses a card that was taken after it was captured | PASS |  |
+| card-duplicates: the same card on a second customer is refused, whatever its case or spaces | PASS |  |
+| card-duplicates: a save that keeps a customer's own code still works | PASS |  |
+| card-duplicates: changing only the name never touches the code | PASS |  |
+| card-duplicates: an old duplicate does not block edits to anyone | PASS |  |
+| card-duplicates: a duplicate backs up the raw list once, and nothing changes | PASS |  |
+| card-duplicates: the notice names the card, both customers, and offers a button for each | PASS |  |
+| card-duplicates: no notice shows when every card has one owner | PASS |  |
+| card-duplicates: Decide later changes nothing | PASS |  |
+| card-duplicates: keeping the card for one customer takes it from the other, and nothing else changes | PASS |  |
+| card-duplicates: three customers on one card are all offered | PASS |  |
+| card-duplicates: codes differing only in case or spaces count as a duplicate | PASS |  |
+| card-duplicates: an ambiguous card at Checkout selects nobody, and a sale earns no points | PASS |  |
+| card-duplicates: an ambiguous card clears a customer who was already selected | PASS |  |
+| card-duplicates: an ambiguous card in Checkout card mode selects nobody and offers no attach | PASS |  |
+| card-duplicates: an ambiguous card on the Scan tab shows nobody | PASS |  |
+| card-duplicates: a card with one owner still works beside a duplicate | PASS |  |
+| card-duplicates: a restore with a duplicate warns and enters the resolve flow | PASS |  |
+| card-duplicates: leading zeros survive save, reload, backup and restore | PASS |  |
+| card-duplicates: Checkout has no console errors with a duplicate stored | PASS |  |
+| card-duplicates: Suki Rewards has no console errors with a duplicate stored | PASS |  |
+| card-duplicates: badge for none: All Sukis list | PASS |  |
+| card-duplicates: badge for none: customer detail | PASS |  |
+| card-duplicates: badge for none: Checkout customer panel | PASS |  |
+| card-duplicates: badge for USB only: All Sukis list | PASS |  |
+| card-duplicates: badge for USB only: customer detail | PASS |  |
+| card-duplicates: badge for USB only: Checkout customer panel | PASS |  |
+| card-duplicates: badge for phone only: All Sukis list | PASS |  |
+| card-duplicates: badge for phone only: customer detail | PASS |  |
+| card-duplicates: badge for phone only: Checkout customer panel | PASS |  |
+| card-duplicates: badge for both: All Sukis list | PASS |  |
+| card-duplicates: badge for both: customer detail | PASS |  |
+| card-duplicates: badge for both: Checkout customer panel | PASS |  |
+| card-duplicates: the edit screen shows the full code, leading zeros and all, with Remove card | PASS |  |
+| card-duplicates: the list can be searched by a USB card code, and filtered by having a card | PASS |  |
+| card-duplicates: the active cards count includes USB cards | PASS |  |
+| card-duplicates: the Scan tab shows which card was read | PASS |  |
+| card-duplicates: after a read the status shows no caret and nothing typeable is focused | PASS |  |
+| card-duplicates: a field the person focused keeps its focus and its caret after a read | PASS |  |
 | overlay: a fast navigation never shows the overlay | PASS |  |
 | overlay: a slow navigation shows the overlay after about 300 ms, then clears it | PASS |  |
 | overlay: pressing Back after a slow navigation clears the overlay, from the back-forward cache | PASS |  |
@@ -494,7 +538,7 @@ These are reported, not fixed, and never affect the exit code.
 
 ## Mutation check
 
-`tests/mutations.js` has 77 mutations and 9 trial fixes. Every mutation was caught when last run, and run them again with `node tests/mutate.js`.
+`tests/mutations.js` has 87 mutations and 9 trial fixes. Every mutation was caught when last run, and run them again with `node tests/mutate.js`.
 
 | Mutation | Fix it reverts | Tests |
 |---|---|---|
@@ -572,6 +616,16 @@ These are reported, not fixed, and never affect the exit code.
 | `remove-card-ignores-cancel` | Keep card keeps it | 1 |
 | `no-note-on-other-pages` | Other pages keep card digits out of their fields | 1 |
 | `card-always-fires-change` | An unchanged field fires no event | 1 |
+| `card-no-fresh-read` | A write checks the stored list, not an in-memory copy | 2 |
+| `stale-list-drops-card` | A stale list cannot delete a card | 1 |
+| `old-duplicate-blocks-edits` | An old duplicate does not block other edits | 1 |
+| `ambiguous-card-guesses` | An ambiguous card selects nobody | 2 |
+| `restore-hides-duplicate` | A restore reports duplicates | 1 |
+| `no-duplicate-backup` | The list is backed up before anything changes | 1 |
+| `keep-card-ignores-cancel` | Decide later changes nothing | 1 |
+| `badge-ignores-card-code` | Badges show USB cards | 3 |
+| `caret-stays-after-read` | A read leaves no caret behind | 1 |
+| `caret-color-removed` | Status text never shows a caret | 1 |
 | `overlay-no-delay` | The overlay waits 300 ms | 1 |
 | `overlay-stuck-after-back` | The overlay clears when a page is restored | 1 |
 | `overlay-no-offline-message` | Offline shows its own message | 1 |
