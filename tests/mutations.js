@@ -180,6 +180,18 @@ const mutations = [
     edits: [{ file: "js/category-icon-tooltip.js", from: "button.addEventListener(\"focusin\", show);", to: "" }],
   },
   {
+    id: "category-rows-squeezed",
+    fix: "Manage Categories rows keep their full height",
+    tests: [
+      "icons: Manage categories: all 16 rows are reachable by mouse at 1366x650",
+      "icons: Manage categories: all 16 rows are reachable by mouse at 1264x805",
+      "icons: Manage categories: all 16 rows are reachable by mouse at 1920x1040",
+      "icons: Manage categories: a mouse click on an icon saves it",
+      "icons: Settings tooltip shows the right label on hover",
+    ],
+    edits: [{ file: "css/settings.css", from: "  grid-auto-rows: max-content;\n  align-content: start;\n", to: "" }],
+  },
+  {
     id: "overlay-no-delay",
     fix: "The overlay waits 300 ms",
     tests: ["overlay: a fast navigation never shows the overlay"],

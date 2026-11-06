@@ -241,9 +241,9 @@ for (const [name, file] of [["Inventory", "inventory"], ["Settings", "settings"]
   });
 }
 
-const openManageCategories = async (page, size) => {
+const openManageCategories = async (page, size, storage = {}) => {
   await page.send("Emulation.setDeviceMetricsOverride", { ...size, deviceScaleFactor: 1, mobile: false });
-  await page.seed();
+  await page.seed(storage);
   await page.goto("settings.html");
   await page.eval("document.getElementById('openCategoryManagement').click()");
   await page.until("document.querySelectorAll('.category-management-row').length>0", { label: "the category list" });
@@ -266,6 +266,42 @@ for (const size of [{ width: 1366, height: 650 }, { width: 1264, height: 805 }, 
     },
   });
 }
+
+const SIXTEEN = Object.fromEntries([["miniMartCategories", Array.from({ length: 12 }, (_, index) => `Extra ${index + 1}`)]]);
+
+for (const size of [{ width: 1366, height: 650 }, { width: 1264, height: 805 }, { width: 1920, height: 1040 }]) {
+  tests.push({
+    name: `Manage categories: all 16 rows are reachable by mouse at ${size.width}x${size.height}`,
+    run: async ({ page }) => {
+      await openManageCategories(page, size, SIXTEEN);
+      const rows = await page.eval("document.querySelectorAll('.category-management-row').length");
+      same(rows, 16, "rows in the list");
+      const unreachable = [];
+      for (let index = 0; index < rows; index += 1) {
+        await page.click(".category-management-edit-panel > summary", index);
+        await sleep(40);
+        const opened = await page.eval((position) => document.querySelectorAll(".category-management-edit-panel")[position].open, index);
+        if (!opened) unreachable.push(index + 1);
+      }
+      same(unreachable, [], "rows a click could not open");
+    },
+  });
+}
+
+tests.push({
+  name: "Manage categories: a mouse click on an icon saves it",
+  run: async ({ page }) => {
+    await openManageCategories(page, { width: 1366, height: 650 });
+    await page.click(".category-management-edit-panel > summary");
+    await sleep(40);
+    await page.click(".category-management-icon-editor > summary");
+    await sleep(40);
+    const category = await page.eval("document.querySelector('.category-management-icon-editor .category-icon-option').dataset.category");
+    await page.click(".category-management-icon-editor .category-icon-option", 13);
+    await sleep(100);
+    same(await page.eval((name) => window.miniMartDB.categoryIconId(name), category), "sweets", "saved icon");
+  },
+});
 
 tests.push({
   name: "Manage categories: the empty message is hidden while categories are listed",
