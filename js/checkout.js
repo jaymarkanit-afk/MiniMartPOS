@@ -421,12 +421,12 @@ function restoreCheckoutDraft() {
     }
     const clamped = Math.min(quantity, stock);
     if (
+      clamped <= 0 ||
       clamped !== quantity ||
       unit !== saved.unit ||
       Number(product.price) !== Number(saved.priceAtSave)
     ) adjusted += 1;
     if (clamped <= 0) {
-      adjusted += 1;
       return;
     }
     cart.set(product.name, {

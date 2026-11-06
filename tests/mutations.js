@@ -198,6 +198,16 @@ const mutations = [
     edits: [{ file: "css/settings.css", from: ".category-management-empty[hidden] {\n  display: none;\n}\n", to: "" }],
   },
   {
+    id: "sold-out-counted-twice",
+    fix: "A sold-out item is counted once",
+    tests: ["cart-draft: a sold-out item is removed and counted once"],
+    edits: [{
+      file: "js/checkout.js",
+      from: "    if (clamped <= 0) {\n      return;",
+      to: "    if (clamped <= 0) {\n      adjusted += 1;\n      return;",
+    }],
+  },
+  {
     id: "overlay-no-delay",
     fix: "The overlay waits 300 ms",
     tests: ["overlay: a fast navigation never shows the overlay"],
