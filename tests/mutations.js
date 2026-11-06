@@ -80,7 +80,7 @@ const mutations = [
     fix: "Backup filename uses the store timezone",
     tests: ["backup: backup filename uses the store timezone, not the computer's"],
     edits: [{
-      file: "js/settings.js",
+      file: "js/settings-core.js",
       from: "return `${prefix}-${storeDateString()}.${extension}`;",
       to: "return `${prefix}-${new Date().toISOString().slice(0, 10)}.${extension}`;",
     }],
@@ -90,7 +90,7 @@ const mutations = [
     fix: "A failed restore puts every key back",
     tests: ["backup: a restore that fails part way puts every key back"],
     edits: [{
-      file: "js/settings.js",
+      file: "js/settings-data.js",
       from: ".filter((entry) => !restoreRawValue(entry.key, entry.raw).ok)",
       to: ".filter(() => false)",
     }],
@@ -100,7 +100,7 @@ const mutations = [
     fix: "Reset backs up first",
     tests: ["backup: reset downloads a backup first, then erases", "backup: reset stops and erases nothing if the automatic backup fails"],
     edits: [{
-      file: "js/settings.js",
+      file: "js/settings-data.js",
       from: "createBackupFile(\"mini-mart-pos-pre-reset-backup\", { requireComplete: true });",
       to: "",
     }],
@@ -110,7 +110,7 @@ const mutations = [
     fix: "Broken backup files are rejected",
     tests: ["backup: broken backup files are rejected and nothing is written"],
     edits: [{
-      file: "js/settings.js",
+      file: "js/settings-data.js",
       from: "return !matchesBackupShape(data[name], backupShapes[name]);",
       to: "return false;",
     }],
@@ -266,7 +266,7 @@ const mutations = [
       "backup: backup, reset, then restore gives back the same products",
     ],
     edits: [{
-      file: "js/settings.js",
+      file: "js/settings-data.js",
       from: "safeWrite(\"miniMartDeletedProducts\", window.miniMartDB.seedProductNames()),",
       to: "safeWrite(\"miniMartDeletedProducts\", []),",
     }],
@@ -280,7 +280,7 @@ const mutations = [
       "backup: a file with some seed products restores just those",
     ],
     edits: [{
-      file: "js/settings.js",
+      file: "js/settings-data.js",
       from: "    data.deletedProducts = window.miniMartDB.seedProductNames().filter((name) => !restoredNames.has(name));",
       to: "",
     }],
@@ -471,7 +471,7 @@ const trialFixes = [
     id: "trial-exports-skip-voided",
     tests: ["known-bugs: exports: voided sales are left out"],
     edits: [{
-      file: "js/settings.js",
+      file: "js/settings-export.js",
       from: "    const date = new Date(sale.date);\n    if (Number.isNaN(date.getTime())) return false;\n    const key = storeDateString(date);",
       to: "    if (sale.status === \"voided\") return false;\n    const date = new Date(sale.date);\n    if (Number.isNaN(date.getTime())) return false;\n    const key = storeDateString(date);",
     }],

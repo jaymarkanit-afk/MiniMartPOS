@@ -145,7 +145,7 @@ tests.push({
     const found = fs.readdirSync(path.join(ROOT, "js"))
       .filter((name) => name.endsWith(".js"))
       .filter((name) => /^(?:const|let|function)\s+lowStockThreshold\b/m.test(read(`js/${name}`)));
-    expectNone(found.filter((name) => name !== "settings.js"), "Defined in");
+    expectNone(found.filter((name) => name !== "settings-core.js"), "Defined in");
   },
 });
 

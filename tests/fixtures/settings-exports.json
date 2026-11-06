@@ -1,0 +1,194 @@
+{
+ "sales excel": {
+  "Sales": [
+   [
+    "Date & Time",
+    "Transaction ID",
+    "Items",
+    "Total",
+    "Cash",
+    "Change",
+    "Profit"
+   ],
+   [
+    "Mar 09, 2026, 10:00 AM",
+    "TX-1",
+    2,
+    30,
+    30,
+    0,
+    10
+   ],
+   [
+    "TOTAL",
+    "",
+    2,
+    30,
+    30,
+    0,
+    10
+   ]
+  ],
+  "Items": [
+   [
+    "Transaction ID",
+    "Date & Time",
+    "Product",
+    "Category",
+    "Quantity",
+    "Unit Price",
+    "Line Total",
+    "Cost",
+    "Profit"
+   ],
+   [
+    "TX-1",
+    "Mar 09, 2026, 10:00 AM",
+    "Alpha",
+    "Snacks",
+    2,
+    15,
+    30,
+    10,
+    10
+   ]
+  ]
+ },
+ "sales pdf": [
+  {
+   "head": [
+    [
+     "Date & time",
+     "Receipt #",
+     "Items",
+     "Total",
+     "Cash",
+     "Change",
+     "Profit"
+    ]
+   ],
+   "body": [
+    [
+     "Mar 09, 2026, 10:00 AM",
+     "TX-1",
+     2,
+     "₱30.00",
+     "₱30.00",
+     "₱0.00",
+     "₱10.00"
+    ],
+    [
+     "TOTAL",
+     "",
+     2,
+     "₱30.00",
+     "₱30.00",
+     "₱0.00",
+     "₱10.00"
+    ]
+   ]
+  }
+ ],
+ "products excel": {
+  "Products": [
+   [
+    "Name",
+    "Category",
+    "Cost",
+    "Price",
+    "Margin %",
+    "Stock",
+    "Low Stock"
+   ],
+   [
+    "Alpha",
+    "Snacks",
+    10,
+    15,
+    0.3333333333333333,
+    4,
+    "Yes"
+   ],
+   [
+    "Beta",
+    "Dairy",
+    12,
+    20,
+    0.4,
+    40,
+    "No"
+   ]
+  ]
+ },
+ "products pdf": [
+  {
+   "head": [
+    [
+     "Name",
+     "Category",
+     "Cost (PHP)",
+     "Price (PHP)",
+     "Margin %",
+     "Stock",
+     "Low stock"
+    ]
+   ],
+   "body": [
+    [
+     "Alpha",
+     "Snacks",
+     "₱10.00",
+     "₱15.00",
+     "33.3%",
+     4,
+     "Yes"
+    ],
+    [
+     "Beta",
+     "Dairy",
+     "₱12.00",
+     "₱20.00",
+     "40.0%",
+     40,
+     "No"
+    ]
+   ]
+  }
+ ],
+ "customers excel": {
+  "Customers": [
+   [
+    "Name",
+    "Phone",
+    "Date Joined",
+    "Linked Card"
+   ],
+   [
+    "Ana",
+    "0917",
+    "Thu, Jan 1",
+    "Yes"
+   ]
+  ]
+ },
+ "customers pdf": [
+  {
+   "head": [
+    [
+     "Name",
+     "Phone",
+     "Date Joined",
+     "Linked Card"
+    ]
+   ],
+   "body": [
+    [
+     "Ana",
+     "0917",
+     "Thu, Jan 1",
+     "Yes"
+    ]
+   ]
+  }
+ ]
+}

@@ -2,7 +2,7 @@
 
 From `node tests/run.js` on 2026-11-06.
 
-284 tests, 284 passed, 0 failed. Known bugs: 17 tests, 17 still fail.
+295 tests, 295 passed, 0 failed. Known bugs: 17 tests, 17 still fail.
 
 | Suite | Passed | Failed |
 |---|---|---|
@@ -17,6 +17,7 @@ From `node tests/run.js` on 2026-11-06.
 | low-stock | 5 | 0 |
 | suki-points | 42 | 0 |
 | product-ids | 23 | 0 |
+| settings-page | 11 | 0 |
 | static | 20 | 0 |
 | pages | 12 | 0 |
 | icons | 35 | 0 |
@@ -232,6 +233,17 @@ From `node tests/run.js` on 2026-11-06.
 | product-ids: an imported new product gets a uuid | PASS |  |
 | product-ids: restoring an old backup with no ids runs the migration | PASS |  |
 | product-ids: a backup includes product ids | PASS |  |
+| settings-page: every Settings tab opens its own panel | PASS |  |
+| settings-page: saving store info keeps it | PASS |  |
+| settings-page: saving inventory rules keeps them | PASS |  |
+| settings-page: saving Suki rules keeps them | PASS |  |
+| settings-page: the theme switches to dark and stays | PASS |  |
+| settings-page: a category can be renamed | PASS |  |
+| settings-page: a category with products can be deleted, moving them first | PASS |  |
+| settings-page: the data health check runs | PASS |  |
+| settings-page: the NFC status shows on this device | PASS |  |
+| settings-page: settings scripts load after the libraries they use | PASS |  |
+| settings-page: exported Excel and PDF data match the snapshot from before the split | PASS |  |
 | static: index: no undefined functions | PASS |  |
 | static: index: no fatal redeclarations | PASS |  |
 | static: inventory: no undefined functions | PASS |  |
