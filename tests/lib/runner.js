@@ -8,13 +8,13 @@ const { Page } = require("./cdp");
 
 const BROWSER_SUITES = [
   "backup", "corruption", "suki-store", "stock-history", "checkout", "measured-draft", "cart-draft", "expiry",
-  "low-stock", "known-bugs",
+  "low-stock", "suki-points", "known-bugs",
 ];
 const NODE_SUITES = ["static", "pages", "icons", "overlay", "known-bugs-login", "requests"];
 // These change shared server state or depend on timing, so nothing runs beside them.
 const RUN_ALONE = ["pages", "overlay", "requests"];
 const REPORT_ORDER = [...BROWSER_SUITES, ...NODE_SUITES];
-const KNOWN_SUITES = new Set(["known-bugs", "known-bugs-login"]);
+const KNOWN_SUITES = new Set(["known-bugs", "known-bugs-login", "suki-points"]);
 const WORKERS = 4;
 const STALL_MS = 150000;
 const NODE_TEST_MS = 120000;
