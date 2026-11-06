@@ -97,6 +97,12 @@ function historyPoints(suki) {
     .reduce((sum, entry) => sum + entryPoints(entry), 0);
 }
 
+// What the screens show: stored points, or zero once they have expired. Points over the
+// cap are shown in full, even though no more than the cap can be spent at once.
+function displayPoints(suki, now = new Date()) {
+  return isExpired(pointsEntryDate(suki), now) ? 0 : Number(suki?.stamps) || 0;
+}
+
 // The balance is never stored. It is always worked out from the points.
 function balance(suki, now = new Date()) {
   return pesoValueOfPoints(usablePoints(suki, now));
@@ -121,6 +127,7 @@ window.miniMartSukiRules = {
   maxRedeemAmount,
   pointsEntryDate,
   usablePoints,
+  displayPoints,
   balance,
   pointsForPesos,
   historyPoints,

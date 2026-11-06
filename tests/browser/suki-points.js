@@ -84,17 +84,19 @@ test("history adds up through earn, redeem, void and expire", async () => {
 test("the Suki list, detail, Checkout and card scan all show the same balance", async () => {
   await fresh();
   saveCustomers(customer({ stamps: 20, rewardBalance: 5 }));
-  await goEarly("suki-reward.html", (w) => {
-    Object.defineProperty(w, "scanNfcCard", { get: () => async (found) => found("AA:BB"), set() {} });
-  });
+  const stubCardReader = (w) => {
+    Object.defineProperty(w, "scanNfcCard", { configurable: true, get: () => async (found) => found("AA:BB"), set() {} });
+  };
+  await goEarly("suki-reward.html", stubCardReader);
+  e("scanExistingSuki()");
+  await sleep(50);
+  has(text("scanStatus"), "₱20.00", "scan");
+  await go("suki-reward.html");
+  has(text("sukiTotalRewards"), "₱20.00", "total");
   $("allSukisTab").click();
   has(F.contentDocument.querySelector(".suki-card").textContent, "₱20.00", "list");
   e("showSukiDetails('c1')");
   has([...F.contentDocument.querySelectorAll(".suki-reward-stat")].find((stat) => stat.textContent.includes("Reward Balance"))?.textContent, "₱20.00", "detail");
-  has(text("sukiTotalRewards"), "₱20.00", "total");
-  e("scanExistingSuki()");
-  await sleep(50);
-  has(text("scanStatus"), "₱20.00", "scan");
   await go("index.html");
   e(`selectedSukiId='c1';${coke}updateSukiCheckoutInfo()`);
   has(text("checkoutSukiInfo"), "₱20.00", "Checkout");
@@ -178,7 +180,7 @@ test("an expired customer shows 0 points on every screen", async () => {
   saveCustomers(customer({ stamps: 15, history: [{ stampsEarned: 15, date: OLD }] }));
   await go("suki-reward.html");
   $("allSukisTab").click();
-  has(F.contentDocument.querySelector(".suki-card").textContent, "0/40 points", "list");
+  has(F.contentDocument.querySelector(".suki-card").textContent.replace(/\s+/g, " "), "0/40 points", "list");
   e("showSukiDetails('c1')");
   ok(!F.contentDocument.body.textContent.includes("15/40"), "The detail still shows the expired points");
   await go("index.html");

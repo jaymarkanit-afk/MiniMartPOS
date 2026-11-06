@@ -500,7 +500,7 @@ async function scanExistingSuki() {
     }
 
     if (scanStatus) {
-      scanStatus.textContent = `${suki.stamps}/${sukiRules.maxPoints()} points • ${peso(
+      scanStatus.textContent = `${sukiRules.displayPoints(suki)}/${sukiRules.maxPoints()} points • ${peso(
         sukiRules.balance(suki),
       )} reward`;
     }
@@ -658,7 +658,7 @@ function renderSukiList() {
       (suki) => {
         const stampProgress = Math.min(
           100,
-          Math.round((suki.stamps / sukiRules.maxPoints()) * 100),
+          Math.round((sukiRules.displayPoints(suki) / sukiRules.maxPoints()) * 100),
         );
         const isReady = suki.active && sukiRules.canRedeem(sukiRules.usablePoints(suki)) && sukiRules.balance(suki) > 0;
         const statusLabel = !suki.active
@@ -690,7 +690,7 @@ function renderSukiList() {
                 ${statusLabel}
               </span>
 
-              <div class="suki-card-progress" aria-label="${suki.stamps} of ${sukiRules.maxPoints()} points">
+              <div class="suki-card-progress" aria-label="${sukiRules.displayPoints(suki)} of ${sukiRules.maxPoints()} points">
                 <span style="width:${stampProgress}%"></span>
               </div>
 
@@ -700,7 +700,7 @@ function renderSukiList() {
 
               <div>
                 <strong>
-                  ${suki.stamps}/${sukiRules.maxPoints()} points
+                  ${sukiRules.displayPoints(suki)}/${sukiRules.maxPoints()} points
                 </strong>
 
                 <small>
@@ -757,8 +757,8 @@ function showSukiDetails(id) {
 
   const history = Array.isArray(suki.history) ? suki.history : [];
 
-  const stampProgress = Math.min(100, (suki.stamps / sukiRules.maxPoints()) * 100);
-  const remainingStamps = Math.max(0, sukiRules.maxPoints() - suki.stamps);
+  const stampProgress = Math.min(100, (sukiRules.displayPoints(suki) / sukiRules.maxPoints()) * 100);
+  const remainingStamps = Math.max(0, sukiRules.maxPoints() - sukiRules.displayPoints(suki));
   const rewardBalance = sukiRules.balance(suki);
 
   detailContent.innerHTML = `
@@ -900,7 +900,7 @@ function showSukiDetails(id) {
             </span>
 
             <strong>
-              ${suki.stamps}
+              ${sukiRules.displayPoints(suki)}
               <small>
                 / ${sukiRules.maxPoints()}
               </small>
@@ -965,7 +965,7 @@ function showSukiDetails(id) {
             </span>
 
             <span>
-              ${suki.stamps}/${sukiRules.maxPoints()} points
+              ${sukiRules.displayPoints(suki)}/${sukiRules.maxPoints()} points
             </span>
 
           </div>

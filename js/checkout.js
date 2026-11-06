@@ -811,7 +811,7 @@ function updateSukiCheckoutInfo() {
     </strong>
     <br>
     Stamps:
-    ${suki.stamps}/${sukiRules.maxPoints()} points
+    ${sukiRules.displayPoints(suki)}/${sukiRules.maxPoints()} points
     <br>
     Reward balance:
     ${window.miniMartSettings.formatCurrency(
