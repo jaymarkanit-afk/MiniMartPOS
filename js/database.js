@@ -736,6 +736,9 @@ window.miniMartDB = {
     }));
   },
   normalizeCategoryIcons,
+  seedProductNames() {
+    return seedProducts.map((product) => product.name);
+  },
   products() {
     const productsResult = read(PRODUCTS_KEY, seedProducts);
     const deletedNamesResult = read(DELETED_PRODUCTS_KEY, []);

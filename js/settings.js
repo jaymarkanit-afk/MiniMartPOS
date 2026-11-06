@@ -1074,8 +1074,9 @@ function updateBackupSummary() {
 
 function showRestorePreview(data, filename) {
   const count = (name) => (data[name] || []).length;
+  const hasProducts = Object.prototype.hasOwnProperty.call(data, "products");
   const kept = Object.keys(backupKeys).filter(
-    (name) => !Object.prototype.hasOwnProperty.call(data, name),
+    (name) => !Object.prototype.hasOwnProperty.call(data, name) && !(hasProducts && name === "deletedProducts"),
   );
   pendingRestoreData = data;
   backupRestorePreviewText.textContent =
@@ -1296,7 +1297,8 @@ function resetAllData() {
     const results = [
       ...["miniMartProducts", "miniMartSales", "miniMartCategories", "miniMartSukis", "miniMartInventoryAdjustments"].map((key) => safeWrite(key, [])),
       safeWrite("miniMartCategoryIcons", {}),
-      safeWrite("miniMartDeletedProducts", []),
+      // A seed product comes back unless it is listed as deleted.
+      safeWrite("miniMartDeletedProducts", window.miniMartDB.seedProductNames()),
       safeWrite("miniMartStockHistoryExport", null, { remove: true }),
     ];
     const failed = results.find((result) => !result.ok);
@@ -1350,6 +1352,9 @@ function restoreBackupData(backup) {
         : window.miniMartDB.stockHistory() || [],
       window.miniMartDB.stockChanges(window.miniMartDB.products(), data.products, { reason: "restore" }),
     ).slice(-window.miniMartDB.stockHistoryLimit());
+    // The restored list is exactly the file's: seeds it lacks stay out, and nothing it has is hidden.
+    const restoredNames = new Set(data.products.map((product) => product.name));
+    data.deletedProducts = window.miniMartDB.seedProductNames().filter((name) => !restoredNames.has(name));
   }
   const writes = Object.keys(backupKeys)
     .filter(hasSection)

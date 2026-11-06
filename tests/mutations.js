@@ -258,6 +258,34 @@ const mutations = [
     }],
   },
   {
+    id: "reset-brings-seeds-back",
+    fix: "Reset keeps seed products out",
+    tests: [
+      "stock-history: after Reset all data, seed products do not come back",
+      "backup: reset stays empty after reloading every page",
+      "backup: backup, reset, then restore gives back the same products",
+    ],
+    edits: [{
+      file: "js/settings.js",
+      from: "safeWrite(\"miniMartDeletedProducts\", window.miniMartDB.seedProductNames()),",
+      to: "safeWrite(\"miniMartDeletedProducts\", []),",
+    }],
+  },
+  {
+    id: "restore-keeps-file-deleted-list",
+    fix: "Restore brings back exactly the products in the file",
+    tests: [
+      "backup: restore brings back exactly the products in the file: an old file with no seed products",
+      "backup: restore keeps a product the file lists as deleted, and keeps every seed the file has",
+      "backup: a file with some seed products restores just those",
+    ],
+    edits: [{
+      file: "js/settings.js",
+      from: "    data.deletedProducts = window.miniMartDB.seedProductNames().filter((name) => !restoredNames.has(name));",
+      to: "",
+    }],
+  },
+  {
     id: "overlay-no-delay",
     fix: "The overlay waits 300 ms",
     tests: ["overlay: a fast navigation never shows the overlay"],

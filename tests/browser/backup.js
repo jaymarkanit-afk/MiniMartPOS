@@ -350,6 +350,114 @@ test("sales, product and customer exports work in Excel and PDF", async () => {
   eq(e("[reportFilename('sales','xlsx'),reportFilename('sales','pdf')]"), [`TestStore_Sales_${date}.xlsx`, `TestStore_Sales_${date}.pdf`], "filenames");
 });
 
+const productNames = () => e("window.miniMartDB.products().map(p=>p.name)");
+const SEED_COUNT = 17;
+
+test("restore brings back exactly the products in the file: an old file with no seed products", async () => {
+  await fresh();
+  await go("settings.html");
+  await pick({
+    format: "MiniMartPOS backup",
+    version: 1,
+    data: { products: [{ name: "Only One", category: "X", price: 1, stock: 1 }], sales: [], categories: ["X"], deletedProducts: [], customers: [], settings: {} },
+  }, "old.json");
+  await confirmRestore();
+  await go("inventory.html");
+  eq(productNames(), ["Only One"], "products after restore");
+  await go("index.html");
+  eq(productNames(), ["Only One"], "products after another page");
+  eq(J("miniMartInventoryAdjustments").at(-1).reason, "restore", "last history entry");
+});
+
+test("restore keeps a product the file lists as deleted, and keeps every seed the file has", async () => {
+  await fresh();
+  await go("settings.html");
+  const data = JSON.parse(e("JSON.stringify(readBackupData())"));
+  data.products.push({ name: "Custom", category: "X", price: 1, stock: 1 });
+  data.deletedProducts = ["Custom"];
+  const expected = data.products.map((product) => product.name);
+  await pick({ format: "MiniMartPOS backup", version: 2, data }, "all.json");
+  await confirmRestore();
+  await go("inventory.html");
+  eq(productNames().sort(), [...expected].sort(), "products after restore");
+  eq(expected.length, SEED_COUNT + 1, "products in the file");
+});
+
+test("a file with some seed products restores just those", async () => {
+  await fresh();
+  await go("settings.html");
+  const data = JSON.parse(e("JSON.stringify(readBackupData())"));
+  data.products = data.products.slice(0, 3);
+  data.deletedProducts = [];
+  const expected = data.products.map((product) => product.name);
+  await pick({ format: "MiniMartPOS backup", version: 2, data }, "some.json");
+  await confirmRestore();
+  await go("inventory.html");
+  eq(productNames(), expected, "products after restore");
+});
+
+test("backup, reset, then restore gives back the same products", async () => {
+  await fresh();
+  seedBusiness();
+  await go("settings.html");
+  const before = productNames();
+  const file = (await manualBackup()).text;
+  await startReset();
+  await go("settings.html");
+  eq(productNames(), [], "products after reset");
+  await pick(file);
+  await confirmRestore();
+  await go("inventory.html");
+  eq(productNames(), before, "products after restore");
+  eq(J("miniMartSales").length, 1, "sales after restore");
+});
+
+test("the preview does not claim the deleted list stays unchanged", async () => {
+  await fresh();
+  await go("settings.html");
+  await pick({
+    format: "MiniMartPOS backup",
+    version: 1,
+    data: { products: [{ name: "Old", category: "X", price: 1, stock: 1 }], sales: [], categories: ["X"], customers: [], settings: {} },
+  }, "old.json");
+  ok(!text("backupRestorePreviewText").includes("deletedProducts"), `Preview: ${text("backupRestorePreviewText")}`);
+});
+
+test("reset stays empty after reloading every page", async () => {
+  await fresh();
+  await go("settings.html");
+  await startReset();
+  for (const page of ["index", "inventory", "reports", "settings"]) {
+    await go(`${page}.html`);
+    eq(productNames().length, 0, `products on ${page}`);
+  }
+  eq(J("miniMartInventoryAdjustments").length, 0, "history");
+});
+
+test("a product added after reset is kept, even with a sample product's name", async () => {
+  await fresh();
+  await go("settings.html");
+  await startReset();
+  await go("inventory.html");
+  e("window.miniMartDB.saveProducts([{id:'n1',name:'Coke 1.5L',category:'Snacks',price:70,costPrice:50,stock:5,unit:'piece'}],{reason:'initial'})");
+  await go("inventory.html");
+  eq(productNames(), ["Coke 1.5L"], "products");
+  eq(J("miniMartProducts")[0].price, 70, "price kept");
+});
+
+test("a fresh first visit shows the 17 sample products once", async () => {
+  await fresh();
+  await go("index.html");
+  const names = productNames();
+  eq(names.length, SEED_COUNT, "products");
+  eq(new Set(names).size, SEED_COUNT, "distinct products");
+  await go("inventory.html");
+  await go("index.html");
+  eq(productNames(), names, "products after more pages");
+  eq(J("miniMartProducts").length, SEED_COUNT, "stored products");
+  eq(J("miniMartInventoryAdjustments").length, SEED_COUNT, "history entries");
+});
+
 test("the page reloads cleanly after a restore", async () => {
   const file = await baseFile();
   await fresh();
