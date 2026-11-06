@@ -235,7 +235,7 @@ const mutations = [
     id: "no-icon-remigration",
     fix: "Stores that already ran the migration are cleaned too",
     tests: ["icons: a tampered icon in a store that already ran the old migration is cleaned too"],
-    edits: [{ file: "js/database.js", from: "const DATA_VERSION = 2;", to: "const DATA_VERSION = 1;" }],
+    edits: [{ file: "js/database.js", from: "const DATA_VERSION = 3;", to: "const DATA_VERSION = 1;" }],
   },
   {
     id: "favicon-dead-link",
