@@ -9,6 +9,9 @@
   const STORAGE_KEY = "miniMartSukis";
   const PREMIGRATION_PREFIX = `${STORAGE_KEY}__premigration_`;
   const UNUSABLE_PREFIX = `${STORAGE_KEY}__unusable_`;
+  const POINTS_BACKUP_PREFIX = `${STORAGE_KEY}__pointsBackup_`;
+  // Stays false until the owner has checked the preview numbers and approved them.
+  const SUKI_MIGRATION_ENABLED = false;
   const UNREADABLE_MESSAGE =
     "The customer list could not be read, so nothing was saved. Your stored data was not changed.";
   const BACKUP_FAILED_MESSAGE =
@@ -295,6 +298,51 @@
     return writeRecords(records.filter((record) => record.id !== id));
   }
 
+  function migrateRecord(record) {
+    const rules = window.miniMartSukiRules;
+    const { rewardBalance, ...rest } = record;
+    const stamps = Math.max(rest.stamps, rules.pointsForPesos(rewardBalance));
+    const next = { ...rest, stamps };
+    const gap = stamps - rules.historyPoints(next);
+    if (gap === 0) return next;
+    return {
+      ...next,
+      history: [...next.history, {
+        date: new Date().toISOString(),
+        ...pointsEntry(next, {
+          kind: "correction",
+          oldStamps: rest.stamps,
+          oldRewardBalance: rewardBalance,
+          newStamps: stamps,
+          pointsChange: gap,
+          details: { description: "Points corrected when the balance moved to points" },
+        }),
+        stampsAfter: stamps,
+      }],
+    };
+  }
+
+  // Moves each old balance into points, keeping the higher value. A record is finished
+  // once it has no rewardBalance, so a second run changes nothing, and a restored old
+  // backup migrates cleanly. The raw list is saved first, or nothing happens.
+  function runPointsMigration() {
+    const problem = migrate();
+    if (problem) return { ...refuse(problem), changed: 0 };
+    const stored = loadStored();
+    const { records } = normalizeList(stored.list);
+    const pending = records.filter((record) => "rewardBalance" in record);
+    if (!pending.length) return { ok: true, error: null, reason: null, changed: 0, pointsAdded: 0 };
+    if (!safeWrite(`${POINTS_BACKUP_PREFIX}${Date.now()}`, stored.raw, { raw: true }).ok) {
+      return { ...refuse(BACKUP_FAILED_MESSAGE), changed: 0 };
+    }
+    const migrated = records.map((record) => ("rewardBalance" in record ? migrateRecord(record) : record));
+    const result = writeRecords(migrated);
+    if (!result.ok) return { ...result, changed: 0 };
+    const pointsAdded = migrated.reduce((sum, record, index) => sum + record.stamps - records[index].stamps, 0);
+    console.info(`Mini Mart Suki points: moved ${pending.length} customers, ${pointsAdded} points added.`);
+    return { ...result, changed: pending.length, pointsAdded };
+  }
+
   function createId() {
     if (window.crypto && typeof window.crypto.randomUUID === "function") {
       return window.crypto.randomUUID();
@@ -302,8 +350,18 @@
     return `suki-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   }
 
-  window.miniMartSukiStore = { STORAGE_KEY, read, save, remove, createId, applyPointsChange };
+  window.miniMartSukiStore = {
+    STORAGE_KEY,
+    read,
+    save,
+    remove,
+    createId,
+    applyPointsChange,
+    runPointsMigration,
+    migrationEnabled: SUKI_MIGRATION_ENABLED,
+  };
 
   const startupProblem = migrate();
   if (startupProblem) showStorageError(startupProblem);
+  else if (SUKI_MIGRATION_ENABLED) runPointsMigration();
 })();

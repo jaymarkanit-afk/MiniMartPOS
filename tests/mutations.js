@@ -366,6 +366,35 @@ const mutations = [
     edits: [{ file: "js/reports.js", from: "{ sukiId: sale.sukiId, earned: sale.pointsEarned, spent: sale.pointsSpent }", to: "{ sukiId: sale.sukiId, earned: window.miniMartSukiRules.pointsEarned(sale.cashRequired), spent: window.miniMartSukiRules.pointsForPesos(sale.rewardUsed) }" }],
   },
   {
+    id: "migration-no-backup",
+    fix: "The migration backs up first and refuses without a backup",
+    tests: [
+      "suki-points: the migration backs up the raw list first, exactly",
+      "suki-points: the migration refuses to run if the backup cannot be written",
+    ],
+    edits: [{
+      file: "js/suki-store.js",
+      from: "if (!safeWrite(`${POINTS_BACKUP_PREFIX}${Date.now()}`, stored.raw, { raw: true }).ok) {",
+      to: "if (false) {",
+    }],
+  },
+  {
+    id: "migration-keeps-stamps-only",
+    fix: "The migration keeps the higher value",
+    tests: ["suki-points: the migration keeps the higher value and adds a correction entry only where needed"],
+    edits: [{
+      file: "js/suki-store.js",
+      from: "const stamps = Math.max(rest.stamps, rules.pointsForPesos(rewardBalance));",
+      to: "const stamps = rest.stamps;",
+    }],
+  },
+  {
+    id: "migration-switched-on",
+    fix: "The migration stays off until approved",
+    tests: ["suki-points: the migration is switched off and does not run on load"],
+    edits: [{ file: "js/suki-store.js", from: "const SUKI_MIGRATION_ENABLED = false;", to: "const SUKI_MIGRATION_ENABLED = true;" }],
+  },
+  {
     id: "overlay-no-delay",
     fix: "The overlay waits 300 ms",
     tests: ["overlay: a fast navigation never shows the overlay"],
