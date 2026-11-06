@@ -49,6 +49,8 @@ const TAMPERED = [
   "constructor",
   "__proto__",
   "toString",
+  "valueOf",
+  "hasOwnProperty",
   42,
   null,
   { path: "Icons/evil.svg" },
@@ -228,6 +230,15 @@ for (const value of TAMPERED) {
     },
   });
 }
+
+tests.push({
+  name: "a tampered icon in a store that already ran the old migration is cleaned too",
+  run: async ({ page }) => {
+    await page.seed({ miniMartDataVersion: "1", miniMartCategories: ["Tampered"], miniMartCategoryIcons: { Tampered: "constructor" } });
+    await page.goto("inventory.html");
+    same(await page.eval("JSON.parse(localStorage.getItem('miniMartCategoryIcons')).Tampered"), "bread", "stored icon");
+  },
+});
 
 for (const [name, file] of [["Inventory", "inventory"], ["Settings", "settings"], ["Checkout", "index"]]) {
   tests.push({

@@ -208,6 +208,36 @@ const mutations = [
     }],
   },
   {
+    id: "icon-alias-inherited-names",
+    fix: "Icon lookups ignore inherited names",
+    tests: [
+      "icons: a tampered icon value falls back and injects nothing: \"constructor\"",
+      "icons: a tampered icon value falls back and injects nothing: \"__proto__\"",
+      "icons: a tampered icon value falls back and injects nothing: \"toString\"",
+    ],
+    edits: [{
+      file: "js/database.js",
+      from: "ownValue(CATEGORY_ICON_LEGACY_ALIASES, storedIcon)",
+      to: "CATEGORY_ICON_LEGACY_ALIASES[storedIcon]",
+    }],
+  },
+  {
+    id: "icon-path-inherited-names",
+    fix: "Icon lookups ignore inherited names",
+    tests: ["icons: a tampered icon value falls back and injects nothing: \"valueOf\""],
+    edits: [{
+      file: "js/database.js",
+      from: "ownValue(CATEGORY_ICON_PATH_TO_ID, storedIcon)",
+      to: "CATEGORY_ICON_PATH_TO_ID[storedIcon]",
+    }],
+  },
+  {
+    id: "no-icon-remigration",
+    fix: "Stores that already ran the migration are cleaned too",
+    tests: ["icons: a tampered icon in a store that already ran the old migration is cleaned too"],
+    edits: [{ file: "js/database.js", from: "const DATA_VERSION = 2;", to: "const DATA_VERSION = 1;" }],
+  },
+  {
     id: "overlay-no-delay",
     fix: "The overlay waits 300 ms",
     tests: ["overlay: a fast navigation never shows the overlay"],

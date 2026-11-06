@@ -50,7 +50,7 @@ const STOCK_HISTORY_EXPORT_KEY = "miniMartStockHistoryExport";
 const STOCK_HISTORY_LIMIT = 1000;
 const STOCK_HISTORY_WARNING_AT = 900;
 const DATA_VERSION_KEY = "miniMartDataVersion";
-const DATA_VERSION = 1;
+const DATA_VERSION = 2;
 const STORAGE_BACKUP_LIMIT = 3;
 const LARGE_BACKUP_CHARS = 500 * 1024;
 // Free space a corruption backup must leave, so it cannot crowd out later sales.
@@ -405,6 +405,11 @@ function read(key, fallback, validator = null) {
   }
 }
 
+// A plain lookup would also find inherited names such as "constructor".
+function ownValue(map, key) {
+  return Object.prototype.hasOwnProperty.call(map, key) ? map[key] : undefined;
+}
+
 function normalizeCategoryIcons(icons) {
   const normalized = {};
   Object.entries(icons && typeof icons === "object" ? icons : {}).forEach(
@@ -414,8 +419,8 @@ function normalizeCategoryIcons(icons) {
         storedIcon,
       )
         ? storedIcon
-        : CATEGORY_ICON_LEGACY_ALIASES[storedIcon] ||
-          CATEGORY_ICON_PATH_TO_ID[storedIcon] ||
+        : ownValue(CATEGORY_ICON_LEGACY_ALIASES, storedIcon) ||
+          ownValue(CATEGORY_ICON_PATH_TO_ID, storedIcon) ||
           DEFAULT_CATEGORY_ICON_ID;
       normalized[category] = iconId;
     },
