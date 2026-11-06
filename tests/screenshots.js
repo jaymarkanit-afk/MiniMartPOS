@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 "use strict";
-// Saves pictures of the dialogs: node tests/screenshots.js
+// Saves pictures of the dialogs and the card reader states: node tests/screenshots.js
 const fs = require("fs");
 const path = require("path");
 const { launch } = require("./lib/chrome");
@@ -10,20 +10,59 @@ const { Page, sleep } = require("./lib/cdp");
 const OUTPUT = path.join(__dirname, "screenshots");
 const DESKTOP = { width: 1264, height: 805 };
 const PHONE = { width: 390, height: 844 };
-const SHOTS = [
-  { file: "reset-section-light.png", size: DESKTOP, theme: "light", open: "reset" },
-  { file: "reset-section-dark.png", size: DESKTOP, theme: "dark", open: "reset" },
-  { file: "reset-section-phone.png", size: PHONE, theme: "light", open: "reset" },
-  { file: "alert-light.png", size: DESKTOP, theme: "light", open: "alert" },
-  { file: "alert-dark.png", size: DESKTOP, theme: "dark", open: "alert" },
+const CARD = "0004521977";
+const customers = [
+  { id: "a", name: "Ana", phone: "", joined: "2026-01-02", nfcId: "", cardCode: CARD, stamps: 12, active: true, history: [] },
+  { id: "b", name: "Ben", phone: "", joined: "2026-01-02", nfcId: "", stamps: 0, active: true, history: [] },
 ];
-const OPENERS = {
-  reset: async (page) => page.click("#resetStoreInfo"),
-  alert: (page) => page.eval(`void alertDialog({
-    title: "This unit can't be changed",
-    message: "This product has stock or sales history. Create a new product if you need a different unit; existing inventory cannot be converted safely.",
-  })`),
-};
+const closeDetail = "closeModal(detailModal)";
+const dialogOpen = (page) => page.until("document.querySelector('.confirm-dialog')", { label: "the dialog" });
+const openTestPanel = (page) => page.eval(() => {
+  const button = document.getElementById("usbReaderTest");
+  const panel = button.closest("[role='tabpanel']");
+  document.querySelector(`.settings-tab[data-settings-panel="${panel.id}"]`).click();
+  button.click();
+});
+const OPEN_ALERT = `void alertDialog({
+  title: "This unit can't be changed",
+  message: "This product has stock or sales history. Create a new product if you need a different unit; existing inventory cannot be converted safely.",
+})`;
+
+const SHOTS = [
+  { file: "reset-section-light.png", theme: "light", open: async (page) => { await page.click("#resetStoreInfo"); await dialogOpen(page); } },
+  { file: "reset-section-dark.png", theme: "dark", open: async (page) => { await page.click("#resetStoreInfo"); await dialogOpen(page); } },
+  { file: "reset-section-phone.png", theme: "light", size: PHONE, open: async (page) => { await page.click("#resetStoreInfo"); await dialogOpen(page); } },
+  { file: "alert-light.png", theme: "light", open: async (page) => { await page.eval(OPEN_ALERT); await dialogOpen(page); } },
+  { file: "alert-dark.png", theme: "dark", open: async (page) => { await page.eval(OPEN_ALERT); await dialogOpen(page); } },
+  { file: "scan-tab-waiting.png", url: "suki-reward.html", open: async () => {} },
+  {
+    file: "scan-tab-after-good-tap.png",
+    url: "suki-reward.html",
+    open: async (page) => {
+      await page.typeBurst(CARD, { gap: 10 });
+      await page.eval(closeDetail);
+    },
+  },
+  { file: "scan-tab-unknown-card.png", url: "suki-reward.html", open: (page) => page.typeBurst("A1B2C3D4", { gap: 10 }) },
+  {
+    file: "checkout-card-mode.png",
+    url: "index.html",
+    open: async (page) => {
+      await page.eval("addProductToCart(window.miniMartDB.products()[0])");
+      await page.click("#checkoutSukiScanButton");
+      await page.eval("document.getElementById('checkoutSukiScanButton').scrollIntoView({block:'center'})");
+    },
+  },
+  {
+    file: "test-panel-accepted-and-rejected.png",
+    open: async (page) => {
+      await openTestPanel(page);
+      await page.typeBurst("1234", { gap: 80 });
+      await page.typeBurst(CARD, { gap: 10 });
+      await page.eval("document.getElementById('usbReaderTaps').scrollIntoView({block:'center'})");
+    },
+  },
+];
 
 async function main() {
   fs.mkdirSync(OUTPUT, { recursive: true });
@@ -31,13 +70,12 @@ async function main() {
   await server.start();
   const chrome = await launch();
   try {
-    for (const { file, size, theme, open } of SHOTS) {
+    for (const { file, url = "settings.html", size = DESKTOP, theme = "light", open } of SHOTS) {
       const page = await Page.open(chrome.cdp, server);
       await page.send("Emulation.setDeviceMetricsOverride", { ...size, deviceScaleFactor: 1, mobile: false });
-      await page.seed({ miniMartSettings: { theme, storeName: "My Corner Store" } });
-      await page.goto("settings.html", 600);
-      await OPENERS[open](page);
-      await page.until("document.querySelector('.confirm-dialog')", { label: "the dialog" });
+      await page.seed({ miniMartSettings: { theme, storeName: "My Corner Store" }, miniMartSukis: customers });
+      await page.goto(url, 600);
+      await open(page);
       await sleep(250);
       const { data } = await page.send("Page.captureScreenshot", { format: "png" });
       fs.writeFileSync(path.join(OUTPUT, file), Buffer.from(data, "base64"));

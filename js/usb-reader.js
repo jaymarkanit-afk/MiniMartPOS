@@ -31,6 +31,12 @@
   const WAITING_TITLE = "Waiting for a card";
   const WAITING_HELP = "Tap a card on the USB reader. The page cannot see the reader until a card is tapped.";
   const WORKING_TITLE = "Reader working";
+  // A reader may send no Enter or Tab. Silence ends its burst, and it needs a longer code
+  // because nothing else marks it as a reader.
+  const SILENCE_END_MS = 150;
+  const MIN_LENGTH_WITHOUT_TERMINATOR = 6;
+  // After a burst ended by silence, a late Enter or Tab still belongs to that card.
+  const LATE_TERMINATOR_MS = 250;
   // The test panel shows what arrives even from a reader that sends no terminator.
   const TEST_IDLE_MS = 400;
   const TERMINATORS = new Set(["Enter", "Tab"]);
@@ -42,6 +48,8 @@
   let activeCapture = null;
   let testListener = null;
   let testTimer = null;
+  let silenceTimer = null;
+  let swallowTerminatorUntil = 0;
   let lastReadAt = null;
   const statusListeners = new Set();
 
@@ -88,22 +96,32 @@
     element.dispatchEvent(new Event(element instanceof HTMLSelectElement ? "change" : "input", { bubbles: true }));
   }
 
-  function describeBurst(terminator, endTime) {
+  // Why a burst is not a card, or "" if it is. Armed means a page is waiting for a card
+  // or the code belongs to a customer, which a burst with no terminator needs.
+  function rejection({ length, fast, code, terminator, armed }) {
+    if (length < MIN_LENGTH) return `too short (at least ${MIN_LENGTH} characters)`;
+    if (length > MAX_LENGTH) return `too long (at most ${MAX_LENGTH} characters)`;
+    if (!fast) return "too slow";
+    if (!code) return "characters not allowed";
+    if (terminator) return "";
+    if (length < MIN_LENGTH_WITHOUT_TERMINATOR) {
+      return `too short (at least ${MIN_LENGTH_WITHOUT_TERMINATOR} characters with no terminator)`;
+    }
+    return armed ? "" : "no terminator and not armed";
+  }
+
+  function describeBurst(terminator, endTime, armed = false) {
     const text = burst.characters.join("");
     const gaps = burst.times.slice(1).map((time, index) => time - burst.times[index]);
     if (endTime !== null) gaps.push(endTime - burst.times.at(-1));
     const averageGap = gaps.length ? gaps.reduce((sum, gap) => sum + gap, 0) / gaps.length : 0;
     const code = window.normalizeCardCode(text);
-    const fastEnough = gaps.length > 0 && averageGap < MAX_AVERAGE_GAP_MS && Math.max(...gaps) <= MAX_SINGLE_GAP_MS;
-    const longEnough = text.length >= MIN_LENGTH && text.length <= MAX_LENGTH;
-    let problem = "";
-    if (!terminator) problem = "It did not end with Enter or Tab.";
-    else if (!longEnough) problem = `It must be ${MIN_LENGTH} to ${MAX_LENGTH} characters.`;
-    else if (!fastEnough) problem = "It was too slow to be a reader.";
-    else if (!code) problem = "It has characters a card code cannot contain.";
+    const fast = gaps.length > 0 && averageGap < MAX_AVERAGE_GAP_MS && Math.max(...gaps) <= MAX_SINGLE_GAP_MS;
+    const problem = rejection({ length: text.length, fast, code, terminator, armed });
     return {
       text,
       code,
+      keys: burst.keys,
       length: text.length,
       allDigits: /^\d+$/.test(text),
       gaps,
@@ -145,7 +163,25 @@
     return true;
   }
 
+  // The burst is kept if it does not qualify: its Enter may still be on the way.
+  function endBurstOnSilence() {
+    if (!burst) return;
+    const { recognized, code } = describeBurst(null, null, true);
+    if (!recognized || !handleScan(code)) return;
+    const { snapshot } = burst;
+    burst = null;
+    swallowTerminatorUntil = performance.now() + LATE_TERMINATOR_MS;
+    restoreField(snapshot);
+  }
+
   function onTerminator(event) {
+    window.clearTimeout(silenceTimer);
+    if (!testListener && !burst && event.timeStamp < swallowTerminatorUntil) {
+      swallowTerminatorUntil = 0;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      return;
+    }
     if (testListener) {
       if (!burst) return;
       event.preventDefault();
@@ -183,9 +219,14 @@
     } else if (burst && event.timeStamp - burst.times.at(-1) > MAX_SINGLE_GAP_MS) {
       burst = null;
     }
-    if (!burst) burst = { characters: [], times: [], snapshot: fieldSnapshot(event.target) };
+    if (!burst) burst = { characters: [], keys: [], times: [], snapshot: fieldSnapshot(event.target) };
     burst.characters.push(event.key);
+    burst.keys.push({ key: event.key, code: event.code });
     burst.times.push(event.timeStamp);
+    if (!testListener) {
+      window.clearTimeout(silenceTimer);
+      silenceTimer = window.setTimeout(endBurstOnSilence, SILENCE_END_MS);
+    }
   }
 
   document.addEventListener("keydown", onKeydown, true);

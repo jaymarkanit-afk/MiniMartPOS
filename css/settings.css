@@ -2626,6 +2626,11 @@ body.modal-open {
   margin: 2px 0 0;
   color: var(--muted);
   font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.usb-reader-tap button {
+  margin-top: 8px;
 }
 
 .device-status-explanation {

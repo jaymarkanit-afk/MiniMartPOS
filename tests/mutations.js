@@ -549,6 +549,42 @@ const mutations = [
     edits: [{ file: "js/usb-reader.js", from: "    const suki = window.miniMartSukiStore?.findByCardCode?.(code) || null;\n", to: "    markRead();\n    const suki = window.miniMartSukiStore?.findByCardCode?.(code) || null;\n" }],
   },
   {
+    id: "no-terminator-rule-dropped",
+    fix: "A reader with no Enter or Tab still works",
+    tests: [
+      "card-reader: no terminator: a registered card is accepted and the field is put back",
+      "card-reader: no terminator: an unknown card in card mode is accepted",
+    ],
+    edits: [{ file: "js/usb-reader.js", from: "      silenceTimer = window.setTimeout(endBurstOnSilence, SILENCE_END_MS);\n", to: "" }],
+  },
+  {
+    id: "card-mode-condition-dropped",
+    fix: "Without card mode or an owner, a code stays a barcode",
+    tests: [
+      "card-reader: no terminator: a code nobody owns stays in the search box, out of card mode",
+      "card-reader: an all-digit barcode no customer owns still adds the product",
+    ],
+    edits: [{ file: "js/usb-reader.js", from: "    if (!isCardMode() && !suki) return false;\n", to: "" }],
+  },
+  {
+    id: "no-terminator-human-accepted",
+    fix: "Human typing is not a card, even with no terminator",
+    tests: ["card-reader: no terminator: human typing of a registered code is not a card"],
+    edits: [{ file: "js/usb-reader.js", from: "    if (!fast) return \"too slow\";\n", to: "" }],
+  },
+  {
+    id: "card-sent-away",
+    fix: "A card code never leaves the page",
+    tests: ["card-reader: a registered card sends nothing and stores nothing on Suki Rewards"],
+    edits: [{ file: "js/usb-reader.js", from: "    markRead();\n    onCard?.(code, suki);", to: "    markRead();\n    window.fetch(`/seen?code=${code}`);\n    onCard?.(code, suki);" }],
+  },
+  {
+    id: "card-stored-by-reader",
+    fix: "The reader stores nothing",
+    tests: ["card-reader: a registered card sends nothing and stores nothing on Suki Rewards"],
+    edits: [{ file: "js/usb-reader.js", from: "    markRead();\n    onCard?.(code, suki);", to: "    markRead();\n    localStorage.setItem(\"lastCard\", code);\n    onCard?.(code, suki);" }],
+  },
+  {
     id: "overlay-no-delay",
     fix: "The overlay waits 300 ms",
     tests: ["overlay: a fast navigation never shows the overlay"],

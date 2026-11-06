@@ -6,7 +6,7 @@ const { sleep } = require("../lib/cdp");
 
 const expect = (actual, expected, label) => {
   const [a, b] = [JSON.stringify(actual), JSON.stringify(expected)];
-  if (a !== b) throw new Error(`${label}: expected ${b}, got ${a}`.slice(0, 500));
+  if (a !== b) throw new Error(`${label}: expected ${b}, got ${a}`.slice(0, 900));
 };
 const tests = [];
 
@@ -14,13 +14,18 @@ const tests = [];
 const openPanel = async (page) => {
   await page.seed();
   await page.goto("settings.html");
-  await page.eval("document.getElementById('usbReaderTest').click()");
+  await page.eval(() => {
+    const panel = document.getElementById("usbReaderTest").closest("[role='tabpanel']");
+    document.querySelector(`.settings-tab[data-settings-panel="${panel.id}"]`).click();
+    document.getElementById("usbReaderTest").click();
+  });
 };
 const lastTap = (page) => page.eval(() => {
   const row = document.querySelector("#usbReaderTaps li");
   return row ? { text: row.querySelector("code").textContent, lines: [...row.querySelectorAll("p")].map((line) => line.textContent) } : null;
 });
-const worksAsCard = (tap) => tap.lines.at(-1) === "Works as a card: yes";
+const ACCEPTED = "Would be accepted as a card";
+const worksAsCard = (tap) => tap.lines.at(-1) === ACCEPTED;
 
 for (const gap of [5, 20, 35]) {
   for (const length of [4, 8, 10, 13]) {
@@ -51,7 +56,7 @@ for (const gap of [80, 150, 300]) {
       await openPanel(page);
       await page.typeBurst("1234567890", { gap });
       const tap = await lastTap(page);
-      expect(tap.lines.at(-1), "Works as a card: no. It was too slow to be a reader.", "verdict");
+      expect(tap.lines.at(-1), "Rejected because: too slow", "verdict");
     },
   });
 }
@@ -71,7 +76,7 @@ tests.push({
     await openPanel(page);
     await page.typeBurst("0004521977", { gap: 10, terminator: "Tab" });
     const tap = await lastTap(page);
-    expect(tap.lines[4], "Ended with: Tab", "terminator");
+    expect(tap.lines[5], "Terminator: Tab", "terminator");
     expect(worksAsCard(tap), true, "recognized");
   },
 });
@@ -83,7 +88,7 @@ tests.push({
     await page.typeBurst("04a1b2c3d4", { gap: 10 });
     const tap = await lastTap(page);
     expect(tap.text, "04a1b2c3d4", "text");
-    expect(tap.lines[1], "All digits: no", "digits");
+    expect(tap.lines[1], "Digits only: no", "digits");
     expect(worksAsCard(tap), true, "recognized");
   },
 });
@@ -93,9 +98,9 @@ tests.push({
   run: async ({ page }) => {
     await openPanel(page);
     await page.typeBurst("123", { gap: 5 });
-    expect((await lastTap(page)).lines.at(-1), "Works as a card: no. It must be 4 to 32 characters.", "short");
+    expect((await lastTap(page)).lines.at(-1), "Rejected because: too short (at least 4 characters)", "short");
     await page.typeBurst("1".repeat(33), { gap: 5 });
-    expect((await lastTap(page)).lines.at(-1), "Works as a card: no. It must be 4 to 32 characters.", "long");
+    expect((await lastTap(page)).lines.at(-1), "Rejected because: too long (at most 32 characters)", "long");
   },
 });
 
@@ -106,7 +111,7 @@ tests.push({
     await page.typeBurst(";1234=56?", { gap: 5 });
     const tap = await lastTap(page);
     expect(tap.text, ";1234=56?", "text");
-    expect(tap.lines.at(-1), "Works as a card: no. It has characters a card code cannot contain.", "verdict");
+    expect(tap.lines.at(-1), "Rejected because: characters not allowed", "verdict");
   },
 });
 
@@ -117,10 +122,12 @@ tests.push({
     await page.typeBurst("00123456", { gap: 20 });
     const tap = await lastTap(page);
     expect(tap.text, "00123456", "text");
-    expect(tap.lines.slice(0, 2), ["Length: 8", "All digits: yes"], "details");
-    if (!/^Average gap: \d+\.\d ms$/.test(tap.lines[2])) throw new Error(tap.lines[2]);
+    expect(tap.lines.slice(0, 2), ["Length: 8", "Digits only: yes"], "details");
+    expect(tap.lines[2], "Keys: 0 (Digit0), 0 (Digit0), 1 (Digit1), 2 (Digit2), 3 (Digit3), 4 (Digit4), 5 (Digit5), 6 (Digit6)", "keys");
     expect(tap.lines[3].split(",").length, 8, "gaps listed");
-    expect(tap.lines[4], "Ended with: Enter", "terminator");
+    if (!/^Average gap: \d+\.\d ms$/.test(tap.lines[4])) throw new Error(tap.lines[4]);
+    expect(tap.lines[5], "Terminator: Enter", "terminator");
+    expect(tap.lines[6], ACCEPTED, "verdict");
   },
 });
 
@@ -147,8 +154,8 @@ tests.push({
     await sleep(500);
     const tap = await lastTap(page);
     expect(tap.text, "12345678", "text");
-    expect(tap.lines[4], "Ended with: none", "terminator");
-    expect(tap.lines.at(-1), "Works as a card: no. It did not end with Enter or Tab.", "verdict");
+    expect(tap.lines[5], "Terminator: none", "terminator");
+    expect(tap.lines.at(-1), "Rejected because: no terminator and not armed", "verdict");
   },
 });
 
@@ -165,14 +172,26 @@ tests.push({
 });
 
 tests.push({
-  name: "the module stores and sends nothing, and reads only the sanitized code",
-  run: async ({ server }) => {
-    const code = server.source("js/usb-reader.js").replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
-    const banned = ["localStorage", "sessionStorage", "indexedDB", "document.cookie", "fetch(", "XMLHttpRequest", "sendBeacon", "WebSocket", "safeWrite", "console.", "innerHTML", "navigator.serial", "navigator.hid", "clipboard"];
-    expect(banned.filter((word) => code.includes(word)), [], "forbidden calls");
-    expect(/findByCardCode\?\.\(code\)/.test(code), true, "lookup uses the sanitized code");
-    expect(/finishCapture\(code\)/.test(code) && /onCard\?\.\(code, suki\)/.test(code), true, "pages get the sanitized code");
-    expect(/normalizeCardCode\(text\)/.test(code), true, "code is sanitized");
+  name: "the test panel copies the whole result as text",
+  run: async ({ page }) => {
+    await openPanel(page);
+    await page.eval("window.__copied=[];navigator.clipboard.writeText=async(text)=>{window.__copied.push(text)}");
+    await page.typeBurst("00123456", { gap: 10 });
+    await page.click("#usbReaderTaps button");
+    await sleep(40);
+    const copied = await page.eval("window.__copied[0]");
+    const tap = await lastTap(page);
+    expect(copied, ["Text: 00123456", ...tap.lines].join("\n"), "copied text");
+  },
+});
+
+tests.push({
+  name: "the test panel explains a short tap with no terminator",
+  run: async ({ page }) => {
+    await openPanel(page);
+    await page.typeBurst("1234", { gap: 5, terminator: null });
+    await sleep(500);
+    expect((await lastTap(page)).lines.at(-1), "Rejected because: too short (at least 6 characters with no terminator)", "verdict");
   },
 });
 
@@ -820,6 +839,152 @@ tests.push({
     await page.goto("settings.html");
     await sleep(100);
     expect(await text(page, "nfcStatusText") === "Phone only", false, "Settings");
+  },
+});
+
+tests.push({
+  name: "no terminator: a registered card is accepted and the field is put back",
+  run: async ({ page }) => {
+    await openCheckout(page);
+    await page.click("#search");
+    await page.typeBurst(CARD, { gap: 10, terminator: null });
+    await sleep(250);
+    expect(await selected(page), "a", "customer");
+    expect(await value(page, "search"), "", "search box");
+  },
+});
+
+tests.push({
+  name: "no terminator: a late Enter from the same card does nothing",
+  run: async ({ page }) => {
+    await openCheckout(page);
+    await page.click("#search");
+    await page.typeBurst(CARD, { gap: 10, terminator: null });
+    await sleep(180);
+    await page.pressKey("Enter");
+    await sleep(40);
+    expect(await text(page, "barcodeStatus") === "This barcode is not registered. Add it to a product in Inventory.", false, "barcode message");
+    expect(await selected(page), "a", "customer");
+  },
+});
+
+tests.push({
+  name: "no terminator: an unknown card in card mode is accepted",
+  run: async ({ page }) => {
+    await armCheckout(page);
+    await page.typeBurst("A1B2C3D4", { gap: 10, terminator: null });
+    await sleep(250);
+    expect(await page.eval("document.getElementById('checkoutUsbUnknown').hidden"), false, "unknown hidden");
+  },
+});
+
+tests.push({
+  name: "no terminator: a code nobody owns stays in the search box, out of card mode",
+  run: async ({ page }) => {
+    await openCheckout(page);
+    await page.click("#search");
+    await page.typeBurst("4800016644801", { gap: 10, terminator: null });
+    await sleep(250);
+    expect(await value(page, "search"), "4800016644801", "search box");
+    expect(await selected(page), "", "customer");
+    await page.pressKey("Enter");
+    await sleep(40);
+    expect(await cartLines(page), [["Rice", 1]], "the barcode flow still works");
+  },
+});
+
+tests.push({
+  name: "no terminator: a code under 6 characters is not a card",
+  run: async ({ page }) => {
+    await page.seed({ ...shop, miniMartSukis: [customer("a", "Ana", { cardCode: "12345" })] });
+    await page.goto("index.html");
+    await page.click("#search");
+    await page.typeBurst("12345", { gap: 10, terminator: null });
+    await sleep(250);
+    expect([await selected(page), await value(page, "search")], ["", "12345"], "customer and search box");
+  },
+});
+
+tests.push({
+  name: "no terminator: human typing of a registered code is not a card",
+  run: async ({ page }) => {
+    await openCheckout(page);
+    await page.click("#search");
+    await page.typeBurst(CARD, { gap: 80, terminator: null });
+    await sleep(250);
+    expect([await selected(page), await value(page, "search")], ["", CARD], "customer and search box");
+  },
+});
+
+const SPY = `(() => {
+  const io = window.__io = [];
+  const fetchReal = window.fetch;
+  window.fetch = (...args) => { io.push(["fetch", String(args[0])]); return fetchReal(...args); };
+  const open = XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open = function openSpied(method, url, ...rest) { io.push(["xhr", url]); return open.call(this, method, url, ...rest); };
+  const beacon = navigator.sendBeacon.bind(navigator);
+  navigator.sendBeacon = (url, data) => { io.push(["beacon", url]); return beacon(url, data); };
+  const setItem = Storage.prototype.setItem;
+  Storage.prototype.setItem = function setItemSpied(key, value) { io.push(["write", key, value]); return setItem.call(this, key, value); };
+  const removeItem = Storage.prototype.removeItem;
+  Storage.prototype.removeItem = function removeItemSpied(key) { io.push(["remove", key]); return removeItem.call(this, key); };
+})();`;
+const spyOn = async (page, storage, file) => {
+  await page.send("Page.addScriptToEvaluateOnNewDocument", { source: SPY });
+  await page.seed(storage);
+  await page.goto(file);
+  await page.eval("window.__io.length=0");
+};
+const recorded = (page) => page.eval("window.__io");
+
+tests.push({
+  name: "a registered card sends nothing and stores nothing on Suki Rewards",
+  run: async ({ page }) => {
+    await spyOn(page, shop, "suki-reward.html");
+    await page.typeBurst(CARD, { gap: 10 });
+    await sleep(100);
+    expect(await recorded(page), [], "activity");
+  },
+});
+
+tests.push({
+  name: "attaching a card sends nothing and writes only that customer's new field",
+  run: async ({ page }) => {
+    await spyOn(page, shop, "suki-reward.html");
+    const before = await stored(page);
+    await page.typeBurst("A1B2C3D4", { gap: 10 });
+    await page.click("#usbAttachCard");
+    await sleep(80);
+    const activity = await recorded(page);
+    expect(activity.map(([kind, key]) => [kind, key]), [["write", "miniMartSukis"]], "activity");
+    const after = JSON.parse(activity[0][2]);
+    expect(after.map(({ cardCode, ...rest }) => rest), before.map(({ cardCode, ...rest }) => rest), "everything but cardCode");
+    expect(after.map(({ cardCode }) => cardCode ?? null), [CARD, "A1B2C3D4"], "card codes");
+  },
+});
+
+tests.push({
+  name: "a card at Checkout sends nothing and only updates the cart draft",
+  run: async ({ page }) => {
+    await spyOn(page, shop, "index.html");
+    await addToCart(page);
+    await sleep(400);
+    await page.eval("window.__io.length=0");
+    await page.typeBurst(CARD, { gap: 10 });
+    await sleep(450);
+    const keys = [...new Set((await recorded(page)).map(([kind, key]) => `${kind} ${key}`))];
+    expect(keys, ["write miniMartCheckoutDraft"], "activity");
+  },
+});
+
+tests.push({
+  name: "a test tap sends nothing and stores nothing",
+  run: async ({ page }) => {
+    await page.send("Page.addScriptToEvaluateOnNewDocument", { source: SPY });
+    await openPanel(page);
+    await page.eval("window.__io.length=0");
+    await page.typeBurst("A1B2C3D4", { gap: 10 });
+    expect(await recorded(page), [], "activity");
   },
 });
 

@@ -6,25 +6,39 @@ const usbReaderStatus = document.getElementById("usbReaderStatus");
 const usbReaderTaps = document.getElementById("usbReaderTaps");
 let usbReaderTesting = false;
 
+function usbReaderTapLines(tap) {
+  return [
+    `Length: ${tap.length}`,
+    `Digits only: ${tap.allDigits ? "yes" : "no"}`,
+    `Keys: ${tap.keys.map(({ key, code }) => `${key} (${code || "no code"})`).join(", ")}`,
+    `Gaps: ${tap.gaps.map((gap) => `${gap.toFixed(1)} ms`).join(", ") || "none"}`,
+    `Average gap: ${tap.averageGap.toFixed(1)} ms`,
+    `Terminator: ${tap.terminator}`,
+    tap.recognized ? "Would be accepted as a card" : `Rejected because: ${tap.problem}`,
+  ];
+}
+
 function usbReaderTapRow(tap) {
   const row = document.createElement("li");
   row.className = "usb-reader-tap";
   const text = document.createElement("code");
   text.textContent = tap.text;
-  const lines = [
-    `Length: ${tap.length}`,
-    `All digits: ${tap.allDigits ? "yes" : "no"}`,
-    `Average gap: ${tap.averageGap.toFixed(1)} ms`,
-    `Gaps: ${tap.gaps.map((gap) => `${gap.toFixed(1)} ms`).join(", ") || "none"}`,
-    `Ended with: ${tap.terminator}`,
-    tap.recognized ? "Works as a card: yes" : `Works as a card: no. ${tap.problem}`,
-  ];
+  const lines = usbReaderTapLines(tap);
   row.append(text);
   lines.forEach((line) => {
     const detail = document.createElement("p");
     detail.textContent = line;
     row.append(detail);
   });
+  const copy = document.createElement("button");
+  copy.type = "button";
+  copy.className = "settings-button-secondary";
+  copy.textContent = "COPY RESULT";
+  copy.addEventListener("click", async () => {
+    await navigator.clipboard.writeText([`Text: ${tap.text}`, ...lines].join("\n"));
+    copy.textContent = "COPIED";
+  });
+  row.append(copy);
   return row;
 }
 

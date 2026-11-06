@@ -354,13 +354,14 @@ class Page {
   async typeBurst(text, { gap = 20, terminator = "Enter" } = {}) {
     const sent = [];
     let next = performance.now();
-    for (const character of [...text, terminator]) {
+    const keyCode = (character) => (/\d/.test(character) ? `Digit${character}` : /[a-z]/i.test(character) ? `Key${character.toUpperCase()}` : "");
+    for (const character of terminator ? [...text, terminator] : [...text]) {
       while (performance.now() < next) { /* hold the exact gap */ }
       next += gap;
       const named = character === terminator && character.length > 1;
       const event = named
         ? { key: character, code: character, windowsVirtualKeyCode: character === "Tab" ? 9 : 13, ...(character === "Enter" ? { text: "\r" } : {}) }
-        : { key: character, text: character, unmodifiedText: character, windowsVirtualKeyCode: character.toUpperCase().charCodeAt(0) };
+        : { key: character, code: keyCode(character), text: character, unmodifiedText: character, windowsVirtualKeyCode: character.toUpperCase().charCodeAt(0) };
       sent.push(this.send("Input.dispatchKeyEvent", { type: named && character === "Tab" ? "rawKeyDown" : "keyDown", ...event }));
       sent.push(this.send("Input.dispatchKeyEvent", { type: "keyUp", ...event, text: undefined, unmodifiedText: undefined }));
     }
