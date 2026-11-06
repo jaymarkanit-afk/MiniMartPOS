@@ -90,7 +90,7 @@ test("the Suki list, detail, Checkout and card scan all show the same balance", 
   $("allSukisTab").click();
   has(F.contentDocument.querySelector(".suki-card").textContent, "₱20.00", "list");
   e("showSukiDetails('c1')");
-  has(F.contentDocument.querySelector(".suki-reward-stat:nth-of-type(2), .suki-reward-stat").parentElement.textContent, "₱20.00", "detail");
+  has([...F.contentDocument.querySelectorAll(".suki-reward-stat")].find((stat) => stat.textContent.includes("Reward Balance"))?.textContent, "₱20.00", "detail");
   has(text("sukiTotalRewards"), "₱20.00", "total");
   e("scanExistingSuki()");
   await sleep(50);
@@ -170,6 +170,20 @@ test("with expiry on, expired points show as zero and stored data is untouched",
   has(text("checkoutSukiInfo"), "₱0.00", "Checkout");
   await go("suki-reward.html");
   eq(localStorage.miniMartSukis, before, "stored customers");
+});
+
+test("an expired customer shows 0 points on every screen", async () => {
+  await fresh();
+  expiryOn();
+  saveCustomers(customer({ stamps: 15, history: [{ stampsEarned: 15, date: OLD }] }));
+  await go("suki-reward.html");
+  $("allSukisTab").click();
+  has(F.contentDocument.querySelector(".suki-card").textContent, "0/40 points", "list");
+  e("showSukiDetails('c1')");
+  ok(!F.contentDocument.body.textContent.includes("15/40"), "The detail still shows the expired points");
+  await go("index.html");
+  e(`selectedSukiId='c1';${coke}updateSukiCheckoutInfo()`);
+  has(text("checkoutSukiInfo"), "0/40 points", "Checkout");
 });
 
 test("a customer with no dates keeps their points through a sale, with expiry on", async () => {
@@ -257,7 +271,7 @@ test("voiding the same sale twice does nothing the second time", async () => {
   const once = localStorage.miniMartSukis;
   await voidOnReports(sale.id);
   eq(localStorage.miniMartSukis, once, "customers");
-  e(`sukiStore.applyPointsChange('c1',{kind:'void-reverse',saleId:${JSON.stringify(sale.id)},earned:2,spent:10})`);
+  e(`window.miniMartSukiStore.applyPointsChange("c1",{kind:"void-reverse",saleId:${JSON.stringify(sale.id)},earned:2,spent:10})`);
   eq(localStorage.miniMartSukis, once, "a repeat of the change itself");
 });
 

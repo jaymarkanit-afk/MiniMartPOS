@@ -71,7 +71,8 @@
       joined: text(record.joined),
       nfcId: window.normalizeNfcId(record.nfcId),
       stamps: amount(record.stamps),
-      rewardBalance: amount(record.rewardBalance),
+      // Only records waiting for the migration still carry the old balance.
+      ...("rewardBalance" in record ? { rewardBalance: amount(record.rewardBalance) } : {}),
       active: record.active !== false,
       history: Array.isArray(record.history) ? record.history : [],
     };

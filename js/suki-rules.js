@@ -2,7 +2,6 @@
 
 // Most points a customer can earn or spend. Earning stops at this limit.
 const MAX_POINTS = 40;
-const MAX_REWARD_BALANCE = 200;
 
 function normalizedSukiSettings() {
   const settings = window.miniMartSettings?.get?.() || {};
@@ -98,6 +97,11 @@ function historyPoints(suki) {
     .reduce((sum, entry) => sum + entryPoints(entry), 0);
 }
 
+// The balance is never stored. It is always worked out from the points.
+function balance(suki, now = new Date()) {
+  return pesoValueOfPoints(usablePoints(suki, now));
+}
+
 function usablePoints(suki, now = new Date()) {
   const points = Number(suki?.stamps);
   if (!Number.isFinite(points) || points <= 0 || isExpired(pointsEntryDate(suki), now)) {
@@ -108,7 +112,6 @@ function usablePoints(suki, now = new Date()) {
 
 window.miniMartSukiRules = {
   maxPoints: () => MAX_POINTS,
-  maxRewardBalance: () => MAX_REWARD_BALANCE,
   settings: normalizedSukiSettings,
   pointsEarned,
   pesoValueOfPoints,
@@ -118,6 +121,7 @@ window.miniMartSukiRules = {
   maxRedeemAmount,
   pointsEntryDate,
   usablePoints,
+  balance,
   pointsForPesos,
   historyPoints,
 };

@@ -193,10 +193,10 @@ function renderSukiOverview() {
   totalCustomers.textContent = sukis.length;
   activeCards.textContent = sukis.filter((suki) => suki.active && suki.nfcId).length;
   readyRewards.textContent = sukis.filter(
-    (suki) => suki.active && sukiRules.canRedeem(sukiRules.usablePoints(suki)) && suki.rewardBalance > 0,
+    (suki) => suki.active && sukiRules.canRedeem(sukiRules.usablePoints(suki)) && sukiRules.balance(suki) > 0,
   ).length;
   totalRewards.textContent = peso(
-    sukis.reduce((sum, suki) => sum + suki.rewardBalance, 0),
+    sukis.reduce((sum, suki) => sum + sukiRules.balance(suki), 0),
   );
 }
 
@@ -410,7 +410,6 @@ function saveSuki(event) {
 
     stamps: 0,
 
-    rewardBalance: 0,
 
     active: true,
 
@@ -502,7 +501,7 @@ async function scanExistingSuki() {
 
     if (scanStatus) {
       scanStatus.textContent = `${suki.stamps}/${sukiRules.maxPoints()} points • ${peso(
-        suki.rewardBalance,
+        sukiRules.balance(suki),
       )} reward`;
     }
 
@@ -590,7 +589,7 @@ function renderSukiList() {
     }
 
     if (selectedSukiFilter === "ready") {
-      return Boolean(suki.active && sukiRules.canRedeem(sukiRules.usablePoints(suki)) && suki.rewardBalance > 0);
+      return Boolean(suki.active && sukiRules.canRedeem(sukiRules.usablePoints(suki)) && sukiRules.balance(suki) > 0);
     }
 
     if (selectedSukiFilter === "inactive") {
@@ -661,7 +660,7 @@ function renderSukiList() {
           100,
           Math.round((suki.stamps / sukiRules.maxPoints()) * 100),
         );
-        const isReady = suki.active && sukiRules.canRedeem(sukiRules.usablePoints(suki)) && suki.rewardBalance > 0;
+        const isReady = suki.active && sukiRules.canRedeem(sukiRules.usablePoints(suki)) && sukiRules.balance(suki) > 0;
         const statusLabel = !suki.active
           ? "Inactive"
           : isReady
@@ -711,7 +710,7 @@ function renderSukiList() {
 
               <div>
                 <strong>
-                  ${peso(suki.rewardBalance)}
+                  ${peso(sukiRules.balance(suki))}
                 </strong>
 
                 <small>
@@ -760,7 +759,7 @@ function showSukiDetails(id) {
 
   const stampProgress = Math.min(100, (suki.stamps / sukiRules.maxPoints()) * 100);
   const remainingStamps = Math.max(0, sukiRules.maxPoints() - suki.stamps);
-  const rewardBalance = sukiRules.pesoValueOfPoints(sukiRules.usablePoints(suki));
+  const rewardBalance = sukiRules.balance(suki);
 
   detailContent.innerHTML = `
 

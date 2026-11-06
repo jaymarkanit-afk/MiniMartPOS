@@ -13,13 +13,13 @@ const mutations = [
     }],
   },
   {
-    id: "reward-ignores-balance",
-    fix: "One reward amount for screen and sale (a165fe2)",
-    tests: ["checkout: a stored balance below the points is the most that can be spent"],
+    id: "reward-ignores-points",
+    fix: "One reward amount for screen and sale, limited by the points (a165fe2)",
+    tests: ["checkout: no more than the points are worth can be spent"],
     edits: [{
       file: "js/checkout.js",
-      from: "Math.min(requested, suki.rewardBalance, sukiRules.maxRedeemAmount(points, total))",
-      to: "Math.min(requested, sukiRules.maxRedeemAmount(points, total))",
+      from: "Math.min(requested, sukiRules.maxRedeemAmount(points, total))",
+      to: "requested",
     }],
   },
   {

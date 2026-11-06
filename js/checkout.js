@@ -768,7 +768,7 @@ function appliedReward(total, suki = getSelectedSuki()) {
   const points = sukiRules.usablePoints(suki);
   if (!sukiRules.canRedeem(points)) return 0;
   return window.miniMartDB.roundMoney(
-    Math.min(requested, suki.rewardBalance, sukiRules.maxRedeemAmount(points, total)),
+    Math.min(requested, sukiRules.maxRedeemAmount(points, total)),
   );
 }
 
@@ -815,7 +815,7 @@ function updateSukiCheckoutInfo() {
     <br>
     Reward balance:
     ${window.miniMartSettings.formatCurrency(
-      sukiRules.pesoValueOfPoints(sukiRules.usablePoints(suki)),
+      sukiRules.balance(suki),
     )}
   `;
 
@@ -1700,10 +1700,7 @@ function updatePayment() {
     rewardUsed = appliedReward(total, suki);
 
     if (rewardInput) {
-      rewardInput.max = Math.min(
-        suki.rewardBalance,
-        sukiRules.maxRedeemAmount(usablePoints, total),
-      );
+      rewardInput.max = sukiRules.maxRedeemAmount(usablePoints, total);
     }
   }
 

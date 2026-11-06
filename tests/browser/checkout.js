@@ -70,16 +70,24 @@ test("a reward above the bill is clamped the same on screen and in the sale", as
   eq(recorded(), { reward: 30, due: 35, change: 0 }, "recorded sale");
 });
 
-test("a stored balance below the points is the most that can be spent", async () => {
-  // Today's rule. The Suki points work replaces it when the balance becomes derived.
+test("what can be spent comes from the points, whatever the old balance says", async () => {
   await fresh();
   seedSuki(30, 5);
   await go("index.html");
   e(`selectedSukiId='c1';${coke}updateSukiCheckoutInfo();document.getElementById('rewardAmount').value='20';amountGiven.value='60';updatePayment();`);
   $("sellButton").click();
-  eq(confirmation(), { reward: "₱5.00", due: "₱60.00", change: "₱0.00" }, "confirmation");
+  eq(confirmation(), { reward: "₱20.00", due: "₱45.00", change: "₱15.00" }, "confirmation");
   await confirmSale();
-  eq(recorded(), { reward: 5, due: 60, change: 0 }, "recorded sale");
+  eq(recorded(), { reward: 20, due: 45, change: 15 }, "recorded sale");
+});
+
+test("no more than the points are worth can be spent", async () => {
+  await fresh();
+  seedSuki(12, 50);
+  await go("index.html");
+  e(`selectedSukiId='c1';${coke}updateSukiCheckoutInfo();document.getElementById('rewardAmount').value='40';amountGiven.value='53';updatePayment();`);
+  $("sellButton").click();
+  eq(confirmation(), { reward: "₱12.00", due: "₱53.00", change: "₱0.00" }, "confirmation");
 });
 
 test("with no customer, a reward value in the box is ignored", async () => {
