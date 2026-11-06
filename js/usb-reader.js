@@ -20,8 +20,9 @@
 (() => {
   // Fast human typing runs at about 70 ms or slower, and a reader at 35 ms or faster.
   const MAX_AVERAGE_GAP_MS = 50;
-  // One late character is allowed, but a longer pause means a new burst.
-  const MAX_SINGLE_GAP_MS = 120;
+  // A USB hiccup can delay one character. A longer pause means a new burst, and the
+  // average above is what keeps human typing out.
+  const MAX_SINGLE_GAP_MS = 200;
   const MIN_LENGTH = 4;
   const MAX_LENGTH = 32;
   const CAPTURE_TIMEOUT_MS = 15000;

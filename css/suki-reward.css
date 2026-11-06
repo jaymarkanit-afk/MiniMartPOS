@@ -446,6 +446,49 @@ html[data-theme="dark"] .suki-page .save-button {
    NFC WARNING
 ========================================================= */
 
+.usb-reader-ready,
+.usb-card-unknown {
+  display: grid;
+  gap: 6px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--green);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--ink);
+}
+
+.usb-card-unknown {
+  border-left-color: var(--gold);
+}
+
+.usb-reader-ready[hidden],
+.usb-card-unknown[hidden],
+.usb-card-box[hidden] {
+  display: none;
+}
+
+.usb-reader-ready p,
+.usb-card-unknown p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.usb-card-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.usb-card-box p {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--muted);
+}
+
 .nfc-browser-warning {
   width: min(500px, 100%);
 

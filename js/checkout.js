@@ -666,6 +666,26 @@ async function scanSukiCard() {
   );
 }
 
+// A USB card does what a phone tap does. At Checkout only a registered card gets here:
+// any other code is a barcode.
+window.miniMartCardReader.onCard((code, suki) => {
+  if (!suki || !document.getElementById("checkoutSukiInfo")) return;
+  selectedSukiId = suki.id;
+  scheduleCheckoutDraftSave();
+  updateSukiCheckoutInfo();
+  updatePayment();
+  const scanButton = document.getElementById("checkoutSukiScanButton");
+  const scanStatus = document.getElementById("checkoutSukiScanStatus");
+  if (scanButton) {
+    scanButton.disabled = false;
+    scanButton.textContent = "Suki Card Selected";
+  }
+  if (scanStatus) {
+    scanStatus.textContent = "Suki card detected.";
+    scanStatus.classList.remove("is-error");
+  }
+});
+
 function transactionNumber() {
   const date = new Date();
   const stamp = date.toISOString().replace(/\D/g, "").slice(0, 14);

@@ -6,7 +6,7 @@ const path = require("path");
 const { ROOT } = require("../lib/server");
 
 const PAGES = ["index", "inventory", "reports", "settings", "suki-reward", "login"];
-const BUILTIN = new Set("if for while switch catch function return typeof await async super new void delete in of Number String Boolean Array Object Map Set Date Math JSON Error Promise RegExp Blob URL URLSearchParams Symbol parseInt parseFloat isNaN isFinite setTimeout clearTimeout setInterval clearInterval alert confirm prompt fetch CustomEvent Event FileReader NDEFReader Intl BigInt var".split(" "));
+const BUILTIN = new Set("if for while switch catch function return typeof await async super new void delete in of Number String Boolean Array Object Map Set Date Math JSON Error Promise RegExp Blob URL URLSearchParams Symbol parseInt parseFloat isNaN isFinite setTimeout clearTimeout setInterval clearInterval alert confirm prompt fetch CustomEvent Event FileReader NDEFReader Intl BigInt var Option".split(" "));
 let server = null;
 const read = (file) => (server ? server.source(file) : fs.readFileSync(path.join(ROOT, file), "utf8"));
 const strip = (code) => code

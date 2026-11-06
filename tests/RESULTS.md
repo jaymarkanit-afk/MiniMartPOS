@@ -2,7 +2,7 @@
 
 From `node tests/run.js` on 2026-11-06.
 
-342 tests, 342 passed, 0 failed. Known bugs: 17 tests, 17 still fail.
+400 tests, 400 passed, 0 failed. Known bugs: 17 tests, 17 still fail.
 
 | Suite | Passed | Failed |
 |---|---|---|
@@ -22,6 +22,7 @@ From `node tests/run.js` on 2026-11-06.
 | pages | 12 | 0 |
 | icons | 35 | 0 |
 | dialogs | 46 | 0 |
+| card-reader | 58 | 0 |
 | overlay | 11 | 0 |
 | requests | 1 | 0 |
 
@@ -359,6 +360,64 @@ From `node tests/run.js` on 2026-11-06.
 | dialogs: unit alert: closing it with Escape puts the unit back | PASS |  |
 | dialogs: void notice: it shows, and the page reloads once it is closed | PASS |  |
 | dialogs: an alert waits for an open dialog instead of being lost | PASS |  |
+| card-reader: a 4-character burst at 5 ms is recognized | PASS |  |
+| card-reader: a 8-character burst at 5 ms is recognized | PASS |  |
+| card-reader: a 10-character burst at 5 ms is recognized | PASS |  |
+| card-reader: a 13-character burst at 5 ms is recognized | PASS |  |
+| card-reader: a 4-character burst at 20 ms is recognized | PASS |  |
+| card-reader: a 8-character burst at 20 ms is recognized | PASS |  |
+| card-reader: a 10-character burst at 20 ms is recognized | PASS |  |
+| card-reader: a 13-character burst at 20 ms is recognized | PASS |  |
+| card-reader: a 4-character burst at 35 ms is recognized | PASS |  |
+| card-reader: a 8-character burst at 35 ms is recognized | PASS |  |
+| card-reader: a 10-character burst at 35 ms is recognized | PASS |  |
+| card-reader: a 13-character burst at 35 ms is recognized | PASS |  |
+| card-reader: typing at 80 ms is never recognized, even with Enter at the end | PASS |  |
+| card-reader: typing at 150 ms is never recognized, even with Enter at the end | PASS |  |
+| card-reader: typing at 300 ms is never recognized, even with Enter at the end | PASS |  |
+| card-reader: leading zeros are kept | PASS |  |
+| card-reader: a Tab can end a burst | PASS |  |
+| card-reader: lowercase hex is shown exactly as it was sent | PASS |  |
+| card-reader: too short and too long are not cards | PASS |  |
+| card-reader: characters a card cannot contain are rejected but still shown | PASS |  |
+| card-reader: the test panel shows length, digits, timing and terminator | PASS |  |
+| card-reader: the test panel keeps the last 5 taps, newest first | PASS |  |
+| card-reader: the test panel shows a reader that sends no terminator | PASS |  |
+| card-reader: the test panel text can be selected and stops when asked | PASS |  |
+| card-reader: the module stores and sends nothing, and reads only the sanitized code | PASS |  |
+| card-reader: the sanitizer keeps the exact text, uppercased, and rejects anything else | PASS |  |
+| card-reader: Settings has no console errors after a test tap | PASS |  |
+| card-reader: a customer with no card stays byte-identical after load and after a save | PASS |  |
+| card-reader: a card code is saved on the right customer, next to the phone card | PASS |  |
+| card-reader: a customer can have both a phone card and a USB card | PASS |  |
+| card-reader: a second customer cannot take the same card | PASS |  |
+| card-reader: a save cannot give two customers the same card | PASS |  |
+| card-reader: a card code that is not valid is refused | PASS |  |
+| card-reader: a points change keeps the card code | PASS |  |
+| card-reader: backup and restore keep the card code, and an older backup still restores | PASS |  |
+| card-reader: a card tapped with nothing focused selects the customer and leaves the cart alone | PASS |  |
+| card-reader: a card tapped in the Checkout search box leaves the box as it was | PASS |  |
+| card-reader: a card tapped in the amount box leaves it as it was | PASS |  |
+| card-reader: typing a customer's card number by hand is not a card | PASS |  |
+| card-reader: an all-digit barcode no customer owns still adds the product | PASS |  |
+| card-reader: a letters barcode no customer owns still adds the product | PASS |  |
+| card-reader: an unknown code at Checkout gets the normal barcode message | PASS |  |
+| card-reader: the Scan tab says the USB reader is ready instead of the red message | PASS |  |
+| card-reader: a registered card shows the customer, the same as a phone tap | PASS |  |
+| card-reader: a registered card works in the search box on the All Sukis tab | PASS |  |
+| card-reader: an unknown card shows the message, and attaching saves it on the right customer | PASS |  |
+| card-reader: on the All Sukis tab an unknown code is left alone | PASS |  |
+| card-reader: Add Suki: the button captures a card and it is saved with the customer | PASS |  |
+| card-reader: Add Suki: a card scanned in the name box leaves it as it was and does not submit | PASS |  |
+| card-reader: a card tapped in a customer name box leaves it as it was | PASS |  |
+| card-reader: Add Suki: a card someone else owns is reported and not kept | PASS |  |
+| card-reader: Add Suki: Cancel stops the capture cleanly | PASS |  |
+| card-reader: Add Suki: the capture times out after 15 seconds | PASS |  |
+| card-reader: closing Add Suki stops a capture | PASS |  |
+| card-reader: edit customer: the button attaches a card, and reports a duplicate | PASS |  |
+| card-reader: the phone NFC path still works, and shows no USB controls | PASS |  |
+| card-reader: Checkout has no console errors or failed requests after a tap | PASS |  |
+| card-reader: Suki Rewards has no console errors or failed requests after a tap | PASS |  |
 | overlay: a fast navigation never shows the overlay | PASS |  |
 | overlay: a slow navigation shows the overlay after about 300 ms, then clears it | PASS |  |
 | overlay: pressing Back after a slow navigation clears the overlay, from the back-forward cache | PASS |  |
@@ -398,7 +457,7 @@ These are reported, not fixed, and never affect the exit code.
 
 ## Mutation check
 
-`tests/mutations.js` has 60 mutations and 9 trial fixes. Every mutation was caught when last run, and run them again with `node tests/mutate.js`.
+`tests/mutations.js` has 65 mutations and 9 trial fixes. Every mutation was caught when last run, and run them again with `node tests/mutate.js`.
 
 | Mutation | Fix it reverts | Tests |
 |---|---|---|
@@ -459,6 +518,11 @@ These are reported, not fixed, and never affect the exit code.
 | `similar-product-ignores-cancel` | Go back adds nothing | 1 |
 | `category-delete-ignores-cancel` | Keep category keeps it | 1 |
 | `alert-before-reset-lost` | An alert waits for an open dialog | 1 |
+| `card-speed-limit-removed` | Human typing is not a card | 1 |
+| `card-duplicate-allowed` | Two customers never share a card | 2 |
+| `card-field-not-repaired` | Card digits never stay in a field | 3 |
+| `card-swallows-barcodes` | Anything that is not a card stays a barcode | 2 |
+| `card-enter-submits` | A card does not submit the form | 1 |
 | `overlay-no-delay` | The overlay waits 300 ms | 1 |
 | `overlay-stuck-after-back` | The overlay clears when a page is restored | 1 |
 | `overlay-no-offline-message` | Offline shows its own message | 1 |

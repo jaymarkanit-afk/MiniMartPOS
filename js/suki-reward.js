@@ -10,6 +10,8 @@ const sukiStore = window.miniMartSukiStore;
 
 let selectedSukiId = "";
 let pendingNfcId = "";
+let pendingCardCode = "";
+let unknownCardCode = "";
 let unlinkSukiId = "";
 let selectedSukiFilter = "all";
 
@@ -60,6 +62,16 @@ const scanTab = document.getElementById("scanTab");
 const allSukisTab = document.getElementById("allSukisTab");
 
 const scanView = document.getElementById("scanView");
+const cardReader = window.miniMartCardReader;
+const usbReaderReady = document.getElementById("usbReaderReady");
+const usbCardUnknown = document.getElementById("usbCardUnknown");
+const usbUnknownCode = document.getElementById("usbUnknownCode");
+const usbAttachCustomer = document.getElementById("usbAttachCustomer");
+const usbAttachCard = document.getElementById("usbAttachCard");
+const addUsbCardBox = document.getElementById("addUsbCardBox");
+const addUsbCardScan = document.getElementById("addUsbCardScan");
+const addUsbCardCancel = document.getElementById("addUsbCardCancel");
+const addUsbCardStatus = document.getElementById("addUsbCardStatus");
 
 const allSukisView = document.getElementById("allSukisView");
 
@@ -242,6 +254,52 @@ function validateSukiFields() {
   return validName && validPhone;
 }
 
+// Waits for one tap on the USB reader, then passes the code on. A code that belongs to
+// someone else is reported here, so onCode only gets a usable card.
+async function captureUsbCard({ scanButton, cancelButton, status, ownerId = null, onCode }) {
+  scanButton.disabled = true;
+  cancelButton.hidden = false;
+  status.textContent = "Tap the card on the reader now.";
+  let cancelled = false;
+  const cancel = () => {
+    cancelled = true;
+    cardReader.cancelCapture();
+  };
+  cancelButton.addEventListener("click", cancel, { once: true });
+  const code = await cardReader.capture();
+  cancelButton.removeEventListener("click", cancel);
+  scanButton.disabled = false;
+  cancelButton.hidden = true;
+  if (!code) {
+    status.textContent = cancelled ? "Cancelled." : "No card was read. Try again.";
+    return;
+  }
+  const owner = sukiStore.findByCardCode(code);
+  if (owner && owner.id !== ownerId) {
+    status.textContent = `This card is already registered to ${owner.name}.`;
+    return;
+  }
+  onCode(code);
+}
+
+function scanUsbCardForNewSuki() {
+  captureUsbCard({
+    scanButton: addUsbCardScan,
+    cancelButton: addUsbCardCancel,
+    status: addUsbCardStatus,
+    onCode: (code) => {
+      pendingCardCode = code;
+      addUsbCardStatus.textContent = `Card ${code} will be saved with this customer.`;
+    },
+  });
+}
+
+function resetUsbCardForm() {
+  cardReader.cancelCapture();
+  pendingCardCode = "";
+  addUsbCardStatus.textContent = "";
+}
+
 function openAddSukiForm() {
   if (!addSukiForm) {
     return;
@@ -250,6 +308,7 @@ function openAddSukiForm() {
   addSukiForm.reset();
 
   pendingNfcId = "";
+  resetUsbCardForm();
 
   if (sukiJoined) {
     sukiJoined.value = new Date().toISOString().split("T")[0];
@@ -282,6 +341,7 @@ function closeAddSukiForm() {
   closeModal(addSukiModal);
 
   pendingNfcId = "";
+  resetUsbCardForm();
 
   if (linkNfcButton) {
     linkNfcButton.disabled = false;
@@ -408,6 +468,8 @@ function saveSuki(event) {
 
     nfcId: pendingNfcId,
 
+    ...(pendingCardCode ? { cardCode: pendingCardCode } : {}),
+
     stamps: 0,
 
 
@@ -495,27 +557,116 @@ async function scanExistingSuki() {
       return;
     }
 
-    if (scanTitle) {
-      scanTitle.textContent = suki.name;
-    }
-
-    if (scanStatus) {
-      scanStatus.textContent = `${sukiRules.displayPoints(suki)}/${sukiRules.maxPoints()} points • ${peso(
-        sukiRules.balance(suki),
-      )} reward`;
-    }
-
-    if (scanButton) {
-      scanButton.disabled = false;
-    }
-
-    showSukiDetails(suki.id);
+    showScannedSuki(suki);
   });
 
   if (scanButton) {
     scanButton.disabled = false;
   }
 }
+
+function showScannedSuki(suki) {
+  if (scanTitle) {
+    scanTitle.textContent = suki.name;
+  }
+
+  if (scanStatus) {
+    scanStatus.textContent = `${sukiRules.displayPoints(suki)}/${sukiRules.maxPoints()} points • ${peso(
+      sukiRules.balance(suki),
+    )} reward`;
+  }
+
+  if (scanButton) {
+    scanButton.disabled = false;
+  }
+
+  showSukiDetails(suki.id);
+}
+
+/* =========================================================
+   USB CARD READER
+========================================================= */
+
+function showUnknownCard(code) {
+  unknownCardCode = code;
+  usbUnknownCode.textContent = `Card ${code}`;
+  usbAttachCustomer.replaceChildren(
+    ...sukiStore.read()
+      .filter((suki) => !suki.cardCode)
+      .sort((first, second) => first.name.localeCompare(second.name))
+      .map((suki) => new Option(suki.name, suki.id)),
+  );
+  usbAttachCard.disabled = usbAttachCustomer.options.length === 0;
+  usbCardUnknown.hidden = false;
+  if (scanTitle) scanTitle.textContent = "Card not registered";
+}
+
+function attachUnknownCard() {
+  const result = sukiStore.setCardCode(usbAttachCustomer.value, unknownCardCode);
+  if (!result.ok) return;
+  const suki = sukiStore.findByCardCode(unknownCardCode);
+  usbCardUnknown.hidden = true;
+  unknownCardCode = "";
+  renderSukiList();
+  showSukiToast(`Card attached to ${suki.name}.`, "success");
+  showScannedSuki(suki);
+}
+
+function addUsbCardControls(suki) {
+  const box = detailContent.querySelector("[data-usb-card-box]");
+  if (!box || isNfcSupported()) return;
+  const value = document.createElement("strong");
+  value.textContent = suki.cardCode || "No USB card linked";
+  const scan = document.createElement("button");
+  scan.type = "button";
+  scan.className = "secondary-button";
+  scan.textContent = "Scan card with USB reader";
+  const cancel = document.createElement("button");
+  cancel.type = "button";
+  cancel.className = "secondary-button";
+  cancel.textContent = "Cancel";
+  cancel.hidden = true;
+  const status = document.createElement("p");
+  status.setAttribute("aria-live", "polite");
+  scan.addEventListener("click", () => captureUsbCard({
+    scanButton: scan,
+    cancelButton: cancel,
+    status,
+    ownerId: suki.id,
+    onCode: (code) => {
+      if (sukiStore.setCardCode(suki.id, code).ok) showSukiDetails(suki.id);
+    },
+  }));
+  box.append(value, scan, cancel, status);
+}
+
+// Only the Scan tab with nothing open over it is waiting for a card.
+cardReader.setCardMode(() => Boolean(scanView && !scanView.hidden) &&
+  addSukiModal?.hidden !== false &&
+  detailModal?.hidden !== false &&
+  deleteSukiModal?.hidden !== false &&
+  unlinkNfcModal?.hidden !== false);
+
+cardReader.onCard((code, suki) => {
+  if (addSukiModal && !addSukiModal.hidden) return;
+  if (!suki) {
+    showUnknownCard(code);
+    return;
+  }
+  usbCardUnknown.hidden = true;
+  showScannedSuki(suki);
+});
+
+if (!isNfcSupported()) {
+  usbReaderReady.hidden = false;
+  addUsbCardBox.hidden = false;
+  if (scanTitle) scanTitle.textContent = "Ready for card";
+  if (scanStatus) scanStatus.textContent = "Tap a card on the USB reader.";
+  document.querySelector(".scan-copy")?.replaceChildren("A USB reader types the card number for you.");
+}
+
+addUsbCardScan.addEventListener("click", scanUsbCardForNewSuki);
+usbAttachCard.addEventListener("click", attachUnknownCard);
 
 /* =========================================================
    TABS
@@ -1189,6 +1340,8 @@ function showSukiDetails(id) {
 
       </section>
 
+      <div class="usb-card-box" data-usb-card-box></div>
+
 
       <!-- ===============================================
            ACTIONS
@@ -1230,6 +1383,8 @@ function showSukiDetails(id) {
 
     </div>
   `;
+
+  addUsbCardControls(suki);
 
   /* =======================================================
      DETAIL EVENTS

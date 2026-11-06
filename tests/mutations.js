@@ -496,6 +496,31 @@ const mutations = [
     ],
   },
   {
+    id: "card-field-not-repaired",
+    fix: "Card digits never stay in a field",
+    tests: [
+      "card-reader: a card tapped in the Checkout search box leaves the box as it was",
+      "card-reader: a card tapped in the amount box leaves it as it was",
+      "card-reader: a card tapped in a customer name box leaves it as it was",
+    ],
+    edits: [{ file: "js/usb-reader.js", from: "    event.stopImmediatePropagation();\n    restoreField(snapshot);", to: "    event.stopImmediatePropagation();" }],
+  },
+  {
+    id: "card-swallows-barcodes",
+    fix: "Anything that is not a card stays a barcode",
+    tests: [
+      "card-reader: an all-digit barcode no customer owns still adds the product",
+      "card-reader: a letters barcode no customer owns still adds the product",
+    ],
+    edits: [{ file: "js/usb-reader.js", from: "    if (!isCardMode() && !suki) return false;\n", to: "" }],
+  },
+  {
+    id: "card-enter-submits",
+    fix: "A card does not submit the form",
+    tests: ["card-reader: a card tapped in a customer name box leaves it as it was"],
+    edits: [{ file: "js/usb-reader.js", from: "    if (!recognized || !handleScan(code)) return;\n    event.preventDefault();\n    event.stopImmediatePropagation();", to: "    if (!recognized || !handleScan(code)) return;" }],
+  },
+  {
     id: "overlay-no-delay",
     fix: "The overlay waits 300 ms",
     tests: ["overlay: a fast navigation never shows the overlay"],

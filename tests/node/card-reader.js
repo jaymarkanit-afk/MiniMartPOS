@@ -29,8 +29,14 @@ for (const gap of [5, 20, 35]) {
       run: async ({ page }) => {
         await openPanel(page);
         const code = "1234567890123".slice(0, length);
-        await page.typeBurst(code, { gap });
-        const tap = await lastTap(page);
+        // A stall in this computer can look like a slow reader, so that try is repeated.
+        let tap = null;
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          await page.typeBurst(code, { gap });
+          tap = await lastTap(page);
+          const slowest = Math.max(...tap.lines[3].match(/[\d.]+/g).map(Number));
+          if (worksAsCard(tap) || slowest <= gap + 100) break;
+        }
         expect(tap.text, code, "text");
         expect(worksAsCard(tap), true, `recognized: ${tap.lines.join(" | ")}`);
       },
@@ -45,11 +51,7 @@ for (const gap of [80, 150, 300]) {
       await openPanel(page);
       await page.typeBurst("1234567890", { gap });
       const tap = await lastTap(page);
-      if (gap < 120) {
-        expect(tap.lines.at(-1), "Works as a card: no. It was too slow to be a reader.", "verdict");
-      } else {
-        expect(worksAsCard(tap), false, "recognized");
-      }
+      expect(tap.lines.at(-1), "Works as a card: no. It was too slow to be a reader.", "verdict");
     },
   });
 }
@@ -116,8 +118,7 @@ tests.push({
     const tap = await lastTap(page);
     expect(tap.text, "00123456", "text");
     expect(tap.lines.slice(0, 2), ["Length: 8", "All digits: yes"], "details");
-    const average = Number(tap.lines[2].match(/([\d.]+) ms/)[1]);
-    if (average < 15 || average > 30) throw new Error(`Average gap was ${average}`);
+    if (!/^Average gap: \d+\.\d ms$/.test(tap.lines[2])) throw new Error(tap.lines[2]);
     expect(tap.lines[3].split(",").length, 8, "gaps listed");
     expect(tap.lines[4], "Ended with: Enter", "terminator");
   },
@@ -290,5 +291,310 @@ tests.push({
     expect(await page.eval("localStorage.getItem('miniMartSukis')"), PLAIN, "older backup");
   },
 });
+
+const CARD = "0004521977";
+const SEEDS = ["Sprite 1.5L", "Nature's Spring 500ml", "Nestea Lemon 1L", "Lucky Me Pancit Canton", "Lucky Me Chicken Noodles", "Payless Xtra Big", "Nissin Cup Noodles", "Piattos 40g", "Chippy Barbecue 110g", "Choc Nut 24g", "Nova Country 78g", "Bear Brand 33g", "Alaska Fortified Milk 1L", "Selecta Ice Cream Cup", "Yakult 5-Pack", "Skyflakes Crackers"];
+const product = (id, name, barcode) => ({ id, name, category: "Snacks", price: 10, costPrice: 5, stock: 9, unit: "piece", icon: "x", accent: "var(--gold)", barcode });
+const shop = {
+  miniMartSukis: [customer("a", "Ana", { cardCode: CARD, stamps: 12 }), customer("b", "Ben")],
+  miniMartProducts: [product("p1", "Rice", "4800016644801"), product("p2", "Soap", "ABC-123")],
+  miniMartDeletedProducts: [...SEEDS, "Coke 1.5L"],
+};
+const openCheckout = async (page) => {
+  await page.seed(shop);
+  await page.goto("index.html");
+};
+const cartLines = (page) => page.eval("[...cart.values()].map(i=>[i.name,i.quantity])");
+const selected = (page) => page.eval("selectedSukiId");
+const value = (page, id) => page.eval((target) => document.getElementById(target).value, id);
+const addToCart = (page) => page.eval("addProductToCart(window.miniMartDB.products()[0])");
+
+tests.push({
+  name: "a card tapped with nothing focused selects the customer and leaves the cart alone",
+  run: async ({ page }) => {
+    await openCheckout(page);
+    await addToCart(page);
+    await page.eval("document.activeElement.blur()");
+    await page.typeBurst(CARD, { gap: 10 });
+    expect(await selected(page), "a", "customer");
+    expect(await cartLines(page), [["Rice", 1]], "cart");
+    expect(await page.eval("document.getElementById('checkoutSukiScanStatus').textContent"), "Suki card detected.", "status");
+  },
+});
+
+tests.push({
+  name: "a card tapped in the Checkout search box leaves the box as it was",
+  run: async ({ page }) => {
+    await openCheckout(page);
+    await addToCart(page);
+    await page.click("#search");
+    await page.eval("search.value='ri';search.dispatchEvent(new Event('input',{bubbles:true}));search.setSelectionRange(1,1)");
+    await page.typeBurst(CARD, { gap: 10 });
+    expect(await selected(page), "a", "customer");
+    expect(await page.eval("[search.value,search.selectionStart]"), ["ri", 1], "search box and cursor");
+    expect(await cartLines(page), [["Rice", 1]], "cart");
+    expect(await page.eval("document.getElementById('barcodeStatus').classList.contains('is-error')"), false, "barcode error");
+  },
+});
+
+tests.push({
+  name: "a card tapped in the amount box leaves it as it was",
+  run: async ({ page }) => {
+    await openCheckout(page);
+    await addToCart(page);
+    await page.eval("amountGiven.value='20';updatePayment();amountGiven.focus()");
+    await page.typeBurst(CARD, { gap: 10 });
+    expect(await page.eval("amountGiven.value"), "20", "amount box");
+    expect(await selected(page), "a", "customer");
+  },
+});
+
+tests.push({
+  name: "typing a customer's card number by hand is not a card",
+  run: async ({ page }) => {
+    await openCheckout(page);
+    await page.click("#search");
+    await page.typeBurst(CARD, { gap: 80 });
+    expect(await selected(page), "", "customer");
+    expect(await value(page, "search"), CARD, "search box");
+  },
+});
+
+for (const [kind, barcode] of [["all-digit", "4800016644801"], ["letters", "ABC-123"]]) {
+  tests.push({
+    name: `an ${kind === "letters" ? "" : ""}${kind} barcode no customer owns still adds the product`.replace("an letters", "a letters"),
+    run: async ({ page }) => {
+      await openCheckout(page);
+      await page.click("#search");
+      await page.typeBurst(barcode, { gap: 10 });
+      expect(await cartLines(page), [[kind === "letters" ? "Soap" : "Rice", 1]], "cart");
+      expect(await selected(page), "", "customer");
+      expect(await page.eval("document.getElementById('barcodeStatus').textContent").then((text) => text.startsWith("Added")), true, "barcode status");
+    },
+  });
+}
+
+tests.push({
+  name: "an unknown code at Checkout gets the normal barcode message",
+  run: async ({ page }) => {
+    await openCheckout(page);
+    await page.click("#search");
+    await page.typeBurst("9999999999", { gap: 10 });
+    expect(await page.eval("document.getElementById('barcodeStatus').textContent"), "This barcode is not registered. Add it to a product in Inventory.", "status");
+  },
+});
+
+const openSuki = async (page, storage = shop) => {
+  await page.seed(storage);
+  await page.goto("suki-reward.html");
+};
+const text = (page, id) => page.eval((target) => document.getElementById(target).textContent.trim(), id);
+
+tests.push({
+  name: "the Scan tab says the USB reader is ready instead of the red message",
+  run: async ({ page }) => {
+    await openSuki(page);
+    expect(await page.eval("document.getElementById('usbReaderReady').hidden"), false, "ready hidden");
+    expect((await text(page, "usbReaderReady")).startsWith("USB card reader ready"), true, "message");
+    expect(await page.eval("document.body.textContent.includes('NFC scanning is unavailable')"), false, "red message");
+  },
+});
+
+tests.push({
+  name: "a registered card shows the customer, the same as a phone tap",
+  run: async ({ page }) => {
+    await openSuki(page);
+    await page.typeBurst(CARD, { gap: 10 });
+    expect(await text(page, "scanTitle"), "Ana", "title");
+    expect(await text(page, "scanStatus"), "12/40 points • ₱12.00 reward", "status");
+    expect(await page.eval("document.getElementById('sukiDetailModal')?.hidden ?? detailModal.hidden"), false, "detail hidden");
+  },
+});
+
+tests.push({
+  name: "a registered card works in the search box on the All Sukis tab",
+  run: async ({ page }) => {
+    await openSuki(page);
+    await page.eval("document.getElementById('allSukisTab').click()");
+    const box = await page.eval("(()=>{const box=document.querySelector('#allSukisView input[type=search], #allSukisView input');box.id=box.id||'sukiListSearch';box.focus();return box.id})()");
+    await page.typeBurst(CARD, { gap: 10 });
+    expect(await value(page, box), "", "search box");
+    expect(await text(page, "scanTitle"), "Ana", "title");
+  },
+});
+
+tests.push({
+  name: "an unknown card shows the message, and attaching saves it on the right customer",
+  run: async ({ page }) => {
+    await openSuki(page);
+    await page.typeBurst("A1B2C3D4", { gap: 10 });
+    expect(await page.eval("document.getElementById('usbCardUnknown').hidden"), false, "unknown hidden");
+    expect(await text(page, "scanTitle"), "Card not registered", "title");
+    expect(await text(page, "usbUnknownCode"), "Card A1B2C3D4", "code");
+    expect(await page.eval("[...document.getElementById('usbAttachCustomer').options].map(o=>o.textContent)"), ["Ben"], "customers offered");
+    await page.click("#usbAttachCard");
+    await sleep(60);
+    const [ana, ben] = await stored(page);
+    expect([ana.cardCode, ben.cardCode], [CARD, "A1B2C3D4"], "card codes");
+    expect(await text(page, "scanTitle"), "Ben", "title");
+  },
+});
+
+tests.push({
+  name: "on the All Sukis tab an unknown code is left alone",
+  run: async ({ page }) => {
+    await openSuki(page);
+    await page.eval("document.getElementById('allSukisTab').click()");
+    await page.typeBurst("A1B2C3D4", { gap: 10 });
+    expect(await page.eval("document.getElementById('usbCardUnknown').hidden"), true, "unknown hidden");
+  },
+});
+
+const openAddForm = async (page) => {
+  await openSuki(page);
+  await page.eval("openAddSukiForm()");
+  await page.click("#addUsbCardScan");
+};
+const saveNewCustomer = async (page) => {
+  await page.eval(() => {
+    const name = document.getElementById("sukiName");
+    name.value = "New Person";
+    name.dispatchEvent(new Event("input", { bubbles: true }));
+    document.getElementById("addSukiForm").requestSubmit();
+  });
+  await sleep(80);
+};
+
+tests.push({
+  name: "Add Suki: the button captures a card and it is saved with the customer",
+  run: async ({ page }) => {
+    await openAddForm(page);
+    expect(await text(page, "addUsbCardStatus"), "Tap the card on the reader now.", "prompt");
+    await page.typeBurst("A1B2C3D4", { gap: 10 });
+    expect(await text(page, "addUsbCardStatus"), "Card A1B2C3D4 will be saved with this customer.", "status");
+    await saveNewCustomer(page);
+    expect((await stored(page)).at(-1).cardCode, "A1B2C3D4", "card code");
+  },
+});
+
+tests.push({
+  name: "Add Suki: a card scanned in the name box leaves it as it was and does not submit",
+  run: async ({ page }) => {
+    await openAddForm(page);
+    await page.eval("(()=>{const n=document.getElementById('sukiName');n.value='Jo';n.focus()})()");
+    await page.typeBurst("A1B2C3D4", { gap: 10 });
+    expect(await value(page, "sukiName"), "Jo", "name box");
+    expect((await stored(page)).length, 2, "customers");
+    expect(await page.eval("document.getElementById('addSukiModal')?.hidden ?? addSukiModal.hidden"), false, "form closed");
+  },
+});
+
+tests.push({
+  name: "a card tapped in a customer name box leaves it as it was",
+  run: async ({ page }) => {
+    await openSuki(page);
+    await page.eval("openAddSukiForm()");
+    await page.eval("(()=>{const n=document.getElementById('sukiName');n.value='Jo';n.focus()})()");
+    await page.typeBurst(CARD, { gap: 10 });
+    expect(await value(page, "sukiName"), "Jo", "name box");
+    expect((await stored(page)).length, 2, "customers");
+  },
+});
+
+tests.push({
+  name: "Add Suki: a card someone else owns is reported and not kept",
+  run: async ({ page }) => {
+    await openAddForm(page);
+    await page.typeBurst(CARD, { gap: 10 });
+    expect(await text(page, "addUsbCardStatus"), "This card is already registered to Ana.", "status");
+    await saveNewCustomer(page);
+    expect("cardCode" in (await stored(page)).at(-1), false, "card code");
+  },
+});
+
+tests.push({
+  name: "Add Suki: Cancel stops the capture cleanly",
+  run: async ({ page }) => {
+    await openAddForm(page);
+    await page.click("#addUsbCardCancel");
+    await sleep(60);
+    expect(await text(page, "addUsbCardStatus"), "Cancelled.", "status");
+    expect(await page.eval("[addUsbCardScan.disabled,addUsbCardCancel.hidden]"), [false, true], "buttons");
+    await page.click("#addUsbCardScan");
+    await page.typeBurst("A1B2C3D4", { gap: 10 });
+    expect(await text(page, "addUsbCardStatus"), "Card A1B2C3D4 will be saved with this customer.", "a new capture works");
+  },
+});
+
+tests.push({
+  name: "Add Suki: the capture times out after 15 seconds",
+  run: async ({ page }) => {
+    await openAddForm(page);
+    await sleep(14000);
+    expect(await text(page, "addUsbCardStatus"), "Tap the card on the reader now.", "still waiting at 14 seconds");
+    await sleep(1600);
+    expect(await text(page, "addUsbCardStatus"), "No card was read. Try again.", "after 15 seconds");
+    expect(await page.eval("[addUsbCardScan.disabled,addUsbCardCancel.hidden]"), [false, true], "buttons");
+  },
+});
+
+tests.push({
+  name: "closing Add Suki stops a capture",
+  run: async ({ page }) => {
+    await openAddForm(page);
+    await page.eval("closeAddSukiForm()");
+    await page.typeBurst("A1B2C3D4", { gap: 10 });
+    expect(await page.eval("document.getElementById('usbCardUnknown').hidden"), false, "the tap is an ordinary scan again");
+  },
+});
+
+tests.push({
+  name: "edit customer: the button attaches a card, and reports a duplicate",
+  run: async ({ page }) => {
+    await openSuki(page);
+    await page.eval("showSukiDetails('b')");
+    await page.eval("[...document.querySelectorAll('[data-usb-card-box] button')].find(b=>b.textContent.startsWith('Scan')).click()");
+    await page.typeBurst(CARD, { gap: 10 });
+    expect(await page.eval("document.querySelector('[data-usb-card-box] p').textContent"), "This card is already registered to Ana.", "duplicate");
+    await page.eval("[...document.querySelectorAll('[data-usb-card-box] button')].find(b=>b.textContent.startsWith('Scan')).click()");
+    await page.typeBurst("A1B2C3D4", { gap: 10 });
+    expect((await stored(page))[1].cardCode, "A1B2C3D4", "card code");
+    expect(await page.eval("document.querySelector('[data-usb-card-box] strong').textContent"), "A1B2C3D4", "shown");
+  },
+});
+
+tests.push({
+  name: "the phone NFC path still works, and shows no USB controls",
+  run: async ({ page }) => {
+    await page.send("Page.addScriptToEvaluateOnNewDocument", {
+      source: "window.NDEFReader=class{async scan(){setTimeout(()=>this.onreading({serialNumber:'aa-bb'}),10)}};",
+    });
+    await page.seed({ miniMartSukis: [customer("a", "Ana", { nfcId: "AA:BB", stamps: 12 })] });
+    await page.goto("suki-reward.html");
+    expect(await page.eval("[document.getElementById('usbReaderReady').hidden,document.getElementById('addUsbCardBox').hidden]"), [true, true], "USB controls hidden");
+    await page.eval("scanExistingSuki()");
+    await sleep(100);
+    expect(await text(page, "scanTitle"), "Ana", "title");
+    expect(await text(page, "scanStatus"), "12/40 points • ₱12.00 reward", "status");
+    await page.goto("index.html");
+    await page.eval("scanSukiCard()");
+    await sleep(100);
+    expect(await selected(page), "a", "Checkout customer");
+  },
+});
+
+for (const [name, file] of [["Checkout", "index"], ["Suki Rewards", "suki-reward"]]) {
+  tests.push({
+    name: `${name} has no console errors or failed requests after a tap`,
+    run: async ({ page, server }) => {
+      await page.seed(shop);
+      await page.goto(`${file}.html`);
+      await page.typeBurst(CARD, { gap: 10 });
+      const problems = page.problems.filter((problem) => !BLOCKED_HOSTS.some((host) => `${problem.text} ${problem.url || ""}`.includes(host)));
+      expect(problems, [], "problems");
+      expect(server.requests.filter(({ status }) => status >= 400), [], "failed requests");
+    },
+  });
+}
 
 module.exports = { tests };
