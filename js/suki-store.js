@@ -37,6 +37,7 @@
         text(record.name).trim() ||
         text(record.phone).trim() ||
         text(record.nfcId).trim() ||
+        normalizeCardCode(record.cardCode) ||
         amount(record.stamps) ||
         amount(record.rewardBalance) ||
         record.history?.length,
@@ -73,6 +74,8 @@
       phone: text(record.phone),
       joined: text(record.joined),
       nfcId: window.normalizeNfcId(record.nfcId),
+      // Only customers with a USB card have this field, so other records stay identical.
+      ...("cardCode" in record ? { cardCode: normalizeCardCode(record.cardCode) } : {}),
       stamps: amount(record.stamps),
       // Only records waiting for the migration still carry the old balance.
       ...("rewardBalance" in record ? { rewardBalance: amount(record.rewardBalance) } : {}),
@@ -262,6 +265,35 @@
     return { ...writeRecords(records), suki: next, entry: next.history.at(-1) };
   }
 
+  // The first customer holding a card code that a later customer also holds.
+  function sharedCardOwner(records) {
+    const owners = new Map();
+    for (const { cardCode, name } of records) {
+      if (!cardCode) continue;
+      if (owners.has(cardCode)) return owners.get(cardCode);
+      owners.set(cardCode, name);
+    }
+    return null;
+  }
+
+  function findByCardCode(code) {
+    const cardCode = normalizeCardCode(code);
+    if (!cardCode) return null;
+    return normalizeList(loadStored().list).records.find((record) => record.cardCode === cardCode) || null;
+  }
+
+  function setCardCode(id, code) {
+    const cardCode = normalizeCardCode(code);
+    if (!cardCode) return refuse("That card code is not valid, so nothing was saved.");
+    const owner = findByCardCode(cardCode);
+    if (owner && owner.id !== id) return refuse(`This card is already registered to ${owner.name}.`);
+    const sukis = read();
+    const suki = sukis.find((record) => record.id === id);
+    if (!suki) return refuse("That customer could not be found, so nothing was saved.");
+    suki.cardCode = cardCode;
+    return save(sukis);
+  }
+
   // Use remove() to delete. This refuses any list that loses a customer.
   function save(sukis) {
     if (!Array.isArray(sukis)) return refuse("The customer list is not valid, so nothing was saved.");
@@ -279,6 +311,8 @@
         `${lost.size} customer record${lost.size === 1 ? "" : "s"} would have been lost, so nothing was saved.`,
       );
     }
+    const cardOwner = sharedCardOwner(records);
+    if (cardOwner) return refuse(`This card is already registered to ${cardOwner}.`);
     // Points and history stay as stored: only applyPointsChange changes them, and a
     // stale tab must not undo them.
     const stored = new Map(storedRecords.map((record) => [record.id, record]));
@@ -357,6 +391,8 @@
     remove,
     createId,
     applyPointsChange,
+    findByCardCode,
+    setCardCode,
     runPointsMigration,
     migrationEnabled: SUKI_MIGRATION_ENABLED,
   };

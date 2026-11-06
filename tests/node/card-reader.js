@@ -195,4 +195,100 @@ tests.push({
   },
 });
 
+const PLAIN = '[{"id":"a1","name":"Ana","phone":"","joined":"2026-01-02","nfcId":"AA:BB","stamps":12,"active":true,"history":[]}]';
+const openStore = async (page, customers) => {
+  await page.seed({ miniMartSukis: customers });
+  await page.goto("suki-reward.html");
+};
+const stored = (page) => page.eval("JSON.parse(localStorage.getItem('miniMartSukis'))");
+const customer = (id, name, extra = {}) => ({ id, name, phone: "", joined: "2026-01-02", nfcId: "", stamps: 0, active: true, history: [], ...extra });
+
+tests.push({
+  name: "a customer with no card stays byte-identical after load and after a save",
+  run: async ({ page }) => {
+    await openStore(page, PLAIN);
+    expect(await page.eval("localStorage.getItem('miniMartSukis')"), PLAIN, "after load");
+    await page.eval("(()=>{const s=sukiStore;s.save(s.read())})()");
+    expect(await page.eval("localStorage.getItem('miniMartSukis')"), PLAIN, "after a save");
+  },
+});
+
+tests.push({
+  name: "a card code is saved on the right customer, next to the phone card",
+  run: async ({ page }) => {
+    await openStore(page, [customer("a", "Ana", { nfcId: "AA:BB" }), customer("b", "Ben")]);
+    expect(await page.eval("sukiStore.setCardCode('b','0004521977').ok"), true, "saved");
+    const [ana, ben] = await stored(page);
+    expect("cardCode" in ana, false, "other customer");
+    expect(ben.cardCode, "0004521977", "card code");
+    expect(await page.eval("sukiStore.findByCardCode('0004521977')?.name"), "Ben", "lookup");
+    expect(await page.eval("sukiStore.findByCardCode('4521977')"), null, "no partial match");
+  },
+});
+
+tests.push({
+  name: "a customer can have both a phone card and a USB card",
+  run: async ({ page }) => {
+    await openStore(page, [customer("a", "Ana", { nfcId: "AA:BB" })]);
+    await page.eval("sukiStore.setCardCode('a','0004521977')");
+    const [ana] = await stored(page);
+    expect([ana.nfcId, ana.cardCode], ["AA:BB", "0004521977"], "both");
+  },
+});
+
+tests.push({
+  name: "a second customer cannot take the same card",
+  run: async ({ page }) => {
+    await openStore(page, [customer("a", "Ana", { cardCode: "0004521977" }), customer("b", "Ben")]);
+    const result = await page.eval("(()=>{const r=sukiStore.setCardCode('b','0004521977');return {ok:r.ok,message:r.error?.message}})()");
+    expect(result, { ok: false, message: "This card is already registered to Ana." }, "result");
+    expect("cardCode" in (await stored(page))[1], false, "second customer");
+  },
+});
+
+tests.push({
+  name: "a save cannot give two customers the same card",
+  run: async ({ page }) => {
+    await openStore(page, [customer("a", "Ana", { cardCode: "0004521977" }), customer("b", "Ben")]);
+    const result = await page.eval("(()=>{const l=sukiStore.read();l[1].cardCode='0004521977';const r=sukiStore.save(l);return {ok:r.ok,message:r.error?.message}})()");
+    expect(result, { ok: false, message: "This card is already registered to Ana." }, "result");
+  },
+});
+
+tests.push({
+  name: "a card code that is not valid is refused",
+  run: async ({ page }) => {
+    await openStore(page, [customer("a", "Ana")]);
+    expect(await page.eval("sukiStore.setCardCode('a','<b>').ok"), false, "saved");
+    expect("cardCode" in (await stored(page))[0], false, "stored");
+  },
+});
+
+tests.push({
+  name: "a points change keeps the card code",
+  run: async ({ page }) => {
+    await openStore(page, [customer("a", "Ana", { cardCode: "0004521977" })]);
+    await page.eval("sukiStore.applyPointsChange('a',{kind:'earn',points:2})");
+    const [ana] = await stored(page);
+    expect([ana.cardCode, ana.stamps], ["0004521977", 2], "customer");
+  },
+});
+
+tests.push({
+  name: "backup and restore keep the card code, and an older backup still restores",
+  run: async ({ page }) => {
+    await page.seed({ miniMartSukis: [customer("a", "Ana", { cardCode: "0004521977" })] });
+    await page.goto("settings.html");
+    const data = await page.eval("readBackupData()");
+    expect(data.customers[0].cardCode, "0004521977", "in the backup");
+    await page.eval((backup) => { restoreBackupData(backup); }, data);
+    await page.goto("suki-reward.html");
+    expect((await stored(page))[0].cardCode, "0004521977", "after restore");
+    await page.goto("settings.html");
+    await page.eval((backup) => { restoreBackupData(backup); }, { ...data, customers: JSON.parse(PLAIN) });
+    await page.goto("suki-reward.html");
+    expect(await page.eval("localStorage.getItem('miniMartSukis')"), PLAIN, "older backup");
+  },
+});
+
 module.exports = { tests };

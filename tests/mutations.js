@@ -487,6 +487,15 @@ const mutations = [
     edits: [{ file: "js/usb-reader.js", from: "const MAX_AVERAGE_GAP_MS = 50;", to: "const MAX_AVERAGE_GAP_MS = 500;" }],
   },
   {
+    id: "card-duplicate-allowed",
+    fix: "Two customers never share a card",
+    tests: ["card-reader: a second customer cannot take the same card", "card-reader: a save cannot give two customers the same card"],
+    edits: [
+      { file: "js/suki-store.js", from: "if (owner && owner.id !== id) return refuse(", to: "if (false) return refuse(" },
+      { file: "js/suki-store.js", from: "if (cardOwner) return refuse(", to: "if (false) return refuse(" },
+    ],
+  },
+  {
     id: "overlay-no-delay",
     fix: "The overlay waits 300 ms",
     tests: ["overlay: a fast navigation never shows the overlay"],
