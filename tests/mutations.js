@@ -576,13 +576,31 @@ const mutations = [
     id: "card-sent-away",
     fix: "A card code never leaves the page",
     tests: ["card-reader: a registered card sends nothing and stores nothing on Suki Rewards"],
-    edits: [{ file: "js/usb-reader.js", from: "    markRead();\n    onCard?.(code, suki);", to: "    markRead();\n    window.fetch(`/seen?code=${code}`);\n    onCard?.(code, suki);" }],
+    edits: [{ file: "js/usb-reader.js", from: "    markRead();\n    if (onCard) onCard(code, suki);", to: "    markRead();\n    window.fetch(`/seen?code=${code}`);\n    if (onCard) onCard(code, suki);" }],
   },
   {
     id: "card-stored-by-reader",
     fix: "The reader stores nothing",
     tests: ["card-reader: a registered card sends nothing and stores nothing on Suki Rewards"],
-    edits: [{ file: "js/usb-reader.js", from: "    markRead();\n    onCard?.(code, suki);", to: "    markRead();\n    localStorage.setItem(\"lastCard\", code);\n    onCard?.(code, suki);" }],
+    edits: [{ file: "js/usb-reader.js", from: "    markRead();\n    if (onCard) onCard(code, suki);", to: "    markRead();\n    localStorage.setItem(\"lastCard\", code);\n    if (onCard) onCard(code, suki);" }],
+  },
+  {
+    id: "remove-card-ignores-cancel",
+    fix: "Keep card keeps it",
+    tests: ["card-reader: Remove card: Cancel changes nothing"],
+    edits: [{ file: "js/suki-reward.js", from: "if (confirmed && sukiStore.clearCardCode(suki.id).ok) showSukiDetails(suki.id);", to: "if (sukiStore.clearCardCode(suki.id).ok) showSukiDetails(suki.id);" }],
+  },
+  {
+    id: "no-note-on-other-pages",
+    fix: "Other pages keep card digits out of their fields",
+    tests: ["card-reader: Inventory: a registered card leaves the search box alone and shows a note"],
+    edits: [{ file: "inventory.html", from: "    <script src=\"js/usb-reader.js\"></script>\n", to: "" }],
+  },
+  {
+    id: "card-always-fires-change",
+    fix: "An unchanged field fires no event",
+    tests: ["card-reader: Reports: a registered card leaves a focused field alone and shows a note"],
+    edits: [{ file: "js/usb-reader.js", from: "    if (changed) element.dispatchEvent(", to: "    element.dispatchEvent(" }],
   },
   {
     id: "overlay-no-delay",

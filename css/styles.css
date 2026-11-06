@@ -16,6 +16,23 @@
   --field: #fffefb;
   --accent-glow: rgba(210, 55, 32, 0.18);
 }
+.usb-reader-note {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  left: 16px;
+  z-index: 10500;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  box-shadow: 0 8px 24px rgba(24, 35, 29, 0.2);
+  color: var(--ink);
+  font-size: 14px;
+}
+
 .confirm-dialog-backdrop {
   position: fixed;
   inset: 0;

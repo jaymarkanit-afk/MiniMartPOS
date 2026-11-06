@@ -818,6 +818,139 @@ tests.push({
   },
 });
 
+const DIALOG = ".confirm-dialog";
+const CANCEL = ".confirm-dialog-button.is-cancel";
+const ACTION = ".confirm-dialog-button.is-confirm";
+const openDialogText = async (page) => {
+  await page.until(`document.querySelector("${DIALOG}")`, { label: "the dialog" });
+  return page.eval((selector) => {
+    const card = document.querySelector(selector);
+    return {
+      title: card.querySelector("h2").textContent,
+      text: [...card.querySelectorAll("p")].map((line) => line.textContent),
+      buttons: [...card.querySelectorAll("button")].map((button) => button.textContent),
+      danger: card.classList.contains("is-danger"),
+    };
+  }, DIALOG);
+};
+const answer = async (page, selector) => {
+  await page.until(`document.querySelector("${DIALOG}")`, { label: "the dialog" });
+  await page.click(selector);
+  await sleep(80);
+};
+const openCustomerWithCard = async (page) => {
+  await page.seed({ miniMartSukis: [customer("a", "Ana", { cardCode: CARD, nfcId: "AA:BB", stamps: 12, history: [{ stampsEarned: 12, date: "2026-11-01T00:00:00.000Z" }] }), customer("b", "Ben")] });
+  await page.goto("suki-reward.html");
+  await page.eval("showSukiDetails('a')");
+  await page.eval("[...document.querySelectorAll('[data-usb-card-box] button')].forEach((b,i)=>{b.dataset.test=b.textContent.trim()})");
+};
+const rawCustomers = (page) => page.eval("localStorage.getItem('miniMartSukis')");
+
+tests.push({
+  name: "Remove card: the dialog names the customer and the card",
+  run: async ({ page }) => {
+    await openCustomerWithCard(page);
+    await page.click('[data-test="Remove card"]');
+    expect(await openDialogText(page), {
+      title: "Remove the card from Ana?",
+      text: [`Card ${CARD} will stop finding this customer.`, "Points, history and any phone card are not touched."],
+      buttons: ["Keep card", "Remove card"],
+      danger: true,
+    }, "dialog");
+  },
+});
+
+tests.push({
+  name: "Remove card: Cancel changes nothing",
+  run: async ({ page }) => {
+    await openCustomerWithCard(page);
+    const before = await rawCustomers(page);
+    await page.click('[data-test="Remove card"]');
+    await answer(page, CANCEL);
+    expect(await rawCustomers(page), before, "stored customers");
+  },
+});
+
+tests.push({
+  name: "Remove card: the card goes and every other field is byte-identical",
+  run: async ({ page }) => {
+    await openCustomerWithCard(page);
+    const before = await rawCustomers(page);
+    await page.click('[data-test="Remove card"]');
+    await answer(page, ACTION);
+    expect(await rawCustomers(page), before.replace(`,"cardCode":"${CARD}"`, ""), "stored customers");
+    expect(await page.eval("sukiStore.findByCardCode('" + CARD + "')"), null, "lookup");
+    expect(await page.eval("document.querySelector('[data-usb-card-box] strong').textContent"), "No USB card linked", "shown");
+  },
+});
+
+tests.push({
+  name: "Replace card: a new tap takes the old card's place",
+  run: async ({ page }) => {
+    await openCustomerWithCard(page);
+    await page.click('[data-test="Replace card"]');
+    await page.typeBurst("A1B2C3D4", { gap: 10 });
+    expect((await stored(page))[0].cardCode, "A1B2C3D4", "card code");
+    expect(await page.eval("sukiStore.findByCardCode('" + CARD + "')"), null, "old card");
+  },
+});
+
+const noteText = (page) => page.eval("document.querySelector('.usb-reader-note')?.textContent ?? null");
+const NO_USE = "Card read. Open Checkout or Suki Rewards to use it.";
+
+tests.push({
+  name: "Inventory: a registered card leaves the search box alone and shows a note",
+  run: async ({ page }) => {
+    await page.seed(shop);
+    await page.goto("inventory.html");
+    await page.click("#inventorySearch");
+    await page.eval("(()=>{const s=document.getElementById('inventorySearch');s.value='ri';s.dispatchEvent(new Event('input',{bubbles:true}))})()");
+    await page.typeBurst(CARD, { gap: 10 });
+    expect(await value(page, "inventorySearch"), "ri", "search box");
+    expect(await noteText(page), NO_USE, "note");
+  },
+});
+
+tests.push({
+  name: "Inventory: a barcode nobody owns still filters as it does today",
+  run: async ({ page }) => {
+    await page.seed(shop);
+    await page.goto("inventory.html");
+    await page.click("#inventorySearch");
+    await page.typeBurst("4800016644801", { gap: 10 });
+    expect(await value(page, "inventorySearch"), "Rice", "Inventory's own barcode search swaps in the name");
+    expect(await noteText(page), null, "note");
+    expect(await page.eval("rows.filter(r=>r.style.display!=='none').map(r=>r.dataset.product)"), ["Rice"], "rows");
+  },
+});
+
+tests.push({
+  name: "Reports: a registered card leaves a focused field alone and shows a note",
+  run: async ({ page }) => {
+    await page.seed(shop);
+    await page.goto("reports.html");
+    await page.eval("(()=>{const select=document.getElementById('reportCategory');select.focus()})()");
+    const before = await value(page, "reportCategory");
+    await page.typeBurst(CARD, { gap: 10 });
+    expect(await value(page, "reportCategory"), before, "field");
+    expect(await noteText(page), NO_USE, "note");
+  },
+});
+
+for (const [name, file] of [["Inventory", "inventory"], ["Reports", "reports"]]) {
+  tests.push({
+    name: `${name} has no console errors or failed requests after a tap`,
+    run: async ({ page, server }) => {
+      await page.seed(shop);
+      await page.goto(`${file}.html`);
+      await page.typeBurst(CARD, { gap: 10 });
+      const problems = page.problems.filter((problem) => !BLOCKED_HOSTS.some((host) => `${problem.text} ${problem.url || ""}`.includes(host)));
+      expect(problems, [], "problems");
+      expect(server.requests.filter(({ status }) => status >= 400), [], "failed requests");
+    },
+  });
+}
+
 const STAND_IN = "window.NDEFReader=class{async scan(){window.__scanned=true}};";
 tests.push({
   name: "with Web NFC the Android wording and behaviour are unchanged",

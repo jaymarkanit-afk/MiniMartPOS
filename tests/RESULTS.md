@@ -2,7 +2,7 @@
 
 From `node tests/run.js` on 2026-11-06.
 
-400 tests, 400 passed, 0 failed. Known bugs: 17 tests, 17 still fail.
+437 tests, 437 passed, 0 failed. Known bugs: 17 tests, 17 still fail.
 
 | Suite | Passed | Failed |
 |---|---|---|
@@ -22,7 +22,7 @@ From `node tests/run.js` on 2026-11-06.
 | pages | 12 | 0 |
 | icons | 35 | 0 |
 | dialogs | 46 | 0 |
-| card-reader | 58 | 0 |
+| card-reader | 95 | 0 |
 | overlay | 11 | 0 |
 | requests | 1 | 0 |
 
@@ -384,7 +384,8 @@ From `node tests/run.js` on 2026-11-06.
 | card-reader: the test panel keeps the last 5 taps, newest first | PASS |  |
 | card-reader: the test panel shows a reader that sends no terminator | PASS |  |
 | card-reader: the test panel text can be selected and stops when asked | PASS |  |
-| card-reader: the module stores and sends nothing, and reads only the sanitized code | PASS |  |
+| card-reader: the test panel copies the whole result as text | PASS |  |
+| card-reader: the test panel explains a short tap with no terminator | PASS |  |
 | card-reader: the sanitizer keeps the exact text, uppercased, and rejects anything else | PASS |  |
 | card-reader: Settings has no console errors after a test tap | PASS |  |
 | card-reader: a customer with no card stays byte-identical after load and after a save | PASS |  |
@@ -402,7 +403,7 @@ From `node tests/run.js` on 2026-11-06.
 | card-reader: an all-digit barcode no customer owns still adds the product | PASS |  |
 | card-reader: a letters barcode no customer owns still adds the product | PASS |  |
 | card-reader: an unknown code at Checkout gets the normal barcode message | PASS |  |
-| card-reader: the Scan tab says the USB reader is ready instead of the red message | PASS |  |
+| card-reader: the Scan tab says waiting for a card, and never the red message | PASS |  |
 | card-reader: a registered card shows the customer, the same as a phone tap | PASS |  |
 | card-reader: a registered card works in the search box on the All Sukis tab | PASS |  |
 | card-reader: an unknown card shows the message, and attaching saves it on the right customer | PASS |  |
@@ -416,6 +417,42 @@ From `node tests/run.js` on 2026-11-06.
 | card-reader: closing Add Suki stops a capture | PASS |  |
 | card-reader: edit customer: the button attaches a card, and reports a duplicate | PASS |  |
 | card-reader: the phone NFC path still works, and shows no USB controls | PASS |  |
+| card-reader: a fresh Suki Rewards page claims nothing about the reader | PASS |  |
+| card-reader: a fresh Checkout page claims nothing about the reader | PASS |  |
+| card-reader: a fresh Settings page claims nothing about the reader | PASS |  |
+| card-reader: a good read says Reader working with the time, on every page | PASS |  |
+| card-reader: an unknown card also counts as a read | PASS |  |
+| card-reader: a duplicate card also counts as a read | PASS |  |
+| card-reader: human typing never counts as a read | PASS |  |
+| card-reader: a barcode no customer owns never counts as a read | PASS |  |
+| card-reader: silence changes nothing, after a read or before one | PASS |  |
+| card-reader: Checkout: Tap Suki's Card arms card mode for 30 seconds, with no NFC error | PASS |  |
+| card-reader: Checkout: Cancel ends card mode | PASS |  |
+| card-reader: Checkout: a registered card in card mode selects the customer | PASS |  |
+| card-reader: Checkout: an unknown card in card mode can be attached, and never says barcode | PASS |  |
+| card-reader: Scan tab: the NFC icon arms card mode for 30 seconds, with no NFC error | PASS |  |
+| card-reader: Add Suki: the NFC icon starts the USB capture, with no NFC error | PASS |  |
+| card-reader: the customer panel offers no NFC link on a laptop | PASS |  |
+| card-reader: Remove card: the dialog names the customer and the card | PASS |  |
+| card-reader: Remove card: Cancel changes nothing | PASS |  |
+| card-reader: Remove card: the card goes and every other field is byte-identical | PASS |  |
+| card-reader: Replace card: a new tap takes the old card's place | PASS |  |
+| card-reader: Inventory: a registered card leaves the search box alone and shows a note | PASS |  |
+| card-reader: Inventory: a barcode nobody owns still filters as it does today | PASS |  |
+| card-reader: Reports: a registered card leaves a focused field alone and shows a note | PASS |  |
+| card-reader: Inventory has no console errors or failed requests after a tap | PASS |  |
+| card-reader: Reports has no console errors or failed requests after a tap | PASS |  |
+| card-reader: with Web NFC the Android wording and behaviour are unchanged | PASS |  |
+| card-reader: no terminator: a registered card is accepted and the field is put back | PASS |  |
+| card-reader: no terminator: a late Enter from the same card does nothing | PASS |  |
+| card-reader: no terminator: an unknown card in card mode is accepted | PASS |  |
+| card-reader: no terminator: a code nobody owns stays in the search box, out of card mode | PASS |  |
+| card-reader: no terminator: a code under 6 characters is not a card | PASS |  |
+| card-reader: no terminator: human typing of a registered code is not a card | PASS |  |
+| card-reader: a registered card sends nothing and stores nothing on Suki Rewards | PASS |  |
+| card-reader: attaching a card sends nothing and writes only that customer's new field | PASS |  |
+| card-reader: a card at Checkout sends nothing and only updates the cart draft | PASS |  |
+| card-reader: a test tap sends nothing and stores nothing | PASS |  |
 | card-reader: Checkout has no console errors or failed requests after a tap | PASS |  |
 | card-reader: Suki Rewards has no console errors or failed requests after a tap | PASS |  |
 | overlay: a fast navigation never shows the overlay | PASS |  |
@@ -457,7 +494,7 @@ These are reported, not fixed, and never affect the exit code.
 
 ## Mutation check
 
-`tests/mutations.js` has 65 mutations and 9 trial fixes. Every mutation was caught when last run, and run them again with `node tests/mutate.js`.
+`tests/mutations.js` has 77 mutations and 9 trial fixes. Every mutation was caught when last run, and run them again with `node tests/mutate.js`.
 
 | Mutation | Fix it reverts | Tests |
 |---|---|---|
@@ -523,6 +560,18 @@ These are reported, not fixed, and never affect the exit code.
 | `card-field-not-repaired` | Card digits never stay in a field | 3 |
 | `card-swallows-barcodes` | Anything that is not a card stays a barcode | 2 |
 | `card-enter-submits` | A card does not submit the form | 1 |
+| `reader-says-ready-at-load` | A page never claims the reader works before a read | 3 |
+| `nfc-button-says-unsupported` | The buttons arm card mode on a laptop | 1 |
+| `scan-icon-says-unsupported` | The buttons arm card mode on a laptop | 1 |
+| `human-typing-counts-as-read` | Only a recognized card counts as a read | 1 |
+| `no-terminator-rule-dropped` | A reader with no Enter or Tab still works | 2 |
+| `card-mode-condition-dropped` | Without card mode or an owner, a code stays a barcode | 2 |
+| `no-terminator-human-accepted` | Human typing is not a card, even with no terminator | 1 |
+| `card-sent-away` | A card code never leaves the page | 1 |
+| `card-stored-by-reader` | The reader stores nothing | 1 |
+| `remove-card-ignores-cancel` | Keep card keeps it | 1 |
+| `no-note-on-other-pages` | Other pages keep card digits out of their fields | 1 |
+| `card-always-fires-change` | An unchanged field fires no event | 1 |
 | `overlay-no-delay` | The overlay waits 300 ms | 1 |
 | `overlay-stuck-after-back` | The overlay clears when a page is restored | 1 |
 | `overlay-no-offline-message` | Offline shows its own message | 1 |

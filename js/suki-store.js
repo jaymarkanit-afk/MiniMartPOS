@@ -294,6 +294,14 @@
     return save(sukis);
   }
 
+  function clearCardCode(id) {
+    const sukis = read();
+    const suki = sukis.find((record) => record.id === id);
+    if (!suki) return refuse("That customer could not be found, so nothing was saved.");
+    delete suki.cardCode;
+    return save(sukis);
+  }
+
   // Use remove() to delete. This refuses any list that loses a customer.
   function save(sukis) {
     if (!Array.isArray(sukis)) return refuse("The customer list is not valid, so nothing was saved.");
@@ -393,6 +401,7 @@
     applyPointsChange,
     findByCardCode,
     setCardCode,
+    clearCardCode,
     runPointsMigration,
     migrationEnabled: SUKI_MIGRATION_ENABLED,
   };

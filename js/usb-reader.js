@@ -31,6 +31,9 @@
   const WAITING_TITLE = "Waiting for a card";
   const WAITING_HELP = "Tap a card on the USB reader. The page cannot see the reader until a card is tapped.";
   const WORKING_TITLE = "Reader working";
+  // Pages with no use for a card still keep its digits out of their fields.
+  const NO_USE_NOTE = "Card read. Open Checkout or Suki Rewards to use it.";
+  const NOTE_MS = 4000;
   // A reader may send no Enter or Tab. Silence ends its burst, and it needs a longer code
   // because nothing else marks it as a reader.
   const SILENCE_END_MS = 150;
@@ -68,6 +71,16 @@
     statusListeners.forEach((listener) => listener(readerStatus()));
   }
 
+  function showNote(message) {
+    document.querySelector(".usb-reader-note")?.remove();
+    const note = document.createElement("div");
+    note.className = "usb-reader-note";
+    note.setAttribute("role", "status");
+    note.textContent = message;
+    document.body.append(note);
+    window.setTimeout(() => note.remove(), NOTE_MS);
+  }
+
   function startCapture(timeoutMs) {
     if (activeCapture) finishCapture(null);
     return new Promise((resolve) => {
@@ -91,9 +104,11 @@
   function restoreField(snapshot) {
     if (!snapshot) return;
     const { element, value, start, end } = snapshot;
+    const changed = element.value !== value;
     element.value = value;
     if (start !== null) element.setSelectionRange(start, end);
-    element.dispatchEvent(new Event(element instanceof HTMLSelectElement ? "change" : "input", { bubbles: true }));
+    // Pages act on these events, and a Reports filter reloads the page.
+    if (changed) element.dispatchEvent(new Event(element instanceof HTMLSelectElement ? "change" : "input", { bubbles: true }));
   }
 
   // Why a burst is not a card, or "" if it is. Armed means a page is waiting for a card
@@ -159,7 +174,8 @@
     const suki = window.miniMartSukiStore?.findByCardCode?.(code) || null;
     if (!isCardMode() && !suki) return false;
     markRead();
-    onCard?.(code, suki);
+    if (onCard) onCard(code, suki);
+    else showNote(NO_USE_NOTE);
     return true;
   }
 

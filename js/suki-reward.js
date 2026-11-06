@@ -614,7 +614,7 @@ function addUsbCardControls(suki) {
   const scan = document.createElement("button");
   scan.type = "button";
   scan.className = "secondary-button";
-  scan.textContent = "Scan card with USB reader";
+  scan.textContent = suki.cardCode ? "Replace card" : "Scan card with USB reader";
   const cancel = document.createElement("button");
   cancel.type = "button";
   cancel.className = "secondary-button";
@@ -632,6 +632,23 @@ function addUsbCardControls(suki) {
     },
   }));
   box.append(value, scan, cancel, status);
+  if (!suki.cardCode) return;
+  const remove = document.createElement("button");
+  remove.type = "button";
+  remove.className = "secondary-button";
+  remove.textContent = "Remove card";
+  remove.addEventListener("click", async () => {
+    const confirmed = await confirmDialog({
+      title: `Remove the card from ${suki.name}?`,
+      message: `Card ${suki.cardCode} will stop finding this customer.`,
+      details: "Points, history and any phone card are not touched.",
+      confirmLabel: "Remove card",
+      cancelLabel: "Keep card",
+      tone: "danger",
+    });
+    if (confirmed && sukiStore.clearCardCode(suki.id).ok) showSukiDetails(suki.id);
+  });
+  scan.after(remove);
 }
 
 // Only the Scan tab with nothing open over it is waiting for a card.
