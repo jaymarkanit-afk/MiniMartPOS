@@ -311,4 +311,18 @@ tests.push({
   },
 });
 
+tests.push({
+  name: "Manage categories: the empty message shows when a search finds nothing",
+  run: async ({ page }) => {
+    await openManageCategories(page, { width: 1264, height: 805 });
+    await page.eval(() => {
+      const search = document.getElementById("categoryManagementSearch");
+      search.value = "no category has this name";
+      search.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await sleep(100);
+    same(await page.eval("getComputedStyle(document.getElementById('categoryManagementEmpty')).display"), "grid", "display");
+  },
+});
+
 module.exports = { tests };

@@ -192,6 +192,12 @@ const mutations = [
     edits: [{ file: "css/settings.css", from: "  grid-auto-rows: max-content;\n  align-content: start;\n", to: "" }],
   },
   {
+    id: "empty-message-always-on",
+    fix: "The empty message respects hidden",
+    tests: ["icons: Manage categories: the empty message is hidden while categories are listed"],
+    edits: [{ file: "css/settings.css", from: ".category-management-empty[hidden] {\n  display: none;\n}\n", to: "" }],
+  },
+  {
     id: "overlay-no-delay",
     fix: "The overlay waits 300 ms",
     tests: ["overlay: a fast navigation never shows the overlay"],

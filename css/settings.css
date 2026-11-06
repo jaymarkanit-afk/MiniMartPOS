@@ -1514,6 +1514,10 @@ html[data-theme="dark"] .settings-page .theme-toggle {
   font-size: 13px;
 }
 
+.category-management-empty[hidden] {
+  display: none;
+}
+
 .category-management-modal .settings-dialog-actions {
   margin: 0;
 }
