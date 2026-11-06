@@ -250,7 +250,7 @@ const mutations = [
   {
     id: "favicon-removed",
     fix: "Each page declares an icon that exists",
-    tests: ["pages: login declares an icon that loads"],
+    tests: ["pages: login declares an icon that loads", "requests: no app request failed at any point in the run"],
     edits: [{
       file: "login.html",
       from: "<link rel=\"icon\" type=\"image/png\" href=\"Icons/grocery-store.png\" />",
@@ -281,4 +281,6 @@ const mutations = [
   },
 ];
 
-module.exports = { mutations };
+const trialFixes = [];
+
+module.exports = { mutations, trialFixes };

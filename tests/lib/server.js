@@ -16,6 +16,8 @@ const TYPES = {
   ".json": "application/json",
 };
 // Lets the harness instrument each page before any app script runs.
+// Test pages need an icon too, or Chrome asks for /favicon.ico on their behalf.
+const TEST_PAGE_HEAD = "<!doctype html><link rel=\"icon\" href=\"data:,\">";
 const HOOK = "<script>try{if(parent!==window&&parent.__hook)parent.__hook(window)}catch(error){}</script>";
 
 function checkMutation(mutation) {
@@ -61,10 +63,10 @@ function createServer({ mutation = null, onResult = () => {} } = {}) {
       });
       return;
     }
-    if (url === "/__blank") return send(response, url, 200, TYPES[".html"], "<!doctype html><title>blank</title>");
+    if (url === "/__blank") return send(response, url, 200, TYPES[".html"], `${TEST_PAGE_HEAD}<title>blank</title>`);
     if (url === "/__harness") {
       const suite = new URL(request.url, "http://x").searchParams.get("suite");
-      const page = `<!doctype html><title>${suite}</title><body></body>` +
+      const page = `${TEST_PAGE_HEAD}<title>${suite}</title><body></body>` +
         `<script src="/__tests/lib/harness.js"></script>` +
         `<script src="/__tests/browser/${suite}.js"></script>` +
         `<script>runSuite()</script>`;

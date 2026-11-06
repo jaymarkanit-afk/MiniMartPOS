@@ -56,7 +56,7 @@ async function launch() {
 
   const close = async () => {
     const exited = new Promise((resolve) => child.once("exit", resolve));
-    await cdp.send("Browser.close").catch(() => {});
+    cdp.send("Browser.close").catch(() => {});
     await Promise.race([exited, sleep(5000)]);
     child.kill();
     cdp.close();
