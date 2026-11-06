@@ -322,6 +322,34 @@ class Page {
     await this.send("Input.dispatchKeyEvent", { type: "keyUp", ...event });
   }
 
+  // Holds long timers back so a test can fire them, instead of really waiting.
+  async useFakeLongTimers() {
+    await this.send("Page.addScriptToEvaluateOnNewDocument", {
+      source: `(() => {
+        const realSet = window.setTimeout;
+        const realClear = window.clearTimeout;
+        const long = new Map();
+        let nextId = 1e9;
+        window.setTimeout = (run, ms, ...args) => {
+          if (ms < 10000) return realSet(run, ms, ...args);
+          nextId += 1;
+          long.set(nextId, { run, ms });
+          return nextId;
+        };
+        window.clearTimeout = (id) => {
+          if (!long.delete(id)) realClear(id);
+        };
+        window.__longTimers = () => [...long.values()].map(({ ms }) => ms);
+        window.__fireLongTimers = (ms) => {
+          [...long].filter(([, timer]) => ms === undefined || timer.ms === ms).forEach(([id, timer]) => {
+            long.delete(id);
+            timer.run();
+          });
+        };
+      })();`,
+    });
+  }
+
   // Types like a USB reader. Busy-waits between keys, because timers are too coarse here.
   async typeBurst(text, { gap = 20, terminator = "Enter" } = {}) {
     const sent = [];

@@ -521,6 +521,34 @@ const mutations = [
     edits: [{ file: "js/usb-reader.js", from: "    if (!recognized || !handleScan(code)) return;\n    event.preventDefault();\n    event.stopImmediatePropagation();", to: "    if (!recognized || !handleScan(code)) return;" }],
   },
   {
+    id: "reader-says-ready-at-load",
+    fix: "A page never claims the reader works before a read",
+    tests: [
+      "card-reader: a fresh Suki Rewards page claims nothing about the reader",
+      "card-reader: a fresh Checkout page claims nothing about the reader",
+      "card-reader: a fresh Settings page claims nothing about the reader",
+    ],
+    edits: [{ file: "js/usb-reader.js", from: "const WAITING_TITLE = \"Waiting for a card\";", to: "const WAITING_TITLE = \"USB card reader ready\";" }],
+  },
+  {
+    id: "nfc-button-says-unsupported",
+    fix: "The buttons arm card mode on a laptop",
+    tests: ["card-reader: Checkout: Tap Suki's Card arms card mode for 30 seconds, with no NFC error"],
+    edits: [{ file: "js/checkout.js", from: "    armUsbCheckout();\n    return;\n  }\n\n  const scanButton", to: "    document.getElementById(\"checkoutSukiScanStatus\").textContent = \"Web NFC is not supported in this browser.\";\n    return;\n  }\n\n  const scanButton" }],
+  },
+  {
+    id: "scan-icon-says-unsupported",
+    fix: "The buttons arm card mode on a laptop",
+    tests: ["card-reader: Scan tab: the NFC icon arms card mode for 30 seconds, with no NFC error"],
+    edits: [{ file: "js/suki-reward.js", from: "    armUsbScan();\n", to: "    scanTitle.textContent = \"NFC Not Supported\";\n" }],
+  },
+  {
+    id: "human-typing-counts-as-read",
+    fix: "Only a recognized card counts as a read",
+    tests: ["card-reader: a barcode no customer owns never counts as a read"],
+    edits: [{ file: "js/usb-reader.js", from: "    const suki = window.miniMartSukiStore?.findByCardCode?.(code) || null;\n", to: "    markRead();\n    const suki = window.miniMartSukiStore?.findByCardCode?.(code) || null;\n" }],
+  },
+  {
     id: "overlay-no-delay",
     fix: "The overlay waits 300 ms",
     tests: ["overlay: a fast navigation never shows the overlay"],

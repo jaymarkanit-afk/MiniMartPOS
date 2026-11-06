@@ -63,7 +63,8 @@ const allSukisTab = document.getElementById("allSukisTab");
 
 const scanView = document.getElementById("scanView");
 const cardReader = window.miniMartCardReader;
-const usbReaderReady = document.getElementById("usbReaderReady");
+const usbReaderState = document.getElementById("usbReaderState");
+const usbScanCancel = document.getElementById("usbScanCancel");
 const usbCardUnknown = document.getElementById("usbCardUnknown");
 const usbUnknownCode = document.getElementById("usbUnknownCode");
 const usbAttachCustomer = document.getElementById("usbAttachCustomer");
@@ -356,9 +357,7 @@ function closeAddSukiForm() {
 
 async function linkNfcCard() {
   if (!isNfcSupported()) {
-    if (linkStatus) {
-      linkStatus.textContent = "Web NFC is not supported.";
-    }
+    scanUsbCardForNewSuki();
 
     return;
   }
@@ -498,13 +497,7 @@ function saveSuki(event) {
 
 async function scanExistingSuki() {
   if (!isNfcSupported()) {
-    if (scanTitle) {
-      scanTitle.textContent = "NFC Not Supported";
-    }
-
-    if (scanStatus) {
-      scanStatus.textContent = "Web NFC is not supported.";
-    }
+    armUsbScan();
 
     return;
   }
@@ -615,6 +608,7 @@ function attachUnknownCard() {
 function addUsbCardControls(suki) {
   const box = detailContent.querySelector("[data-usb-card-box]");
   if (!box || isNfcSupported()) return;
+  detailContent.querySelector(".suki-nfc-actions")?.remove();
   const value = document.createElement("strong");
   value.textContent = suki.cardCode || "No USB card linked";
   const scan = document.createElement("button");
@@ -647,22 +641,55 @@ cardReader.setCardMode(() => Boolean(scanView && !scanView.hidden) &&
   deleteSukiModal?.hidden !== false &&
   unlinkNfcModal?.hidden !== false);
 
-cardReader.onCard((code, suki) => {
-  if (addSukiModal && !addSukiModal.hidden) return;
+function handleCardTap(code, suki) {
   if (!suki) {
     showUnknownCard(code);
     return;
   }
   usbCardUnknown.hidden = true;
   showScannedSuki(suki);
+}
+
+cardReader.onCard((code, suki) => {
+  if (addSukiModal && !addSukiModal.hidden) return;
+  handleCardTap(code, suki);
 });
 
+// On a browser without Web NFC the icon asks the cashier to tap the USB reader.
+async function armUsbScan() {
+  scanButton.disabled = true;
+  usbScanCancel.hidden = false;
+  usbCardUnknown.hidden = true;
+  scanTitle.textContent = "Waiting for a card. Tap it on the reader now.";
+  let cancelled = false;
+  const cancel = () => {
+    cancelled = true;
+    cardReader.cancelCapture();
+  };
+  usbScanCancel.addEventListener("click", cancel, { once: true });
+  const code = await cardReader.arm();
+  usbScanCancel.removeEventListener("click", cancel);
+  usbScanCancel.hidden = true;
+  scanButton.disabled = false;
+  if (code) {
+    handleCardTap(code, sukiStore.findByCardCode(code));
+    return;
+  }
+  scanTitle.textContent = "Waiting for a card";
+  scanStatus.textContent = cancelled ? "Cancelled." : "No card was read. Press the icon to try again.";
+}
+
 if (!isNfcSupported()) {
-  usbReaderReady.hidden = false;
+  usbReaderState.hidden = false;
   addUsbCardBox.hidden = false;
-  if (scanTitle) scanTitle.textContent = "Ready for card";
-  if (scanStatus) scanStatus.textContent = "Tap a card on the USB reader.";
+  scanTitle.textContent = "Waiting for a card";
+  scanStatus.textContent = "";
   document.querySelector(".scan-copy")?.replaceChildren("A USB reader types the card number for you.");
+  cardReader.onStatus(({ working, title, help }) => {
+    usbReaderState.classList.toggle("is-working", working);
+    document.getElementById("usbReaderStateTitle").textContent = title;
+    document.getElementById("usbReaderStateHelp").textContent = help;
+  });
 }
 
 addUsbCardScan.addEventListener("click", scanUsbCardForNewSuki);

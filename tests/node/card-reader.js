@@ -318,7 +318,7 @@ tests.push({
     await page.typeBurst(CARD, { gap: 10 });
     expect(await selected(page), "a", "customer");
     expect(await cartLines(page), [["Rice", 1]], "cart");
-    expect(await page.eval("document.getElementById('checkoutSukiScanStatus').textContent"), "Suki card detected.", "status");
+    expect(await page.eval("document.getElementById('checkoutSukiScanStatus').textContent"), "Ana selected.", "status");
   },
 });
 
@@ -384,6 +384,14 @@ tests.push({
   },
 });
 
+const HONEST_HELP = "Tap a card on the USB reader. The page cannot see the reader until a card is tapped.";
+const FORBIDDEN = /\b(ready|detected|connected|available|not supported)\b/i;
+const statusText = (page, ids) => page.eval((list) => list.map((id) => document.getElementById(id)?.textContent ?? "").join(" | "), ids);
+const expectHonest = (shown, label) => {
+  const match = shown.match(FORBIDDEN);
+  if (match) throw new Error(`${label} says "${match[0]}": ${shown}`.slice(0, 300));
+  if (!shown.includes("Waiting for a card")) throw new Error(`${label} does not say Waiting for a card: ${shown}`.slice(0, 300));
+};
 const openSuki = async (page, storage = shop) => {
   await page.seed(storage);
   await page.goto("suki-reward.html");
@@ -391,11 +399,12 @@ const openSuki = async (page, storage = shop) => {
 const text = (page, id) => page.eval((target) => document.getElementById(target).textContent.trim(), id);
 
 tests.push({
-  name: "the Scan tab says the USB reader is ready instead of the red message",
+  name: "the Scan tab says waiting for a card, and never the red message",
   run: async ({ page }) => {
     await openSuki(page);
-    expect(await page.eval("document.getElementById('usbReaderReady').hidden"), false, "ready hidden");
-    expect((await text(page, "usbReaderReady")).startsWith("USB card reader ready"), true, "message");
+    expect(await page.eval("document.getElementById('usbReaderState').hidden"), false, "state hidden");
+    expect(await text(page, "usbReaderStateTitle"), "Waiting for a card", "state");
+    expect(await text(page, "usbReaderStateHelp"), HONEST_HELP, "help");
     expect(await page.eval("document.body.textContent.includes('NFC scanning is unavailable')"), false, "red message");
   },
 });
@@ -529,10 +538,12 @@ tests.push({
 tests.push({
   name: "Add Suki: the capture times out after 15 seconds",
   run: async ({ page }) => {
+    await page.useFakeLongTimers();
     await openAddForm(page);
-    await sleep(14000);
-    expect(await text(page, "addUsbCardStatus"), "Tap the card on the reader now.", "still waiting at 14 seconds");
-    await sleep(1600);
+    expect(await page.eval("window.__longTimers().filter(ms=>ms===15000).length"), 2, "the time limit, beside the page's own loading limit");
+    expect(await text(page, "addUsbCardStatus"), "Tap the card on the reader now.", "still waiting");
+    await page.eval("window.__fireLongTimers(15000)");
+    await sleep(30);
     expect(await text(page, "addUsbCardStatus"), "No card was read. Try again.", "after 15 seconds");
     expect(await page.eval("[addUsbCardScan.disabled,addUsbCardCancel.hidden]"), [false, true], "buttons");
   },
@@ -571,7 +582,7 @@ tests.push({
     });
     await page.seed({ miniMartSukis: [customer("a", "Ana", { nfcId: "AA:BB", stamps: 12 })] });
     await page.goto("suki-reward.html");
-    expect(await page.eval("[document.getElementById('usbReaderReady').hidden,document.getElementById('addUsbCardBox').hidden]"), [true, true], "USB controls hidden");
+    expect(await page.eval("[document.getElementById('usbReaderState').hidden,document.getElementById('addUsbCardBox').hidden]"), [true, true], "USB controls hidden");
     await page.eval("scanExistingSuki()");
     await sleep(100);
     expect(await text(page, "scanTitle"), "Ana", "title");
@@ -580,6 +591,235 @@ tests.push({
     await page.eval("scanSukiCard()");
     await sleep(100);
     expect(await selected(page), "a", "Checkout customer");
+  },
+});
+
+tests.push({
+  name: "a fresh Suki Rewards page claims nothing about the reader",
+  run: async ({ page }) => {
+    await openSuki(page);
+    expectHonest(await statusText(page, ["scanTitle", "scanStatus", "usbReaderStateTitle", "usbReaderStateHelp"]), "Suki Rewards");
+  },
+});
+
+tests.push({
+  name: "a fresh Checkout page claims nothing about the reader",
+  run: async ({ page }) => {
+    await openCheckout(page);
+    await addToCart(page);
+    expectHonest(await statusText(page, ["checkoutSukiScanStatus"]), "Checkout");
+  },
+});
+
+tests.push({
+  name: "a fresh Settings page claims nothing about the reader",
+  run: async ({ page }) => {
+    await page.seed();
+    await page.goto("settings.html");
+    expectHonest(await statusText(page, ["usbReaderStateTitle", "usbReaderStateHelp", "nfcStatusText", "nfcStatusExplanation"]), "Settings");
+  },
+});
+
+tests.push({
+  name: "a good read says Reader working with the time, on every page",
+  run: async ({ page }) => {
+    await openSuki(page);
+    await page.typeBurst(CARD, { gap: 10 });
+    expect(await text(page, "usbReaderStateTitle"), "Reader working", "Suki Rewards");
+    if (!/^Last read at .*\d/.test(await text(page, "usbReaderStateHelp"))) throw new Error("No time shown");
+    await page.seed();
+    await page.goto("settings.html");
+    expect(await text(page, "usbReaderStateTitle"), "Waiting for a card", "a new page starts again");
+    await page.eval("document.getElementById('usbReaderTest').click()");
+    await page.typeBurst(CARD, { gap: 10 });
+    expect(await text(page, "usbReaderStateTitle"), "Reader working", "Settings");
+  },
+});
+
+tests.push({
+  name: "an unknown card also counts as a read",
+  run: async ({ page }) => {
+    await openSuki(page);
+    await page.typeBurst("A1B2C3D4", { gap: 10 });
+    expect(await text(page, "usbReaderStateTitle"), "Reader working", "state");
+  },
+});
+
+tests.push({
+  name: "a duplicate card also counts as a read",
+  run: async ({ page }) => {
+    await openAddForm(page);
+    await page.typeBurst(CARD, { gap: 10 });
+    expect(await text(page, "usbReaderStateTitle"), "Reader working", "state");
+  },
+});
+
+tests.push({
+  name: "human typing never counts as a read",
+  run: async ({ page }) => {
+    await openSuki(page);
+    await page.eval("document.getElementById('allSukisTab').click();document.querySelector('#allSukisView input').focus()");
+    await page.typeBurst(CARD, { gap: 80 });
+    expect(await text(page, "usbReaderStateTitle"), "Waiting for a card", "state");
+  },
+});
+
+tests.push({
+  name: "a barcode no customer owns never counts as a read",
+  run: async ({ page }) => {
+    await page.seed(shop);
+    await page.goto("index.html");
+    await page.click("#search");
+    await page.eval("window.__reads=0;window.miniMartCardReader.onStatus(()=>{window.__reads+=1})");
+    await page.typeBurst("4800016644801", { gap: 10 });
+    expect(await page.eval("window.__reads"), 1, "only the first call, when the listener was added");
+  },
+});
+
+tests.push({
+  name: "silence changes nothing, after a read or before one",
+  run: async ({ page }) => {
+    await page.useFakeLongTimers();
+    await openSuki(page);
+    const later = "Date.now=(n=>()=>n()+60000)(Date.now)";
+    await page.eval(`${later};window.__fireLongTimers()`);
+    expect(await text(page, "usbReaderStateTitle"), "Waiting for a card", "before a read");
+    await page.typeBurst(CARD, { gap: 10 });
+    const shown = await text(page, "usbReaderStateHelp");
+    await page.eval(`${later};window.__fireLongTimers()`);
+    expect([await text(page, "usbReaderStateTitle"), await text(page, "usbReaderStateHelp")], ["Reader working", shown], "after a read");
+  },
+});
+
+const armCheckout = async (page) => {
+  await page.useFakeLongTimers();
+  await openCheckout(page);
+  await addToCart(page);
+  await page.click("#checkoutSukiScanButton");
+};
+const noUnsupported = async (page) => {
+  const shown = await page.eval("document.body.textContent");
+  if (/not supported|unsupported/i.test(shown)) throw new Error("The page says NFC is unsupported");
+};
+
+tests.push({
+  name: "Checkout: Tap Suki's Card arms card mode for 30 seconds, with no NFC error",
+  run: async ({ page }) => {
+    await armCheckout(page);
+    expect(await text(page, "checkoutSukiScanStatus"), "Waiting for a card. Tap it on the reader now.", "status");
+    expect(await page.eval("window.__longTimers().includes(30000)"), true, "time limit");
+    expect(await page.eval("[document.getElementById('checkoutUsbCancel').hidden,document.getElementById('checkoutSukiScanStatus').classList.contains('is-error')]"), [false, false], "cancel and red");
+    await noUnsupported(page);
+    await page.eval("window.__fireLongTimers(30000)");
+    await sleep(30);
+    expect(await text(page, "checkoutSukiScanStatus"), "No card was read. Press the button to try again.", "after 30 seconds");
+    expect(await page.eval("[document.getElementById('checkoutUsbCancel').hidden,document.getElementById('checkoutSukiScanButton').disabled]"), [true, false], "buttons");
+  },
+});
+
+tests.push({
+  name: "Checkout: Cancel ends card mode",
+  run: async ({ page }) => {
+    await armCheckout(page);
+    await page.click("#checkoutUsbCancel");
+    await sleep(40);
+    expect(await text(page, "checkoutSukiScanStatus"), "Cancelled.", "status");
+    await page.click("#search");
+    await page.typeBurst("9999999999", { gap: 10 });
+    expect(await text(page, "barcodeStatus"), "This barcode is not registered. Add it to a product in Inventory.", "a code is a barcode again");
+  },
+});
+
+tests.push({
+  name: "Checkout: a registered card in card mode selects the customer",
+  run: async ({ page }) => {
+    await armCheckout(page);
+    await page.typeBurst(CARD, { gap: 10 });
+    expect(await selected(page), "a", "customer");
+    expect(await text(page, "checkoutSukiScanStatus"), "Ana selected.", "status");
+  },
+});
+
+tests.push({
+  name: "Checkout: an unknown card in card mode can be attached, and never says barcode",
+  run: async ({ page }) => {
+    await armCheckout(page);
+    await page.typeBurst("A1B2C3D4", { gap: 10 });
+    expect(await page.eval("document.getElementById('checkoutUsbUnknown').hidden"), false, "unknown hidden");
+    expect((await text(page, "checkoutUsbUnknown")).startsWith("Card not registered"), true, "message");
+    expect(await page.eval("document.getElementById('barcodeStatus').textContent.includes('barcode is not registered')"), false, "barcode message");
+    expect(await page.eval("[...document.getElementById('checkoutUsbCustomer').options].map(o=>o.textContent)"), ["Ben"], "customers");
+    await page.click("#checkoutUsbAttach");
+    await sleep(60);
+    const [ana, ben] = await stored(page);
+    expect([ana.cardCode, ben.cardCode], [CARD, "A1B2C3D4"], "card codes");
+    expect(await selected(page), "b", "customer selected");
+  },
+});
+
+tests.push({
+  name: "Scan tab: the NFC icon arms card mode for 30 seconds, with no NFC error",
+  run: async ({ page }) => {
+    await page.useFakeLongTimers();
+    await openSuki(page);
+    await page.click("#scanButton");
+    expect(await text(page, "scanTitle"), "Waiting for a card. Tap it on the reader now.", "title");
+    expect(await page.eval("window.__longTimers().includes(30000)"), true, "time limit");
+    await noUnsupported(page);
+    await page.eval("window.__fireLongTimers(30000)");
+    await sleep(30);
+    expect([await text(page, "scanTitle"), await text(page, "scanStatus")], ["Waiting for a card", "No card was read. Press the icon to try again."], "after 30 seconds");
+    await page.click("#scanButton");
+    await page.click("#usbScanCancel");
+    await sleep(40);
+    expect(await text(page, "scanStatus"), "Cancelled.", "cancelled");
+    await page.click("#scanButton");
+    await page.typeBurst("A1B2C3D4", { gap: 10 });
+    expect(await text(page, "scanTitle"), "Card not registered", "unknown card");
+  },
+});
+
+tests.push({
+  name: "Add Suki: the NFC icon starts the USB capture, with no NFC error",
+  run: async ({ page }) => {
+    await openSuki(page);
+    await page.eval("openAddSukiForm()");
+    await page.click("#linkNfcButton");
+    expect(await text(page, "addUsbCardStatus"), "Tap the card on the reader now.", "status");
+    await noUnsupported(page);
+  },
+});
+
+tests.push({
+  name: "the customer panel offers no NFC link on a laptop",
+  run: async ({ page }) => {
+    await openSuki(page);
+    await page.eval("showSukiDetails('b')");
+    expect(await page.eval("[Boolean(document.getElementById('linkNfcDetailButton')),document.getElementById('detailContent').textContent.includes('Ready to link')]"), [false, false], "NFC link");
+  },
+});
+
+const STAND_IN = "window.NDEFReader=class{async scan(){window.__scanned=true}};";
+tests.push({
+  name: "with Web NFC the Android wording and behaviour are unchanged",
+  run: async ({ page }) => {
+    await page.send("Page.addScriptToEvaluateOnNewDocument", { source: STAND_IN });
+    await page.seed(shop);
+    await page.goto("suki-reward.html");
+    expect(await text(page, "scanTitle"), "Ready for NFC card", "Scan tab");
+    expect(await page.eval("document.getElementById('usbReaderState').hidden"), true, "USB state hidden");
+    await page.click("#scanButton");
+    await sleep(40);
+    expect([await text(page, "scanTitle"), await text(page, "scanStatus"), await page.eval("window.__scanned")], ["Waiting for Card...", "Hold the Suki card near the back of your phone.", true], "NFC scan");
+    await page.goto("index.html");
+    expect(await text(page, "checkoutSukiScanStatus"), "Tap the customer's NFC card to apply rewards.", "Checkout");
+    await addToCart(page);
+    await page.click("#checkoutSukiScanButton");
+    await sleep(40);
+    expect(await text(page, "checkoutSukiScanStatus"), "Hold the Suki card near the back of your phone.", "Checkout scan");
+    await page.goto("settings.html");
+    await sleep(100);
+    expect(await text(page, "nfcStatusText") === "Phone only", false, "Settings");
   },
 });
 

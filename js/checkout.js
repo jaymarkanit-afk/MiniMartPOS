@@ -503,6 +503,23 @@ function createSukiCheckoutUI() {
       Tap the customer's NFC card to apply rewards.
     </small>
 
+    <button
+      id="checkoutUsbCancel"
+      class="checkout-secondary-button"
+      type="button"
+      hidden
+    >
+      Cancel
+    </button>
+
+    <div id="checkoutUsbUnknown" hidden>
+      <strong>Card not registered</strong>
+      <select id="checkoutUsbCustomer" aria-label="Attach it to"></select>
+      <button id="checkoutUsbAttach" class="checkout-secondary-button" type="button">
+        Attach to customer
+      </button>
+    </div>
+
     <div
       id="checkoutSukiInfo"
       style="margin-top:8px;font-size:.9rem;"
@@ -543,6 +560,7 @@ function createSukiCheckoutUI() {
   const rewardInput = document.getElementById("rewardAmount");
 
   scanButton.addEventListener("click", scanSukiCard);
+  if (!window.isNfcSupported()) window.miniMartCardReader.onStatus(showReaderStatus);
 
   rewardInput.addEventListener("input", updatePayment);
 
@@ -564,7 +582,77 @@ function refreshSukiSelector() {
   scheduleCheckoutDraftSave();
 }
 
+// On a browser without Web NFC the button asks the cashier to tap the USB reader.
+async function armUsbCheckout() {
+  const scanButton = document.getElementById("checkoutSukiScanButton");
+  const scanStatus = document.getElementById("checkoutSukiScanStatus");
+  const cancelButton = document.getElementById("checkoutUsbCancel");
+  const reader = window.miniMartCardReader;
+  document.getElementById("checkoutUsbUnknown").hidden = true;
+  scanButton.disabled = true;
+  scanButton.textContent = "Waiting...";
+  scanStatus.textContent = "Waiting for a card. Tap it on the reader now.";
+  cancelButton.hidden = false;
+  let cancelled = false;
+  const cancel = () => {
+    cancelled = true;
+    reader.cancelCapture();
+  };
+  cancelButton.addEventListener("click", cancel, { once: true });
+  const code = await reader.arm();
+  cancelButton.removeEventListener("click", cancel);
+  cancelButton.hidden = true;
+  scanButton.disabled = false;
+  scanButton.textContent = "Tap Suki's Card";
+  if (!code) {
+    scanStatus.textContent = cancelled ? "Cancelled." : "No card was read. Press the button to try again.";
+    return;
+  }
+  const suki = sukiStore.findByCardCode(code);
+  if (suki) selectCardCustomer(suki);
+  else showUnknownCheckoutCard(code);
+}
+
+function showUnknownCheckoutCard(code) {
+  const customers = document.getElementById("checkoutUsbCustomer");
+  customers.replaceChildren(
+    ...sukiStore.read()
+      .filter((suki) => !suki.cardCode)
+      .sort((first, second) => first.name.localeCompare(second.name))
+      .map((suki) => new Option(suki.name, suki.id)),
+  );
+  document.getElementById("checkoutUsbAttach").onclick = () => {
+    if (!sukiStore.setCardCode(customers.value, code).ok) return;
+    document.getElementById("checkoutUsbUnknown").hidden = true;
+    selectCardCustomer(sukiStore.findByCardCode(code));
+  };
+  document.getElementById("checkoutSukiScanStatus").textContent = `Card ${code}`;
+  document.getElementById("checkoutUsbUnknown").hidden = false;
+}
+
+function selectCardCustomer(suki) {
+  selectedSukiId = suki.id;
+  scheduleCheckoutDraftSave();
+  updateSukiCheckoutInfo();
+  updatePayment();
+  const scanButton = document.getElementById("checkoutSukiScanButton");
+  const scanStatus = document.getElementById("checkoutSukiScanStatus");
+  if (scanButton) {
+    scanButton.disabled = false;
+    scanButton.textContent = "Suki Card Selected";
+  }
+  if (scanStatus) {
+    scanStatus.textContent = `${suki.name} selected.`;
+    scanStatus.classList.remove("is-error");
+  }
+}
+
 async function scanSukiCard() {
+  if (!window.isNfcSupported()) {
+    armUsbCheckout();
+    return;
+  }
+
   const scanButton = document.getElementById("checkoutSukiScanButton");
 
   const scanStatus = document.getElementById("checkoutSukiScanStatus");
@@ -669,22 +757,14 @@ async function scanSukiCard() {
 // A USB card does what a phone tap does. At Checkout only a registered card gets here:
 // any other code is a barcode.
 window.miniMartCardReader.onCard((code, suki) => {
-  if (!suki || !document.getElementById("checkoutSukiInfo")) return;
-  selectedSukiId = suki.id;
-  scheduleCheckoutDraftSave();
-  updateSukiCheckoutInfo();
-  updatePayment();
-  const scanButton = document.getElementById("checkoutSukiScanButton");
-  const scanStatus = document.getElementById("checkoutSukiScanStatus");
-  if (scanButton) {
-    scanButton.disabled = false;
-    scanButton.textContent = "Suki Card Selected";
-  }
-  if (scanStatus) {
-    scanStatus.textContent = "Suki card detected.";
-    scanStatus.classList.remove("is-error");
-  }
+  if (suki && document.getElementById("checkoutSukiInfo")) selectCardCustomer(suki);
 });
+
+function showReaderStatus({ title, help }) {
+  const scanStatus = document.getElementById("checkoutSukiScanStatus");
+  if (selectedSukiId || !document.getElementById("checkoutUsbCancel").hidden) return;
+  scanStatus.textContent = `${title}. ${help}`;
+}
 
 function transactionNumber() {
   const date = new Date();

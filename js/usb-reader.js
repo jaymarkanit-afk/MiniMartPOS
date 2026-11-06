@@ -26,6 +26,11 @@
   const MIN_LENGTH = 4;
   const MAX_LENGTH = 32;
   const CAPTURE_TIMEOUT_MS = 15000;
+  const ARMED_TIMEOUT_MS = 30000;
+  // A keyboard-type reader cannot be seen until it types, so this is all a page may claim.
+  const WAITING_TITLE = "Waiting for a card";
+  const WAITING_HELP = "Tap a card on the USB reader. The page cannot see the reader until a card is tapped.";
+  const WORKING_TITLE = "Reader working";
   // The test panel shows what arrives even from a reader that sends no terminator.
   const TEST_IDLE_MS = 400;
   const TERMINATORS = new Set(["Enter", "Tab"]);
@@ -37,6 +42,30 @@
   let activeCapture = null;
   let testListener = null;
   let testTimer = null;
+  let lastReadAt = null;
+  const statusListeners = new Set();
+
+  function readerStatus() {
+    if (lastReadAt === null) return { working: false, title: WAITING_TITLE, help: WAITING_HELP };
+    return {
+      working: true,
+      title: WORKING_TITLE,
+      help: `Last read at ${new Date(lastReadAt).toLocaleTimeString()}.`,
+    };
+  }
+
+  // Only a recognized card gets here. Silence never changes the state.
+  function markRead() {
+    lastReadAt = Date.now();
+    statusListeners.forEach((listener) => listener(readerStatus()));
+  }
+
+  function startCapture(timeoutMs) {
+    if (activeCapture) finishCapture(null);
+    return new Promise((resolve) => {
+      activeCapture = { resolve, timer: window.setTimeout(() => finishCapture(null), timeoutMs) };
+    });
+  }
 
   function fieldSnapshot(target) {
     if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement)) {
@@ -87,7 +116,11 @@
 
   function reportTest(terminator, endTime) {
     window.clearTimeout(testTimer);
-    if (burst && testListener) testListener(describeBurst(terminator, endTime));
+    if (burst && testListener) {
+      const tap = describeBurst(terminator, endTime);
+      testListener(tap);
+      if (tap.recognized) markRead();
+    }
     burst = null;
   }
 
@@ -101,11 +134,13 @@
   // The decision order at the top of this file. Returns true if the burst was a card.
   function handleScan(code) {
     if (activeCapture) {
+      markRead();
       finishCapture(code);
       return true;
     }
     const suki = window.miniMartSukiStore?.findByCardCode?.(code) || null;
     if (!isCardMode() && !suki) return false;
+    markRead();
     onCard?.(code, suki);
     return true;
   }
@@ -165,10 +200,16 @@
     },
     // Resolves with the next card code, or null after a cancel or the time limit.
     capture() {
-      if (activeCapture) finishCapture(null);
-      return new Promise((resolve) => {
-        activeCapture = { resolve, timer: window.setTimeout(() => finishCapture(null), CAPTURE_TIMEOUT_MS) };
-      });
+      return startCapture(CAPTURE_TIMEOUT_MS);
+    },
+    // The same, for a button that asks the cashier to tap a card now.
+    arm() {
+      return startCapture(ARMED_TIMEOUT_MS);
+    },
+    // Calls the listener now, and again after every read.
+    onStatus(listener) {
+      statusListeners.add(listener);
+      listener(readerStatus());
     },
     cancelCapture() {
       if (activeCapture) finishCapture(null);

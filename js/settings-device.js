@@ -46,6 +46,10 @@ function toggleUsbReaderTest() {
 }
 
 usbReaderTest.addEventListener("click", toggleUsbReaderTest);
+window.miniMartCardReader.onStatus(({ title, help }) => {
+  document.getElementById("usbReaderStateTitle").textContent = title;
+  document.getElementById("usbReaderStateHelp").textContent = help;
+});
 
 function setNfcStatusBadge(variant, icon, text) {
   nfcStatusBadge.className = `device-status-badge device-status-badge-${variant}`;
@@ -86,8 +90,8 @@ async function checkNfcDeviceStatus(showConfirmation = false) {
     setNfcStatusBadge("warning", "!", "Secure connection required");
     nfcStatusExplanation.textContent = "NFC needs a secure connection. Open Mini Mart POS over HTTPS or on localhost to check NFC availability.";
   } else if (!supported) {
-    setNfcStatusBadge("neutral", "?", "Not supported");
-    nfcStatusExplanation.textContent = "Web NFC only works in Chrome on an Android phone with NFC, over HTTPS. This device or browser can't read NFC cards. You can still use Suki Rewards by finding a customer by name or phone number.";
+    setNfcStatusBadge("neutral", "?", "Phone only");
+    nfcStatusExplanation.textContent = "Phone NFC works in Chrome on an Android phone. On this computer, use the USB card reader below.";
   } else if (permission === "granted") {
     setNfcStatusBadge("success", "✓", "Supported and allowed");
     nfcStatusExplanation.textContent = "NFC is ready to use. Make sure NFC is turned on in your phone settings.";

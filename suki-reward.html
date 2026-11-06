@@ -216,10 +216,14 @@
 
               <!-- USB CARD READER -->
 
-              <div class="usb-reader-ready" id="usbReaderReady" hidden>
-                <strong>USB card reader ready</strong>
+              <div class="usb-reader-state" id="usbReaderState" hidden>
+                <strong id="usbReaderStateTitle"></strong>
 
-                <p>Tap a card on the reader.</p>
+                <p id="usbReaderStateHelp"></p>
+
+                <button class="secondary-button" id="usbScanCancel" type="button" hidden>
+                  Cancel
+                </button>
               </div>
 
               <div class="usb-card-unknown" id="usbCardUnknown" hidden>
