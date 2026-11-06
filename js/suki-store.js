@@ -150,6 +150,114 @@
     return records;
   }
 
+  function addEntry(record, entry) {
+    const stamps = Math.max(0, record.stamps + entry.pointsChange);
+    const next = {
+      ...record,
+      stamps,
+      history: [...record.history, { date: new Date().toISOString(), ...entry, stampsAfter: stamps }],
+    };
+    // Until the migration runs, the old balance keeps its gap from the points.
+    if ("rewardBalance" in record) {
+      const pesos = entry.pointsChange * window.miniMartSukiRules.settings().pesoValue;
+      next.rewardBalance = Math.max(0, window.miniMartDB.roundMoney(record.rewardBalance + pesos));
+    }
+    return next;
+  }
+
+  // Expiry is only worked out on read. This writes it, the next time the customer is written.
+  function settleExpiry(record) {
+    const rules = window.miniMartSukiRules;
+    if (!(record.stamps > 0) || !rules.isExpired(rules.pointsEntryDate(record))) return record;
+    return addEntry(record, {
+      type: "Points expired",
+      kind: "expire",
+      description: `${record.stamps} points expired`,
+      pointsExpired: record.stamps,
+      pointsChange: -record.stamps,
+    });
+  }
+
+  function pointsEntry(record, change) {
+    const rules = window.miniMartSukiRules;
+    const details = change.details || {};
+    if (change.kind === "earn") {
+      const earned = Math.min(Number(change.points) || 0, Math.max(0, rules.maxPoints() - record.stamps));
+      const spent = Math.min(Number(change.spent) || 0, record.stamps + earned);
+      return {
+        type: "Purchase",
+        ...details,
+        kind: "earn",
+        saleId: change.saleId ?? null,
+        stampsEarned: earned,
+        pointsSpent: spent,
+        pointsChange: earned - spent,
+      };
+    }
+    if (change.kind === "redeem") {
+      const spent = Math.min(Number(change.points) || 0, record.stamps);
+      return {
+        type: "Reward redeemed",
+        ...details,
+        kind: "redeem",
+        saleId: change.saleId ?? null,
+        stampsEarned: 0,
+        pointsSpent: spent,
+        pointsChange: -spent,
+      };
+    }
+    if (change.kind === "void-reverse") {
+      const earned = Number(change.earned) || 0;
+      const spent = Number(change.spent) || 0;
+      const after = record.stamps + spent - earned;
+      return {
+        type: "Sale voided",
+        ...details,
+        kind: "void-reverse",
+        saleId: change.saleId,
+        pointsReversed: earned,
+        pointsReturned: spent,
+        shortfall: Math.max(0, -after),
+        pointsChange: Math.max(0, after) - record.stamps,
+      };
+    }
+    if (change.kind === "correction") {
+      return {
+        type: "Balance correction",
+        ...details,
+        kind: "correction",
+        oldStamps: change.oldStamps,
+        oldRewardBalance: change.oldRewardBalance,
+        newStamps: change.newStamps,
+        pointsChange: change.pointsChange,
+      };
+    }
+    return null;
+  }
+
+  // The only code that changes points or adds history. Both go in one write.
+  // kind is earn, redeem, expire, void-reverse or correction. A sale that both earns and
+  // spends is one earn with spent set, so it stays one history entry.
+  function applyPointsChange(id, change) {
+    const problem = migrate();
+    if (problem) return refuse(problem);
+    const { records } = normalizeList(loadStored().list);
+    const index = records.findIndex((record) => record.id === id);
+    if (index === -1) return refuse("That customer could not be found, so nothing was saved.");
+    if (
+      change.kind === "void-reverse" &&
+      records[index].history.some((entry) => entry.kind === "void-reverse" && entry.saleId === change.saleId)
+    ) {
+      return { ok: true, error: null, reason: null, suki: records[index], entry: null };
+    }
+    let next = settleExpiry(records[index]);
+    const entry = change.kind === "expire" ? null : pointsEntry(next, change);
+    if (change.kind !== "expire" && !entry) return refuse("That points change is not valid, so nothing was saved.");
+    if (entry) next = addEntry(next, entry);
+    records[index] = next;
+    return { ...writeRecords(records), suki: next, entry: next.history.at(-1) };
+  }
+
   // Use remove() to delete. This refuses any list that loses a customer.
   function save(sukis) {
     if (!Array.isArray(sukis)) return refuse("The customer list is not valid, so nothing was saved.");
@@ -167,7 +275,16 @@
         `${lost.size} customer record${lost.size === 1 ? "" : "s"} would have been lost, so nothing was saved.`,
       );
     }
-    return writeRecords(records);
+    // Points and history stay as stored: only applyPointsChange changes them, and a
+    // stale tab must not undo them.
+    const stored = new Map(storedRecords.map((record) => [record.id, record]));
+    return writeRecords(records.map((record) => {
+      const current = stored.get(record.id);
+      if (!current) return record;
+      const kept = { ...record, stamps: current.stamps, history: current.history };
+      if ("rewardBalance" in current) kept.rewardBalance = current.rewardBalance;
+      return JSON.stringify(kept) === JSON.stringify(current) ? kept : settleExpiry(kept);
+    }));
   }
 
   function remove(id) {
@@ -184,7 +301,7 @@
     return `suki-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   }
 
-  window.miniMartSukiStore = { STORAGE_KEY, read, save, remove, createId };
+  window.miniMartSukiStore = { STORAGE_KEY, read, save, remove, createId, applyPointsChange };
 
   const startupProblem = migrate();
   if (startupProblem) showStorageError(startupProblem);

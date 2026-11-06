@@ -831,6 +831,9 @@ window.miniMartDB = {
       change: Number.isFinite(Number(payment.change))
         ? Number(payment.change)
         : null,
+      sukiId: payment.sukiId || null,
+      pointsEarned: Number(payment.pointsEarned) || 0,
+      pointsSpent: Number(payment.pointsSpent) || 0,
       rewardUsed: Number.isFinite(Number(payment.rewardUsed))
         ? Number(payment.rewardUsed)
         : null,

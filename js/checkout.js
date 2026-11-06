@@ -1491,86 +1491,36 @@ function completeSale() {
        UPDATE SUKI
     ========================================= */
 
-  if (suki) {
-    const sukis = sukiStore.read();
+  const saleId = transactionNumber();
+  let sukiPoints = { sukiId: null, pointsEarned: 0, pointsSpent: 0 };
 
-    const index = sukis.findIndex((entry) => entry.id === suki.id);
-
-    if (index !== -1) {
-      const current = sukis[index];
-
-      let newStamps = current.stamps;
-
-      let newRewardBalance = current.rewardBalance;
-
-      /*
-       * Add new stamps.
-       */
-      if (stampsEarned > 0) {
-        newStamps = Math.min(sukiRules.maxPoints(), newStamps + stampsEarned);
-        newRewardBalance = Math.min(
-          sukiRules.maxRewardBalance(),
-          newRewardBalance + sukiRules.pesoValueOfPoints(stampsEarned),
-        );
-      }
-
-      /*
-       * Redeeming removes the points spent.
-       */
-      if (rewardUsed > 0 && sukiRules.canRedeem(sukiRules.usablePoints(current))) {
-        newStamps = Math.max(0, sukiRules.usablePoints(current) - Math.ceil(rewardUsed / sukiRules.settings().pesoValue));
-        newRewardBalance = Math.max(0, newRewardBalance - rewardUsed);
-      }
-
-      /*
-       * Record transaction.
-       */
-      const historyEntry = {
-        type: "Purchase",
-
-        date: new Date().toISOString(),
-
-        description: `${entries.length} item${
-          entries.length === 1 ? "" : "s"
-        } purchased`,
-
+  if (suki && sukiStore.read().some((entry) => entry.id === suki.id)) {
+    const pointsSpent = sukiRules.canRedeem(usablePoints) ? sukiRules.pointsForPesos(rewardUsed) : 0;
+    const sukiResult = sukiStore.applyPointsChange(suki.id, {
+      kind: "earn",
+      points: stampsEarned,
+      spent: pointsSpent,
+      saleId,
+      details: {
+        description: `${entries.length} item${entries.length === 1 ? "" : "s"} purchased`,
         purchaseTotal: total,
-
-        rewardUsed: rewardUsed,
-
+        rewardUsed,
         cashGiven,
-
-        cashRequired: cashRequired,
-
+        cashRequired,
         change,
-
-        stampsEarned: stampsEarned,
-
-        stampsAfter: newStamps,
-
-        rewardBalanceAfter: newRewardBalance,
-      };
-
-      sukis[index] = {
-        ...current,
-
-        stamps: newStamps,
-
-        rewardBalance: newRewardBalance,
-
-        redeemed: false,
-
-        history: [...(current.history || []), historyEntry],
-      };
-
-      const sukiResult = sukiStore.save(sukis);
-      if (!sukiResult.ok) {
-        saleInProgress = false;
-        updatePayment();
-        showCheckoutToast("The sale could not be saved. Nothing was changed.");
-        return;
-      }
+      },
+    });
+    if (!sukiResult.ok) {
+      saleInProgress = false;
+      updatePayment();
+      showCheckoutToast("The sale could not be saved. Nothing was changed.");
+      return;
     }
+    sukiPoints = {
+      sukiId: suki.id,
+      pointsEarned: sukiResult.entry.stampsEarned,
+      pointsSpent: sukiResult.entry.pointsSpent,
+    };
   }
 
   /* =========================================
@@ -1626,7 +1576,6 @@ function completeSale() {
   });
 
   try {
-    const saleId = transactionNumber();
     const productsResult = window.miniMartDB.saveProducts(inventory, {
       reason: "sale",
       reference: saleId,
@@ -1647,6 +1596,7 @@ function completeSale() {
       cashRequired,
       change,
       rewardUsed,
+      ...sukiPoints,
     });
     if (!saleResult?.ok) throw saleResult.error;
     shift.sales += 1;

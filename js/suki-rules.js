@@ -79,6 +79,25 @@ function pointsEntryDate(suki) {
     (Number.isNaN(joined.getTime()) ? null : joined);
 }
 
+// Points a peso amount costs, rounded up so a reward is never underpaid.
+function pointsForPesos(amount) {
+  const pesos = Number(amount);
+  if (!Number.isFinite(pesos) || pesos <= 0) return 0;
+  return Math.ceil(Math.round((pesos / normalizedSukiSettings().pesoValue) * 1e6) / 1e6);
+}
+
+// Entries before applyPointsChange have no pointsChange, so theirs is worked out.
+function entryPoints(entry) {
+  const change = Number(entry?.pointsChange);
+  if (Number.isFinite(change)) return change;
+  return (Number(entry?.stampsEarned) || 0) - pointsForPesos(entry?.rewardUsed);
+}
+
+function historyPoints(suki) {
+  return (Array.isArray(suki?.history) ? suki.history : [])
+    .reduce((sum, entry) => sum + entryPoints(entry), 0);
+}
+
 function usablePoints(suki, now = new Date()) {
   const points = Number(suki?.stamps);
   if (!Number.isFinite(points) || points <= 0 || isExpired(pointsEntryDate(suki), now)) {
@@ -99,4 +118,6 @@ window.miniMartSukiRules = {
   maxRedeemAmount,
   pointsEntryDate,
   usablePoints,
+  pointsForPesos,
+  historyPoints,
 };
