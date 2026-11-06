@@ -1,5 +1,51 @@
-// Settings page: NFC device status.
+// Settings page: NFC device status and the USB card reader test.
 let nfcPermissionStatus = null;
+const USB_READER_TAPS_SHOWN = 5;
+const usbReaderTest = document.getElementById("usbReaderTest");
+const usbReaderStatus = document.getElementById("usbReaderStatus");
+const usbReaderTaps = document.getElementById("usbReaderTaps");
+let usbReaderTesting = false;
+
+function usbReaderTapRow(tap) {
+  const row = document.createElement("li");
+  row.className = "usb-reader-tap";
+  const text = document.createElement("code");
+  text.textContent = tap.text;
+  const lines = [
+    `Length: ${tap.length}`,
+    `All digits: ${tap.allDigits ? "yes" : "no"}`,
+    `Average gap: ${tap.averageGap.toFixed(1)} ms`,
+    `Gaps: ${tap.gaps.map((gap) => `${gap.toFixed(1)} ms`).join(", ") || "none"}`,
+    `Ended with: ${tap.terminator}`,
+    tap.recognized ? "Works as a card: yes" : `Works as a card: no. ${tap.problem}`,
+  ];
+  row.append(text);
+  lines.forEach((line) => {
+    const detail = document.createElement("p");
+    detail.textContent = line;
+    row.append(detail);
+  });
+  return row;
+}
+
+function toggleUsbReaderTest() {
+  usbReaderTesting = !usbReaderTesting;
+  usbReaderTest.textContent = usbReaderTesting ? "STOP TEST" : "TEST";
+  if (!usbReaderTesting) {
+    window.miniMartCardReader.stopTest();
+    usbReaderStatus.textContent = "Test stopped. Press Test, then tap a card on the reader.";
+    return;
+  }
+  usbReaderTest.blur();
+  usbReaderStatus.textContent = "Testing. Tap a card on the reader now.";
+  window.miniMartCardReader.startTest((tap) => {
+    usbReaderStatus.textContent = "Tap received. Tap again, or press Stop test.";
+    usbReaderTaps.prepend(usbReaderTapRow(tap));
+    while (usbReaderTaps.children.length > USB_READER_TAPS_SHOWN) usbReaderTaps.lastElementChild.remove();
+  });
+}
+
+usbReaderTest.addEventListener("click", toggleUsbReaderTest);
 
 function setNfcStatusBadge(variant, icon, text) {
   nfcStatusBadge.className = `device-status-badge device-status-badge-${variant}`;

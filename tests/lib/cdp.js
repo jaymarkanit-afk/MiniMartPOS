@@ -322,6 +322,24 @@ class Page {
     await this.send("Input.dispatchKeyEvent", { type: "keyUp", ...event });
   }
 
+  // Types like a USB reader. Busy-waits between keys, because timers are too coarse here.
+  async typeBurst(text, { gap = 20, terminator = "Enter" } = {}) {
+    const sent = [];
+    let next = performance.now();
+    for (const character of [...text, terminator]) {
+      while (performance.now() < next) { /* hold the exact gap */ }
+      next += gap;
+      const named = character === terminator && character.length > 1;
+      const event = named
+        ? { key: character, code: character, windowsVirtualKeyCode: character === "Tab" ? 9 : 13, ...(character === "Enter" ? { text: "\r" } : {}) }
+        : { key: character, text: character, unmodifiedText: character, windowsVirtualKeyCode: character.toUpperCase().charCodeAt(0) };
+      sent.push(this.send("Input.dispatchKeyEvent", { type: named && character === "Tab" ? "rawKeyDown" : "keyDown", ...event }));
+      sent.push(this.send("Input.dispatchKeyEvent", { type: "keyUp", ...event, text: undefined, unmodifiedText: undefined }));
+    }
+    await Promise.all(sent);
+    await sleep(40);
+  }
+
   async goBack() {
     const { currentIndex, entries } = await this.send("Page.getNavigationHistory");
     await this.send("Page.navigateToHistoryEntry", { entryId: entries[currentIndex - 1].id });

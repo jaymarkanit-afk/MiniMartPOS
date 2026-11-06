@@ -479,6 +479,14 @@ const mutations = [
     edits: [{ file: "js/utils.js", from: "  while (activeDialog) await activeDialog;\n", to: "  if (activeDialog) return;\n" }],
   },
   {
+    id: "card-speed-limit-removed",
+    fix: "Human typing is not a card",
+    tests: [
+      "card-reader: typing at 80 ms is never recognized, even with Enter at the end",
+    ],
+    edits: [{ file: "js/usb-reader.js", from: "const MAX_AVERAGE_GAP_MS = 50;", to: "const MAX_AVERAGE_GAP_MS = 500;" }],
+  },
+  {
     id: "overlay-no-delay",
     fix: "The overlay waits 300 ms",
     tests: ["overlay: a fast navigation never shows the overlay"],

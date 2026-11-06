@@ -426,6 +426,23 @@
                   <p class="settings-help nfc-troubleshooting">Web NFC normally requires Chrome on Android, an NFC-capable phone, and HTTPS (or localhost). Turn on NFC in the phone settings and allow this site if scanning is blocked.</p>
                 </div>
               </section>
+              <section class="device-status" aria-labelledby="usbReaderTitle">
+                <div class="device-status-heading">
+                  <div>
+                    <h4 id="usbReaderTitle">USB card reader</h4>
+                    <p class="settings-help">See exactly what your reader sends</p>
+                  </div>
+                  <button class="settings-button-secondary device-status-check" id="usbReaderTest" type="button">
+                    TEST
+                  </button>
+                </div>
+                <div class="device-status-content">
+                  <p class="device-status-explanation" id="usbReaderStatus" aria-live="polite">
+                    Press Test, then tap a card on the reader.
+                  </p>
+                  <ol class="usb-reader-taps" id="usbReaderTaps"></ol>
+                </div>
+              </section>
             </div>
           </article>
         </section>
@@ -578,6 +595,7 @@
     <script src="js/auth-client.js"></script>
     <script src="js/settings-store.js"></script>
     <script src="js/database.js"></script>
+    <script src="js/usb-reader.js"></script>
     <script src="js/category-icon-tooltip.js"></script>
     <script src="js/vendor/xlsx.full.min.js"></script>
     <script src="js/vendor/jspdf.umd.min.js"></script>

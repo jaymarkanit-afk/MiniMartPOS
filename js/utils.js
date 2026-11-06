@@ -41,6 +41,15 @@ function productLowStockThreshold(product) {
     : Number(window.miniMartSettings.get().lowStockThreshold) || 0;
 }
 
+// A USB reader's text is untrusted, so only these characters are accepted. Otherwise the
+// code is exactly what the reader sent, uppercased: no zeros removed, nothing converted.
+function normalizeCardCode(value) {
+  const code = String(value ?? "").trim().toUpperCase();
+  return /^[A-Z0-9 :._-]{4,32}$/.test(code) ? code : "";
+}
+
+window.normalizeCardCode = normalizeCardCode;
+
 // One dialog at a time. Only this file changes activeDialog.
 let activeDialog = null;
 

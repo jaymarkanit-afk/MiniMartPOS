@@ -2597,6 +2597,37 @@ body.modal-open {
   line-height: 1.45;
 }
 
+.usb-reader-taps {
+  display: grid;
+  gap: 10px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.usb-reader-tap {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.usb-reader-tap code {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--ink);
+  font-size: 15px;
+  overflow-wrap: anywhere;
+  user-select: all;
+  white-space: pre-wrap;
+}
+
+.usb-reader-tap p {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .device-status-explanation {
   color: var(--ink);
   font-size: 12px;
